@@ -73,6 +73,7 @@ if not app.testing:
 def get_root():
 
     app.logger.debug("GET ROOT")
+    app.logger.debug(flask.request.environ)
     return app.send_static_file('index.html')
 
 
