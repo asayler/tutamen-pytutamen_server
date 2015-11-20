@@ -20,8 +20,46 @@ app.config['JSON_AS_ASCII'] = False
 cors = flask.ext.cors.CORS(app, headers=["Content-Type", "Authorization"])
 httpauth = flask.ext.httpauth.HTTPBasicAuth()
 
+app.debug=True
 
 ### Logging ###
+
+if not app.testing:
+
+    import logging
+    import logging.handlers
+
+    loggers = [app.logger, logging.getLogger('tutamen')]
+
+    formatter_line = logging.Formatter('%(levelname)s: %(module)s - %(message)s')
+    formatter_line_time = logging.Formatter('%(asctime)s %(levelname)s: %(module)s - %(message)s')
+
+    # Stream Handler
+    handler_stream = logging.StreamHandler()
+    handler_stream.setFormatter(formatter_line)
+    if app.debug:
+        handler_stream.setLevel(logging.DEBUG)
+    else:
+        handler_stream.setLevel(logging.INFO)
+
+    # File Handler
+    # if not os.path.exists(_LOGGING_PATH):
+    #     os.makedirs(_LOGGING_PATH)
+    # logfile_path = "{:s}/{:s}".format(_LOGGING_PATH, "api.log")
+    # handler_file = logging.handlers.WatchedFileHandler(logfile_path)
+    # handler_file.setFormatter(formatter_line_time)
+    # if app.debug:
+    #     handler_file.setLevel(logging.DEBUG)
+    # else:
+    #     handler_file.setLevel(logging.INFO)
+
+    for logger in loggers:
+        if app.debug:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+        logger.addHandler(handler_stream)
+    #    logger.addHandler(handler_file)
 
 
 ### Functions ###
