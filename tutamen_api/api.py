@@ -10,6 +10,8 @@ import flask
 import flask.ext.httpauth
 import flask.ext.cors
 
+from . import exceptions
+
 ### Constants ###
 
 
@@ -65,25 +67,48 @@ if not app.testing:
 ### Functions ###
 
 
+
+### Auth Decorators ###
+
+def authenticate_client():
+
+    def _decorator(func):
+
+        @functools.wraps(func)
+        def _wrapper(*args, **kwargs):
+
+            cert_info = flask.request.environ
+            status = cert_info['SSL_CLIENT_VERIFY']
+            if status != 'SUCCESS':
+                msg = "Could not verify client cert: {}".format(status)
+                app.logger.error(msg)
+                raise exceptions.SSLClientCertError(msg)
+
+            account_id = cert_info['SSL_CLIENT_S_DN_O']
+            client_id = cert_info['SSL_CLIENT_S_DN_CN']
+            msg = "Authenticated Client '{}' for Account '{}'".format(client_id, account_id)
+            app.logger.info(msg)
+            flask.g.account_id = account_id
+            flask.g.client_id = client_id
+
+            # Call Function
+            return func(*args, **kwargs)
+
+        return _wrapper
+
+    return _decorator
+
+
 ### Endpoints ###
 
 ## Root Endpoints ##
 
 @app.route("/", methods=['GET'])
+@authenticate_client
 def get_root():
 
     app.logger.debug("GET ROOT")
-    d = flask.request.environ
-    k = list(d.keys())
-    k.sort()
-    app.logger.debug("Environ Keys = {}".format(k))
-    app.logger.debug("Client Cert =\n{}".format(d['SSL_CLIENT_CERT']))
-    app.logger.debug("Client Verify          = {}".format(d['SSL_CLIENT_VERIFY']))
-    app.logger.debug("Client Cert Serial     = {}".format(d['SSL_CLIENT_M_SERIAL']))
-    app.logger.debug("Client Cert Subject    = {}".format(d['SSL_CLIENT_S_DN']))
-    app.logger.debug("Client Cert Subject CN = {}".format(d['SSL_CLIENT_S_DN_CN']))
     return app.send_static_file('index.html')
-
 
 ### Exceptions ###
 
