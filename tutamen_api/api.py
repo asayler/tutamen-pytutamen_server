@@ -6,11 +6,14 @@
 
 
 ### Imports ###
+import functools
+
 import flask
 import flask.ext.httpauth
 import flask.ext.cors
 
 from . import exceptions
+
 
 ### Constants ###
 
@@ -23,6 +26,7 @@ cors = flask.ext.cors.CORS(app, headers=["Content-Type", "Authorization"])
 httpauth = flask.ext.httpauth.HTTPBasicAuth()
 
 app.debug=True
+
 
 ### Logging ###
 
@@ -104,7 +108,7 @@ def authenticate_client():
 ## Root Endpoints ##
 
 @app.route("/", methods=['GET'])
-@authenticate_client
+@authenticate_client()
 def get_root():
 
     app.logger.debug("GET ROOT")
