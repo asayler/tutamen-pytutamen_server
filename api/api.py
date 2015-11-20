@@ -82,7 +82,7 @@ def get_root():
 def bad_key(error):
     err = { 'status': 400,
             'message': "{:s}".format(error) }
-    app.logger.info("Client Error: KeyError: {:s}".format(err))
+    app.logger.info("Client Error: KeyError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -91,7 +91,7 @@ def bad_key(error):
 def bad_value(error):
     err = { 'status': 400,
             'message': "{:s}".format(error) }
-    app.logger.info("Client Error: ValueError: {:s}".format(err))
+    app.logger.info("Client Error: ValueError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -100,7 +100,7 @@ def bad_value(error):
 def bad_type(error):
     err = { 'status': 400,
             'message': "{:s}".format(error) }
-    app.logger.info("Client Error: TypeError: {:s}".format(err))
+    app.logger.info("Client Error: TypeError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -109,7 +109,7 @@ def bad_type(error):
 def bad_request(error=False):
     err = { 'status': 400,
             'message': "Malformed request" }
-    app.logger.info("Client Error: 400: {:s}".format(err))
+    app.logger.info("Client Error: 400: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -118,7 +118,7 @@ def bad_request(error=False):
 def not_authorized_401(error=False):
     err = { 'status': 401,
             'message': "Not Authorized" }
-    app.logger.info("Client Error: 401: {:s}".format(err))
+    app.logger.info("Client Error: 401: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -126,8 +126,8 @@ def not_authorized_401(error=False):
 @app.errorhandler(404)
 def not_found(error=False):
     err = { 'status': 404,
-            'message': "Not Found: {:s}".format(flask.request.url) }
-    app.logger.info("Client Error: 404: {:s}".format(err))
+            'message': "Not Found: {}".format(flask.request.url) }
+    app.logger.info("Client Error: 404: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
@@ -135,8 +135,8 @@ def not_found(error=False):
 @app.errorhandler(405)
 def bad_method(error=False):
     err = { 'status': 405,
-            'message': "Bad Method: {:s} {:s}".format(flask.request.method, flask.request.url) }
-    app.logger.info("Client Error: 405: {:s}".format(err))
+            'message': "Bad Method: {} {}".format(flask.request.method, flask.request.url) }
+    app.logger.info("Client Error: 405: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
