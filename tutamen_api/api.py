@@ -78,7 +78,6 @@ def get_root():
     k.sort()
     app.logger.debug("Environ Keys = {}".format(k))
     app.logger.debug("Client Cert =\n{}".format(d['SSL_CLIENT_CERT']))
-                                                          SSL_CLIENT_VERIFY
     app.logger.debug("Client Verify          = {}".format(d['SSL_CLIENT_VERIFY']))
     app.logger.debug("Client Cert Serial     = {}".format(d['SSL_CLIENT_M_SERIAL']))
     app.logger.debug("Client Cert Subject    = {}".format(d['SSL_CLIENT_S_DN']))
