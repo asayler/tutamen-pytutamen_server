@@ -73,7 +73,16 @@ if not app.testing:
 def get_root():
 
     app.logger.debug("GET ROOT")
-    app.logger.debug(flask.request.environ)
+    d = flask.request.environ
+    k = list(d.keys())
+    k.sort()
+    app.logger.debug("Environ Keys = {}".format(k))
+    app.logger.debug("Client Cert =\n{}".format(d['SSL_CLIENT_CERT']))
+                                                          SSL_CLIENT_VERIFY
+    app.logger.debug("Client Verify          = {}".format(d['SSL_CLIENT_VERIFY']))
+    app.logger.debug("Client Cert Serial     = {}".format(d['SSL_CLIENT_M_SERIAL']))
+    app.logger.debug("Client Cert Subject    = {}".format(d['SSL_CLIENT_S_DN']))
+    app.logger.debug("Client Cert Subject CN = {}".format(d['SSL_CLIENT_S_DN_CN']))
     return app.send_static_file('index.html')
 
 
@@ -82,7 +91,7 @@ def get_root():
 @app.errorhandler(KeyError)
 def bad_key(error):
     err = { 'status': 400,
-            'message': "{:s}".format(error) }
+            'message': "{}".format(error) }
     app.logger.info("Client Error: KeyError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
@@ -91,7 +100,7 @@ def bad_key(error):
 @app.errorhandler(ValueError)
 def bad_value(error):
     err = { 'status': 400,
-            'message': "{:s}".format(error) }
+            'message': "{}".format(error) }
     app.logger.info("Client Error: ValueError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
@@ -100,7 +109,7 @@ def bad_value(error):
 @app.errorhandler(TypeError)
 def bad_type(error):
     err = { 'status': 400,
-            'message': "{:s}".format(error) }
+            'message': "{}".format(error) }
     app.logger.info("Client Error: TypeError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
