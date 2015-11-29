@@ -12,6 +12,9 @@ from pcollections import be_redis_atomic as ds_objects
 from pcollections import factories as ds_factories
 from pcollections import keys as ds_keys
 
+
+### Objects ###
+
 class ManagmentServer(object):
 
     def __init__(self, ds_driver):
@@ -24,13 +27,11 @@ class ManagmentServer(object):
 
 
     def organization_new(self, name):
-        return UserOrganization.from_new(self._ds_driver, name)
-
+        return Organization.from_new(self._ds_driver, name)
     def organization_existing(self, uid):
-        return UserOrganization.from_existing(self._ds_driver, uid)
+        return Organization.from_existing(self._ds_driver, uid)
 
-
-class UserOrganization(object):
+class Organization(object):
 
     def __init__(self, driver, uid, meta, accounts):
 
@@ -82,3 +83,8 @@ class UserOrganization(object):
         accounts = accounts_f.from_existing(str(uid))
 
         return cls(driver, uid, meta, accounts)
+
+    def rem(self):
+        """Delete Organization"""
+        self._meta.rem()
+        self._accounts.rem()
