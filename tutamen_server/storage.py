@@ -72,7 +72,7 @@ class StorageServer(object):
 
         uid = uuid.uuid4()
         data = self._sec_f_data.from_new(uid, data)
-        sec = Secret(uid, data)
+        sec = Secret(self, uid, data)
         self.secret_register(sec)
         return sec
 
@@ -85,7 +85,7 @@ class StorageServer(object):
 
         uid = uuid.UUID(uid)
         data = self._sec_f_data.from_existing(uid)
-        sec = Secret(uid, data)
+        sec = Secret(self, uid, data)
         return sec
 
 class Secret(object):
@@ -95,13 +95,17 @@ class Secret(object):
     type_data = dso.String
     postfix_data = "data"
 
-    def __init__(self, uid, data):
+    def __init__(self, srv, uid, data):
         """Initialize Secret"""
 
         # Call Parent
         super().__init__()
 
         # Check Args
+        if not isinstance(srv, StorageServer):
+            msg = "'srv' must be of type '{}', ".format(StorageServer)
+            msg += "not '{}'".format(type(srv))
+            raise TypeError(msg)
         if not isinstance(uid, self.type_uid):
             msg = "'uid' must be of type '{}', ".format(self.type_uid)
             msg += "not '{}'".format(type(uid))
@@ -112,6 +116,7 @@ class Secret(object):
             raise TypeError(msg)
 
         # Save Attrs
+        self._srv = srv
         self._uid = uid
         self._data = data
 
@@ -125,6 +130,11 @@ class Secret(object):
         """Return Secret UUID"""
         return str(self._uid)
 
+    def exists(self):
+        """Secret Exists?"""
+        return self._srv.secret_exists(self)
+
     def rem(self):
         """Delete Secret"""
+        self._srv.secret_unregister(self)
         self._data.rem()
