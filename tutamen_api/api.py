@@ -14,10 +14,14 @@ import flask.ext.cors
 
 from . import exceptions
 
-from tutamen_server import storage
+import pcollections.be_redis_atomic
+
+import tutamen_server.storage
 
 
 ### Constants ###
+
+_REDIS_DB = 3
 
 
 ### Global Setup ###
@@ -26,8 +30,6 @@ app = flask.Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 cors = flask.ext.cors.CORS(app, headers=["Content-Type", "Authorization"])
 httpauth = flask.ext.httpauth.HTTPBasicAuth()
-
-app.debug=True
 
 
 ### Logging ###
@@ -45,10 +47,7 @@ if not app.testing:
     # Stream Handler
     handler_stream = logging.StreamHandler()
     handler_stream.setFormatter(formatter_line)
-    if app.debug:
-        handler_stream.setLevel(logging.DEBUG)
-    else:
-        handler_stream.setLevel(logging.INFO)
+    handler_stream.setLevel(logging.DEBUG)
 
     # File Handler
     # if not os.path.exists(_LOGGING_PATH):
@@ -62,17 +61,23 @@ if not app.testing:
     #     handler_file.setLevel(logging.INFO)
 
     for logger in loggers:
-        if app.debug:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
         logger.addHandler(handler_stream)
     #    logger.addHandler(handler_file)
 
 
 ### Functions ###
 
+@app.before_request
+def before_request():
 
+    driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
+    storage = tutamen_server.storage.StorageServer(driver)
+    flask.g.srv_storage = storage
+
+@app.teardown_request
+def teardown_request(exception):
+    pass
 
 ### Auth Decorators ###
 
@@ -93,7 +98,7 @@ def authenticate_client():
             account_id = cert_info['SSL_CLIENT_S_DN_O']
             client_id = cert_info['SSL_CLIENT_S_DN_CN']
             msg = "Authenticated Client '{}' for Account '{}'".format(client_id, account_id)
-            app.logger.info(msg)
+            app.logger.debug(msg)
             flask.g.account_id = account_id
             flask.g.client_id = client_id
 
@@ -115,6 +120,29 @@ def get_root():
 
     app.logger.debug("GET ROOT")
     return app.send_static_file('index.html')
+
+
+## Storage Endpoints ##
+
+@app.route("/secrets/", methods=['POST'])
+@authenticate_client()
+def post_secret():
+
+    app.logger.debug("POST SECRET")
+    d_in = flask.request.get_json(force=True)
+    data = d_in['secret']
+    sec = flask.g.srv_storage.secret_from_new(data)
+    d_out = [sec.uid]
+    return flask.jsonify(d_out)
+
+@app.route("/secrets/<uid>/", methods=['GET'])
+@authenticate_client()
+def get_secret(uid):
+
+    app.logger.debug("GET SECRET")
+    sec = flask.g.srv_storage.secret_from_existing(uid)
+    d_out = {'secret': sec.data}
+    return flask.jsonify(d_out)
 
 
 ### Error Handling ###
