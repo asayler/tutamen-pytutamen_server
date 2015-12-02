@@ -14,6 +14,8 @@ import flask.ext.cors
 
 from . import exceptions
 
+from tutamen_server import storage
+
 
 ### Constants ###
 
@@ -114,7 +116,8 @@ def get_root():
     app.logger.debug("GET ROOT")
     return app.send_static_file('index.html')
 
-### Exceptions ###
+
+### Error Handling ###
 
 @app.errorhandler(KeyError)
 def bad_key(error):
@@ -153,7 +156,7 @@ def bad_request(error=False):
     return res
 
 @app.errorhandler(401)
-def not_authorized_401(error=False):
+def not_authorized(error=False):
     err = { 'status': 401,
             'message': "Not Authorized" }
     app.logger.info("Client Error: 401: {}".format(err))
