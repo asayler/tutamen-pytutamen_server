@@ -12,6 +12,19 @@ from pcollections import be_redis_atomic as dso
 from pcollections import factories as dsf
 from pcollections import keys as dsk
 
+
+### Exceptions ###
+
+class ObjectDNE(Exception):
+
+    def __init__(self, key):
+
+        # Call Parent
+        msg = "Object '{:s}' does not exist".format(key)
+        super().__init__(msg)
+
+
+
 ### Objects ###
 
 class StorageServer(object):
