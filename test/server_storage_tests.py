@@ -95,15 +95,88 @@ class SecretTestCase(BaseTestCase):
         # Call Parent
         super().__init__(*args, **kwargs)
 
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
         # Setup Properties
         self.ss = tutamen_server.storage.StorageServer(self.driver)
 
-    def test_secret_from_new(self):
+    def tearDown(self):
 
-        d = "Test Secret"
-        s = self.ss.secret_from_new(d)
-        self.assertIsNotNone(s)
-        self.assertIsInstance(s, tutamen_server.storage.Secret)
+        # Teardown Properties
+        self.ss.wipe()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_from_new(self):
+
+        # Create
+        data = "Test Data"
+        sec = self.ss.secret_from_new(data)
+
+        # Test
+        self.assertIsNotNone(sec)
+        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+
+        # Cleanup
+        sec.rem()
+
+    def test_from_existing(self):
+
+        # Create
+        data = "Test Data"
+        uid = self.ss.secret_from_new(data).uid
+        sec = self.ss.secret_from_existing(uid)
+
+        # Test
+        self.assertIsNotNone(sec)
+        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+
+        # Cleanup
+        sec.rem()
+
+    def test_uid(self):
+
+        # Create Secret
+        data = "Test Data"
+        uid = self.ss.secret_from_new(data).uid
+        sec = self.ss.secret_from_existing(uid)
+
+        # Test
+        self.assertEqual(uid, sec.uid)
+
+        # Cleanup
+        sec.rem()
+
+    def test_data(self):
+
+        # Create
+        data = "Test Data"
+        sec = self.ss.secret_from_new(data)
+
+        # Test
+        self.assertEqual(data, sec.data)
+
+        # Cleanup
+        sec.rem()
+
+    def test_exists(self):
+
+        # Create
+        data = "Test Data"
+        sec = self.ss.secret_from_new(data)
+
+        # Test Exists
+        self.assertTrue(sec.exists())
+
+        # Cleanup
+        sec.rem()
+
+        # Test Not Exists
+        self.assertFalse(sec.exists())
 
 
 ### Main ###
