@@ -15,6 +15,7 @@ PYLINT_CONF = pylint.rc
 API_DIR = "./tutamen_api/"
 SRV_DIR = "./tutamen_server/"
 TEST_DIR = "./tests/"
+PCOL_DIR = "./submodules/pcollections"
 
 PYTHONPATH = $(shell readlink -f ./)
 EXPORT_PATH = export PYTHONPATH="$(PYTHONPATH)"
@@ -28,13 +29,14 @@ git:
 	$(GIT) submodule init
 	$(GIT) submodule update
 
-reqs: $(REQUIRMENTS)
-	$(PIP) install -r "$<" -U
+reqs:
+	$(PIP) install -r $(REQUIRMENTS) -U
+	$(MAKE) -C $(PCOL_DIR) reqs3
 
 conf:
 	$(ECHO) "Todo"
 
-lint: $(PYLINT_CONF)
+lint:
 	$(EXPORT_PATH) && $(PYLINT) --rcfile="$<" $(API_DIR)
 	$(EXPORT_PATH) && $(PYLINT) --rcfile="$<" $(SRV_DIR)
 
