@@ -77,11 +77,16 @@ class StorageServerTestCase(BaseTestCase):
         # Call Parent
         super().__init__(*args, **kwargs)
 
-    def test_secret_init(self):
+    def test_init(self):
 
+        # Create Server
         ss = tutamen_server.storage.StorageServer(self.driver)
         self.assertIsNotNone(ss)
         self.assertIsInstance(ss, tutamen_server.storage.StorageServer)
+
+        # Cleanup
+        ss.wipe()
+
 
 class SecretTestCase(BaseTestCase):
 
