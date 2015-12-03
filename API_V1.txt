@@ -1,0 +1,58 @@
+### Endpoints ###
+
+GET     /                                               Welcome Message
+
+POST    /secrets/                                       Create Secret
+GET     /secrets/<uid>/                                 Get Secret
+        /secrets/<uid>/permissions/
+        /secrets/<uid>/permissions/<permission>/verifiers/
+
+        /authorizations/
+        /authorizations/<uid>/
+
+        /verifiers/
+        /verifiers/<uid>/
+        /verifiers/<uid>/accounts/
+        /verifiers/<uid>/modules/
+
+        /organizations/
+        /organizations/<uid>/
+        /organizations/<uid>/accounts/
+
+        /accounts/
+        /accounts/<uid>/
+        /accounts/<uid>/devices/
+
+        /devices/
+        /devices/<uid>/
+
+### Data Types ###
+
+Type (ID):
+    KEY                     VAL           TYPE             R/W
+
+Secret (UUID):
+    data                    <secret>      string           R
+
+Authorization:
+    permission
+    object
+    status
+    token
+    expiration
+
+### Permissions ###
+
+org
+    account-associate
+
+account:
+    account-full
+    secret-create
+
+secret
+    secret-read
+    secret-update
+    secret-full
+
+permission: [([accounts], [modules]), ...]
