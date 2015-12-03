@@ -130,9 +130,12 @@ def post_secret():
 
     app.logger.debug("POST SECRET")
     d_in = flask.request.get_json(force=True)
-    data = d_in['secret']
+    app.logger.debug("d_in = '{}'".format(d_in))
+    data = d_in['data']
+    app.logger.debug("data = '{}'".format(data))
     sec = flask.g.srv_storage.secret_from_new(data)
-    d_out = [sec.uid]
+    app.logger.debug("sec = '{}'".format(sec))
+    d_out = {'secrets': [sec.uid]}
     return flask.jsonify(d_out)
 
 @app.route("/secrets/<uid>/", methods=['GET'])
@@ -141,7 +144,7 @@ def get_secret(uid):
 
     app.logger.debug("GET SECRET")
     sec = flask.g.srv_storage.secret_from_existing(uid)
-    d_out = {'secret': sec.data}
+    d_out = {'data': sec.data}
     return flask.jsonify(d_out)
 
 
