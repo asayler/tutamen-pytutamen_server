@@ -1,30 +1,91 @@
 ### Endpoints ###
 
-GET     /                                               Welcome Message
+<VERB>   <PATH>                                              <Description>
+---------------------------------------------------------------------------------------
 
-POST    /secrets/                                       Create Secret
-GET     /secrets/<uid>/                                 Get Secret
-        /secrets/<uid>/permissions/
-        /secrets/<uid>/permissions/<permission>/verifiers/
+GET      /                                                   Welcome Message
 
-        /authorizations/
-        /authorizations/<uid>/
+POST     /authorizations/                                    Request Authorization
+GET      /authorizations/<uid>/                              Get Authorization
 
-        /verifiers/
-        /verifiers/<uid>/
-        /verifiers/<uid>/accounts/
-        /verifiers/<uid>/modules/
+---------------------------------------------------------------------------------------
 
-        /organizations/
-        /organizations/<uid>/
-        /organizations/<uid>/accounts/
+POST     /verifiers/                                         Create Verifier
+GET      /verifiers/<uid>/                                   Get Metadata
+PUT      /verifiers/<uid>/                                   Modify Metadata
+GET      /verifiers/<uid>/organizations/                     List Allowed Organizations
+PUT      /verifiers/<uid>/organizations/                     Add Allowed Organizations
+DELETE   /verifiers/<uid>/organizations/                     Remove Allowed Organizations
+GET      /verifiers/<uid>/accounts/                          List Allowed Accounts
+PUT      /verifiers/<uid>/accounts/                          Add Allowed Accounts
+DELETE   /verifiers/<uid>/accounts/                          Remove Allowed Accounts
+GET      /verifiers/<uid>/clients/                           List Allowed Clients
+PUT      /verifiers/<uid>/clients/                           Add Allowed Clients
+DELETE   /verifiers/<uid>/clients/                           Remove Allowed Clients
+GET      /verifiers/<uid>/authmods/                          List Required Authmods
+PUT      /verifiers/<uid>/authmods/                          Add Required Authmods
+DELETE   /verifiers/<uid>/authmods/                          Remove Required Authmods
 
-        /accounts/
-        /accounts/<uid>/
-        /accounts/<uid>/devices/
+---------------------------------------------------------------------------------------
 
-        /devices/
-        /devices/<uid>/
+POST     /collections/                                       Create Collection
+GET      /collections/<uid>/                                 Get Metadata
+PUT      /collections/<uid>/                                 Modify Metadata
+DELETE   /collections/<uid>/                                 Delete Collection
+GET      /collections/<uid>/secrets/                         List Secrets
+POST     /collections/<uid>/secrets/                         Create Secret
+GET      /collections/<uid>/permissions/<pid>/verifiers/     List Verifiers
+PUT      /collections/<uid>/permissions/<pid>/verifiers/     Add Verifiers
+DELETE   /collections/<uid>/permissions/<pid>/verifiers/     Remove Verifiers
+
+GET      /secrets/<uid>/                                     Get Metadata
+PUT      /secrets/<uid>/                                     Create New Version
+DELETE   /secrets/<uid>/                                     Delete All Versions
+GET      /secrets/<uid>/versions/                            List Secret Versions
+GET      /secrets/<uid>/versions/latest/                     Get Secret (Latest)
+GET      /secrets/<uid>/versions/<vid>/                      Get Secret (Version)
+DELETE   /secrets/<uid>/versions/<vid>/                      Delete Secret (Version)
+
+---------------------------------------------------------------------------------------
+
+GET      /organizations/                                     List Organizations
+POST     /organizations/                                     Create Organization
+GET      /organizations/<uid>/                               Get Metadata
+PUT      /organizations/<uid>/                               Modify Metadata
+GET      /organizations/<uid>/accounts/                      List Accounts
+POST     /organizations/<uid>/accounts/                      Create Account
+GET      /organizations/<uid>/accounts/pending/              List Pending Accounts
+PUT      /organizations/<uid>/accounts/pending/              Enable Pending Accounts
+DELETE   /organizations/<uid>/accounts/pending/              Disable Pending Accounts
+GET      /organizations/<uid>/accounts/enabled/              List Enabled Accounts
+GET      /organizations/<uid>/accounts/enabled/              List Enabled Accounts
+GET      /organizations/<uid>/accounts/disabled/             List Disabled Accounts
+GET      /organizations/<uid>/permissions/<pid>/verifiers/   List Verifiers
+PUT      /organizations/<uid>/permissions/<pid>/verifiers/   Add Verifiers
+DELETE   /organizations/<uid>/permissions/<pid>/verifiers/   Remove Verifiers
+
+GET      /accounts/                                          List Accounts
+GET      /accounts/<uid>/                                    Get Metadata
+PUT      /accounts/<uid>/                                    Modify Metadata
+GET      /accounts/<uid>/clients/                            List Clients
+POST     /accounts/<uid>/clients/                            Create Client
+GET      /accounts/<uid>/clients/pending/                    List Pending Clients
+PUT      /accounts/<uid>/clients/pending/                    Enable Pending Clients
+DELETE   /accounts/<uid>/clients/pending/                    Disable Pending Clients
+GET      /accounts/<uid>/clients/enabled/                    List Enabled Clients
+GET      /accounts/<uid>/clients/disabled/                   List Disabled Clients
+GET      /accounts/<uid>/permissions/<pid>/verifiers/        List Verifiers
+PUT      /accounts/<uid>/permissions/<pid>/verifiers/        Add Verifiers
+DELETE   /accounts/<uid>/permissions/<pid>/verifiers/        Remove Verifiers
+
+GET      /clients/                                           List Clients
+GET      /clients/<uid>/                                     Get Metadata
+
+---------------------------------------------------------------------------------------
+
+POST     /bootstrap/client/                                  Bootstrap Client
+POST     /bootstrap/account/                                 Bootstrap Account
+POST     /bootstrap/organization/                            Bootstrap Organization
 
 ### Data Types ###
 
@@ -33,6 +94,7 @@ Type (ID):
 
 Secret (UUID):
     data                    <secret>      string           R
+    collection              <uid>         UUID
 
 Authorization:
     permission
@@ -43,16 +105,38 @@ Authorization:
 
 ### Permissions ###
 
-org
-    account-associate
+server:
+    server-organization-request
+    server-organization-approve
+    server-organization-create
+    server-collection-create
+    server-verifier-create
+
+organization:
+    organization-read
+    organization-modify
+    organization-full
+    organization-account-request
+    organization-account-approve
+    organization-account-create
 
 account:
+    account-read
+    account-modify
     account-full
-    secret-create
+    account-client-request
+    account-client-approve
+    account-client-create
+    account-client-read
+    account-client-delete
 
-secret
-    secret-read
-    secret-update
-    secret-full
+collection:
+    collection-read
+    collection-modify
+    collection-full
+    collection-secret-read
+    collection-secret-modify
+    collection-secret-full
 
-permission: [([accounts], [modules]), ...]
+permission: [verfiers]
+verifer: ([organizations], [accounts], [clients], [authmods])
