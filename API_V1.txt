@@ -1,91 +1,90 @@
 ### Endpoints ###
 
-<VERB>   <PATH>                                              <Description>
+<VERB>   <PATH>                                          <Perms>              <Description>
 ---------------------------------------------------------------------------------------
 
-GET      /                                                   Welcome Message
+GET     /                                                none                 Welcome Message
 
-POST     /authorizations/                                    Request Authorization
-GET      /authorizations/<uid>/                              Get Authorization
-
----------------------------------------------------------------------------------------
-
-POST     /verifiers/                                         Create Verifier
-GET      /verifiers/<uid>/                                   Get Metadata
-PUT      /verifiers/<uid>/                                   Modify Metadata
-GET      /verifiers/<uid>/organizations/                     List Allowed Organizations
-PUT      /verifiers/<uid>/organizations/                     Add Allowed Organizations
-DELETE   /verifiers/<uid>/organizations/                     Remove Allowed Organizations
-GET      /verifiers/<uid>/accounts/                          List Allowed Accounts
-PUT      /verifiers/<uid>/accounts/                          Add Allowed Accounts
-DELETE   /verifiers/<uid>/accounts/                          Remove Allowed Accounts
-GET      /verifiers/<uid>/clients/                           List Allowed Clients
-PUT      /verifiers/<uid>/clients/                           Add Allowed Clients
-DELETE   /verifiers/<uid>/clients/                           Remove Allowed Clients
-GET      /verifiers/<uid>/authmods/                          List Required Authmods
-PUT      /verifiers/<uid>/authmods/                          Add Required Authmods
-DELETE   /verifiers/<uid>/authmods/                          Remove Required Authmods
+POST    /authorizations/                                 none                 Request Authorization
+GET     /authorizations/<uid>/                           none                 Get Authorization
 
 ---------------------------------------------------------------------------------------
 
-POST     /collections/                                       Create Collection
-GET      /collections/<uid>/                                 Get Metadata
-PUT      /collections/<uid>/                                 Modify Metadata
-DELETE   /collections/<uid>/                                 Delete Collection
-GET      /collections/<uid>/secrets/                         List Secrets
-POST     /collections/<uid>/secrets/                         Create Secret
-GET      /collections/<uid>/permissions/<pid>/verifiers/     List Verifiers
-PUT      /collections/<uid>/permissions/<pid>/verifiers/     Add Verifiers
-DELETE   /collections/<uid>/permissions/<pid>/verifiers/     Remove Verifiers
-
-GET      /secrets/<uid>/                                     Get Metadata
-PUT      /secrets/<uid>/                                     Create New Version
-DELETE   /secrets/<uid>/                                     Delete All Versions
-GET      /secrets/<uid>/versions/                            List Secret Versions
-GET      /secrets/<uid>/versions/latest/                     Get Secret (Latest)
-GET      /secrets/<uid>/versions/<vid>/                      Get Secret (Version)
-DELETE   /secrets/<uid>/versions/<vid>/                      Delete Secret (Version)
+GET     /verifiers/                                      srv-verifier-read    List Verfiers
+POST    /verifiers/                                      srv-verifier-create  Create Verifier
+GET     /verifiers/<uid>/                                verifier-read        Get Metadata
+PUT     /verifiers/<uid>/                                verifier-modify      Modify Metadata
+GET     /verifiers/<uid>/groups/                         verifier-read        List Allowed Groups
+PUT     /verifiers/<uid>/groups/                         verifier-modify      Add Allowed Groups
+DELETE  /verifiers/<uid>/groups/                         verifier-modify      Remove Allowed Groups
+GET     /verifiers/<uid>/authmods/                       verifier-read        List Required Authmods
+PUT     /verifiers/<uid>/authmods/                       verifier-modify      Add Required Authmods
+DELETE  /verifiers/<uid>/authmods/                       verifier-modify      Remove Required Authmods
+GET     /verifiers/<uid>/permissions/<pid>/verifiers/    verifier-perms       List Verifiers
+PUT     /verifiers/<uid>/permissions/<pid>/verifiers/    verifier-perms       Add Verifiers
+DELETE  /verifiers/<uid>/permissions/<pid>/verifiers/    verifier-perms       Remove Verifiers
 
 ---------------------------------------------------------------------------------------
 
-GET      /organizations/                                     List Organizations
-POST     /organizations/                                     Create Organization
-GET      /organizations/<uid>/                               Get Metadata
-PUT      /organizations/<uid>/                               Modify Metadata
-GET      /organizations/<uid>/accounts/                      List Accounts
-POST     /organizations/<uid>/accounts/                      Create Account
-GET      /organizations/<uid>/accounts/pending/              List Pending Accounts
-PUT      /organizations/<uid>/accounts/pending/              Enable Pending Accounts
-DELETE   /organizations/<uid>/accounts/pending/              Disable Pending Accounts
-GET      /organizations/<uid>/accounts/enabled/              List Enabled Accounts
-GET      /organizations/<uid>/accounts/enabled/              List Enabled Accounts
-GET      /organizations/<uid>/accounts/disabled/             List Disabled Accounts
-GET      /organizations/<uid>/permissions/<pid>/verifiers/   List Verifiers
-PUT      /organizations/<uid>/permissions/<pid>/verifiers/   Add Verifiers
-DELETE   /organizations/<uid>/permissions/<pid>/verifiers/   Remove Verifiers
-
-GET      /accounts/                                          List Accounts
-GET      /accounts/<uid>/                                    Get Metadata
-PUT      /accounts/<uid>/                                    Modify Metadata
-GET      /accounts/<uid>/clients/                            List Clients
-POST     /accounts/<uid>/clients/                            Create Client
-GET      /accounts/<uid>/clients/pending/                    List Pending Clients
-PUT      /accounts/<uid>/clients/pending/                    Enable Pending Clients
-DELETE   /accounts/<uid>/clients/pending/                    Disable Pending Clients
-GET      /accounts/<uid>/clients/enabled/                    List Enabled Clients
-GET      /accounts/<uid>/clients/disabled/                   List Disabled Clients
-GET      /accounts/<uid>/permissions/<pid>/verifiers/        List Verifiers
-PUT      /accounts/<uid>/permissions/<pid>/verifiers/        Add Verifiers
-DELETE   /accounts/<uid>/permissions/<pid>/verifiers/        Remove Verifiers
-
-GET      /clients/                                           List Clients
-GET      /clients/<uid>/                                     Get Metadata
+GET     /collections/                                      srv-collection-read    List Collections
+POST    /collections/                                      srv-collection-create  Create Collection
+GET     /collections/<uid>/                                collection-read        Get Metadata
+PUT     /collections/<uid>/                                collection-modify      Modify Metadata
+DELETE  /collections/<uid>/                                collection-delete      Delete Collection
+GET     /collections/<uid>/secrets/                        collection-read        List Secrets
+POST    /collections/<uid>/secrets/                        collection-create      Create Secret
+GET     /collections/<uid>/secrets/<uid>/                  collection-read        Get Metadata
+PUT     /collections/<uid>/secrets/<uid>/                  collection-modify      Create New Version
+DELETE  /collections/<uid>/secrets/<uid>/                  collection-delete      Delete All Versions
+GET     /collections/<uid>/secrets/<uid>/versions/         collection-read        List Secret Versions
+GET     /collections/<uid>/secrets/<uid>/versions/latest/  collection-read        Get Secret (latest)
+GET     /collections/<uid>/secrets/<uid>/versions/<vid>/   collection-read        Get Secret (vid)
+DELETE  /collections/<uid>/secrets/<uid>/versions/<vid>/   collection-delete      Delete Secret (vid)
+GET     /collections/<uid>/permissions/<pid>/verifiers/    collection-perms       List Verifiers
+PUT     /collections/<uid>/permissions/<pid>/verifiers/    collection-perms       Add Verifiers
+DELETE  /collections/<uid>/permissions/<pid>/verifiers/    collection-perms       Remove Verifiers
 
 ---------------------------------------------------------------------------------------
 
-POST     /bootstrap/client/                                  Bootstrap Client
-POST     /bootstrap/account/                                 Bootstrap Account
-POST     /bootstrap/organization/                            Bootstrap Organization
+GET     /groups/                                         srv-group-read         List Groups
+POST    /groups/                                         srv-group-create       Create Group
+GET     /groups/<uid>/                                   group-read             Get Metadata
+PUT     /groups/<uid>/                                   group-modify           Update Metadata
+GET     /groups/<uid>/members/                           group-read             List Membersy
+PUT     /groups/<uid>/members/                           group-modify           Add Members
+DELETE  /groups/<uid>/members/                           group-modify           Remove Members
+GET     /groups/<uid>/permissions/<pid>/verifiers/       groups-perms           List Verifiers
+PUT     /groups/<uid>/permissions/<pid>/verifiers/       groups-perms           Add Verifiers
+DELETE  /groups/<uid>/permissions/<pid>/verifiers/       groups-perms           Remove Verifiers
+
+---------------------------------------------------------------------------------------
+
+GET     /accounts/                                       srv-account-read       List Accounts
+POST    /accounts/                                       srv-account-create     Create Account
+GET     /accounts/<uid>/                                 account-read           Get Metadata
+PUT     /accounts/<uid>/                                 account-modify         Modify Metadata
+DELETE  /accounts/<uid>/                                 account-delete         Delete Account
+GET     /accounts/<uid>/groups/                          account-read           List Groups
+GET     /accounts/<uid>/clients/                         account-read           List Clients
+POST    /accounts/<uid>/clients/                         account-create         Create Client
+GET     /accounts/<uid>/clients/pending/                 account-read           List Pending Clients
+PUT     /accounts/<uid>/clients/pending/                 account-modify         Enable Pending Clients
+DELETE  /accounts/<uid>/clients/pending/                 account-modify         Disable Pending Clients
+GET     /accounts/<uid>/clients/enabled/                 account-read           List Enabled Clients
+GET     /accounts/<uid>/clients/disabled/                account-read           List Disabled Clients
+GET     /accounts/<uid>/clients/<uid>/                   account-read           Get Client Metadata
+PUT     /accounts/<uid>/clients/<uid>/                   account-modify         Modify Client Metadata
+DELETE  /accounts/<uid>/clients/<uid>/                   account-delete         Delete Client
+GET     /accounts/<uid>/permissions/<pid>/verifiers/     account-perms          List Verifiers
+PUT     /accounts/<uid>/permissions/<pid>/verifiers/     account-perms          Add Verifiers
+DELETE  /accounts/<uid>/permissions/<pid>/verifiers/     account-perms          Remove Verifiers
+
+---------------------------------------------------------------------------------------
+
+POST     /bootstrap/client/                              srv-client-request     Bootstrap Client
+POST     /bootstrap/account/                             srv-account-request    Bootstrap Account
+
+---------------------------------------------------------------------------------------
 
 ### Data Types ###
 
@@ -106,37 +105,41 @@ Authorization:
 ### Permissions ###
 
 server:
-    server-organization-request
-    server-organization-approve
-    server-organization-create
-    server-collection-create
     server-verifier-create
+    server-verifier-read
+    server-collection-read
+    server-collection-create
+    server-group-create
+    server-group-read
+    server-account-create
+    server-account-read
+    server-account-request
+    server-client-read
+    server-client-request
 
-organization:
-    organization-read
-    organization-modify
-    organization-full
-    organization-account-request
-    organization-account-approve
-    organization-account-create
+verifier:
+    verifier-read
+    verifier-modify
+    verifier-perms
+
+group:
+    group-read
+    group-modify
+    group-perms
 
 account:
     account-read
     account-modify
-    account-full
-    account-client-request
-    account-client-approve
-    account-client-create
-    account-client-read
-    account-client-delete
+    account-create
+    account-delete
+    account-perms
 
 collection:
     collection-read
     collection-modify
-    collection-full
-    collection-secret-read
-    collection-secret-modify
-    collection-secret-full
+    collection-create
+    collection-delete
+    collection-perms
 
 permission: [verfiers]
-verifer: ([organizations], [accounts], [clients], [authmods])
+verifer: ([groups], [authmods])
