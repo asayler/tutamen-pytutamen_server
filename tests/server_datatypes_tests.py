@@ -204,6 +204,19 @@ class IndexedTestCase(BaseTestCase):
         # Cleanup
         obj.destroy()
 
+    def test_indexes_empty(self):
+
+        # Create Indexes Object
+        key = "test_indexed_obj"
+        obj = tutamen_server.datatypes.Indexed(self.srv, key)
+
+        # Test Members
+        indexes = obj.indexes()
+        self.assertEqual(len(indexes), 0)
+
+        # Cleanup
+        obj.destroy()
+
 
 ### Main ###
 

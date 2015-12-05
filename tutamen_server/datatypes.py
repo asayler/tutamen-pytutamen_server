@@ -184,6 +184,11 @@ class Indexed(PersistentObject):
         index.remove(self.key)
         self._metaindex.remove(index.key)
 
+    def indexes(self):
+
+        # Return registered indexes
+        return self._metaindex.members()
+
     def destroy(self):
 
         # Unregister from indexes
