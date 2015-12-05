@@ -108,6 +108,25 @@ class Index(PersistentObject):
             index.create(set())
         self._index = index
 
+    def destroy(self):
+
+        # Unregister objects
+        for obj_key in self.members:
+            obj = Indexed(self._srv, obj_key)
+            obj.unregister(self)
+
+        # Cleanup backend object
+        self._index.rem()
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def members(self):
+
+        # Return index memebership
+        return set(self._index)
+
     def add(self, obj):
 
         # Check Args
@@ -116,7 +135,8 @@ class Index(PersistentObject):
             msg += "not '{}'".format(type(obj))
             raise TypeError(msg)
 
-        # Add Object Key
+        # Add Object Key and Register Index
+        obj.register(self)
         self._index.add(obj.key)
 
     def remove(self, obj):
@@ -127,26 +147,9 @@ class Index(PersistentObject):
             msg += "not '{}'".format(type(obj))
             raise TypeError(msg)
 
-        # Remove Object Key
+        # Remove Object Key and Unregister Index
         self._index.discard(obj.key)
-
-    def members(self):
-
-        # Return index memebership
-        return set(self._index)
-
-    def destroy(self):
-
-        # Unregister objects
-        for obj_key in self.members():
-            obj = IndexedObject(self._srv, obj_key)
-            obj.index_unregister(index)
-
-        # Cleanup backend object
-        self._index.rem()
-
-        # Call Parent
-        super().destroy()
+        obj.unregister(self)
 
 class Indexed(PersistentObject):
 
@@ -157,8 +160,31 @@ class Indexed(PersistentObject):
         super().__init__(*args, **kwargs)
 
         # Create Metaindex
+        factory = self._srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
         metaindex_key = self._key + _METAINDEX_POSTFIX
-        self._metaindex = Index(self._srv, metaindex_key)
+        metaindex = factory.from_raw(metaindex_key)
+        if not metaindex.exists():
+            metaindex.create(set())
+        self._metaindex = metaindex
+
+    def destroy(self):
+
+        # Unregister from indexes
+        for idx_key in self.indexes:
+            index = Index(self._srv, idx_key)
+            index.remove(self)
+
+        # Cleanup metaindex
+        self._metaindex.rem()
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def indexes(self):
+
+        # Return registered indexes
+        return set(self._metaindex)
 
     def register(self, index):
 
@@ -170,7 +196,6 @@ class Indexed(PersistentObject):
 
         # Add Index Key
         self._metaindex.add(index.key)
-        index.add(self.key)
 
     def unregister(self, index):
 
@@ -181,23 +206,4 @@ class Indexed(PersistentObject):
             raise TypeError(msg)
 
         # Remove Index Key
-        index.remove(self.key)
-        self._metaindex.remove(index.key)
-
-    def indexes(self):
-
-        # Return registered indexes
-        return self._metaindex.members()
-
-    def destroy(self):
-
-        # Unregister from indexes
-        for idx_key in self._metaindex.members():
-            index = Index(self._srv, idx_key)
-            self.index_unregister(index)
-
-        # Cleanup metaindex
-        self._metaindex.destroy()
-
-        # Call Parent
-        super().destroy()
+        self._metaindex.discard(index.key)
