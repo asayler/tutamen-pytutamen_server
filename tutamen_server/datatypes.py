@@ -15,7 +15,10 @@ from pcollections import keys as dsk
 
 
 ### Constants ###
-_INDEX_PREFIX = "master_"
+
+_INDEX_OBJ_TYPE = dso.MutableSet
+_INDEX_KEY_TYPE = dsk.StrKey
+_METAINDEX_POSTFIX = "_metaindex"
 _INDEX_POSTFIX = "_index"
 
 
@@ -30,9 +33,9 @@ class ObjectDNE(Exception):
         super().__init__(msg)
 
 
-### Objects ###
+### Abstarct Objects ###
 
-class PersistentServer(object, metaclass=abc.ABCMeta):
+class PersistentObjectServer(object, metaclass=abc.ABCMeta):
 
     def __init__(self, driver):
 
@@ -52,7 +55,7 @@ class PersistentServer(object, metaclass=abc.ABCMeta):
 
 class PersistentObject(object, metaclass=abc.ABCMeta):
 
-    def __init__(self, srv):
+    def __init__(self, srv, key):
         """Initialize Object"""
 
         # Check Args
@@ -66,37 +69,119 @@ class PersistentObject(object, metaclass=abc.ABCMeta):
 
         # Save Attrs
         self._srv = srv
+        self._key = key
 
+    @property
+    def key(self):
+        return self._key
 
-class IndexedObject(PersistentObject):
+    @abc.abstractmethod
+    def destory(self):
+        pass
 
-    def __init__(self, *args, indexes=[], **kwargs):
+### Objects ###
+
+class Index(PersistentObject):
+
+    def __init__(self, *args, **kwargs):
         """Initialize Object"""
 
         # Call Parent
         super().__init__(*args, **kwargs)
 
         # Create Index Factory
-        index_fac = self._srv.make_factory(dso.MutableSet, key_type=dsk.StrKey)
-        index_key = _INDEX_PREFIX + type(self).__name__.lower() + _INDEX_POSTFIX
-        obj_index = index_factory.from_raw(index_key)
-        if not obj_index.exists():
-            obj_index.create(set())
+        factory = self._srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        index_key = self.key + _INDEX_POSTFIX
+        index = factory.from_raw(index_key)
+        if not index.exists():
+            index.create(set())
+        self._index = index
 
-        # Save Attrs
-        indexes.append(obj_index)
-        self._indexes = indexes
+    def add(self, obj):
 
-    def _register(self):
-        pass
+        # Check Args
+        if not isinstance(obj, Indexed):
+            msg = "'obj' must be an instance of '{}', ".format(Indexed)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
 
-    def _unregister(self):
-        pass
+        # Add Object Key
+        self._index.add(obj.key)
 
-    @classmethod
-    def instance_list():
-        pass
+    def remove(self, obj):
 
-    @classmethod
-    def instance_exists():
-        pass
+        # Check Args
+        if not isinstance(obj, Indexed):
+            msg = "'obj' must be an instance of '{}', ".format(Indexed)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Remove Object Key
+        self._index.discard(obj.key)
+
+    def members(self):
+
+        # Return index memebership
+        return set(self._index)
+
+    def destroy(self):
+
+        # Unregister objects
+        for obj_key in self._index.memebers():
+            obj = IndexedObject(self._srv, obj_key)
+            obj.index_unregister(index)
+
+        # Cleanup backend object
+        self._index.rem()
+
+        # Call Parent
+        super().destroy()
+
+class Indexed(PersistentObject):
+
+    def __init__(self, *args, **kwargs):
+        """Initialize Object"""
+
+        # Call Parent
+        super().__init__(*args, **kwargs)
+
+        # Create Metaindex
+        metaindex_key = self._key + _METAINDEX_POSTFIX
+        self._metaindex = Index(self._srv, metaindex_key)
+
+    def register(self, index):
+
+        # Check Args
+        if not isinstance(index, Index):
+            msg = "'index' must be an instance of '{}', ".format(Index)
+            msg += "not '{}'".format(type(index))
+            raise TypeError(msg)
+
+        # Add Index Key
+        self._metaindex.add(index.key)
+        index.add(self.key)
+
+    def unregister(self, index):
+
+        # Check Args
+        if not isinstance(index, Index):
+            msg = "'index' must be an instance of '{}', ".format(Index)
+            msg += "not '{}'".format(type(index))
+            raise TypeError(msg)
+
+        # Remove Index Key
+        index.remove(self.key)
+        self._metaindex.remove(index.key)
+
+    def destroy(self):
+
+        # Unregister from indexes
+        for idx_key in self._metaindex.members():
+            index = Index(self._srv, idx_key)
+            self.index_unregister(index)
+
+        # Cleanup metaindex
+        self._metaindex.destroy()
+
+        # Call Parent
+        super().destroy()
