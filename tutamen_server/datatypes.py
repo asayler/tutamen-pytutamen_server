@@ -40,7 +40,7 @@ class PersistentObjectServer(object, metaclass=abc.ABCMeta):
     def __init__(self, driver):
 
         # Check Args
-        # TODO: Verify driver if of appropriate type
+        # TODO: Verify driver is of appropriate type
 
         # Call Parent
         super().__init__()
@@ -48,9 +48,16 @@ class PersistentObjectServer(object, metaclass=abc.ABCMeta):
         # Save Attrs
         self._driver = driver
 
+    @property
+    def driver(self):
+        return self._driver
+
+    @abc.abstractmethod
+    def destroy(self):
+        pass
 
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
-        return dsf.Instancefactory(self._driver, obj_type,
+        return dsf.InstanceFactory(self._driver, obj_type,
                                    key_type=key_type, key_kwargs=key_kwargs)
 
 class PersistentObject(object, metaclass=abc.ABCMeta):
@@ -59,8 +66,8 @@ class PersistentObject(object, metaclass=abc.ABCMeta):
         """Initialize Object"""
 
         # Check Args
-        if not isinstance(srv, PersistentServer):
-            msg = "'srv' must be of type '{}', ".format(PersistentServer)
+        if not isinstance(srv, PersistentObjectServer):
+            msg = "'srv' must be of type '{}', ".format(PersistentObjectServer)
             msg += "not '{}'".format(type(srv))
             raise TypeError(msg)
 
@@ -71,13 +78,17 @@ class PersistentObject(object, metaclass=abc.ABCMeta):
         self._srv = srv
         self._key = key
 
+    @abc.abstractmethod
+    def destroy(self):
+        pass
+
     @property
     def key(self):
         return self._key
 
-    @abc.abstractmethod
-    def destory(self):
-        pass
+    @property
+    def srv(self):
+        return self._srv
 
 ### Objects ###
 
@@ -127,7 +138,7 @@ class Index(PersistentObject):
     def destroy(self):
 
         # Unregister objects
-        for obj_key in self._index.memebers():
+        for obj_key in self.members():
             obj = IndexedObject(self._srv, obj_key)
             obj.index_unregister(index)
 
