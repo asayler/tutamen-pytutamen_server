@@ -62,6 +62,21 @@ class PersistentObjectServer(object, metaclass=abc.ABCMeta):
 
 class PersistentObject(object, metaclass=abc.ABCMeta):
 
+    @classmethod
+    @abc.abstractmethod
+    def from_new(cls, srv, key, *args, **kwargs):
+        return cls(srv, key, *args, **kwargs)
+
+    @classmethod
+    @abc.abstractmethod
+    def from_existing(cls, srv, key, *args, **kwargs):
+        return cls(srv, key, *args, **kwargs)
+
+    @classmethod
+    @abc.abstractmethod
+    def from_any(cls, srv, key, *args, **kwargs):
+        return cls(srv, key, *args, **kwargs)
+
     def __init__(self, srv, key):
         """Initialize Object"""
 
@@ -94,25 +109,67 @@ class PersistentObject(object, metaclass=abc.ABCMeta):
 
 class Index(PersistentObject):
 
-    def __init__(self, *args, **kwargs):
+    @classmethod
+    def from_new(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        index_key = key + _INDEX_POSTFIX
+        index = factory.from_new(index_key, set())
+
+        # Call parent
+        obj = super().from_new(srv, key, *args, index=index, **kwargs)
+
+        return obj
+
+    @classmethod
+    def from_existing(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        index_key = key + _INDEX_POSTFIX
+        index = factory.from_existing(index_key)
+
+        # Call parent
+        obj = super().from_existing(srv, key, *args, index=index, **kwargs)
+
+        return obj
+
+    @classmethod
+    def from_any(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        index_key = key + _INDEX_POSTFIX
+        index = factory.from_raw(index_key)
+        if not index.exists():
+            index.create(set())
+
+        # Call parent
+        obj = super().from_any(srv, key, *args, index=index, **kwargs)
+
+        return obj
+
+    def __init__(self, *args, index=None, **kwargs):
         """Initialize Object"""
+
+        # Check Args
+        if not isinstance(index, _INDEX_OBJ_TYPE):
+            msg = "'index' must be of type '{}', ".format(_INDEX_OBJ_TYPE)
+            msg += "not '{}'".format(type(index))
+            raise TypeError(msg)
 
         # Call Parent
         super().__init__(*args, **kwargs)
 
-        # Create Index Factory
-        factory = self._srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = self.key + _INDEX_POSTFIX
-        index = factory.from_raw(index_key)
-        if not index.exists():
-            index.create(set())
+        # Save Attrs
         self._index = index
 
     def destroy(self):
 
         # Unregister objects
         for obj_key in self.members:
-            obj = Indexed(self._srv, obj_key)
+            obj = Indexed.from_any(self._srv, obj_key)
             obj.unregister(self)
 
         # Cleanup backend object
@@ -153,25 +210,67 @@ class Index(PersistentObject):
 
 class Indexed(PersistentObject):
 
-    def __init__(self, *args, **kwargs):
+    @classmethod
+    def from_new(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        metaindex_key = key + _METAINDEX_POSTFIX
+        metaindex = factory.from_new(metaindex_key, set())
+
+        # Call parent
+        obj = super().from_new(srv, key, *args, metaindex=metaindex, **kwargs)
+
+        return obj
+
+    @classmethod
+    def from_existing(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        metaindex_key = key + _METAINDEX_POSTFIX
+        metaindex = factory.from_existing(metaindex_key)
+
+        # Call parent
+        obj = super().from_existing(srv, key, *args, metaindex=metaindex, **kwargs)
+
+        return obj
+
+    @classmethod
+    def from_any(cls, srv, key, *args, **kwargs):
+
+        # Setup Members
+        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        metaindex_key = key + _METAINDEX_POSTFIX
+        metaindex = factory.from_raw(metaindex_key)
+        if not metaindex.exists():
+            metaindex.create(set())
+
+        # Call parent
+        obj = super().from_any(srv, key, *args, metaindex=metaindex, **kwargs)
+
+        return obj
+
+    def __init__(self, *args, metaindex=None, **kwargs):
         """Initialize Object"""
+
+        # Check Args
+        if not isinstance(metaindex, _INDEX_OBJ_TYPE):
+            msg = "'metaindex' must be of type '{}', ".format(_INDEX_OBJ_TYPE)
+            msg += "not '{}'".format(type(metaindex))
+            raise TypeError(msg)
 
         # Call Parent
         super().__init__(*args, **kwargs)
 
-        # Create Metaindex
-        factory = self._srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        metaindex_key = self._key + _METAINDEX_POSTFIX
-        metaindex = factory.from_raw(metaindex_key)
-        if not metaindex.exists():
-            metaindex.create(set())
+        # Save Attrs
         self._metaindex = metaindex
 
     def destroy(self):
 
         # Unregister from indexes
         for idx_key in self.indexes:
-            index = Index(self._srv, idx_key)
+            index = Index.from_any(self._srv, idx_key)
             index.remove(self)
 
         # Cleanup metaindex
