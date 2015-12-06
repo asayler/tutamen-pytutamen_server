@@ -12,60 +12,37 @@ from pcollections import be_redis_atomic as dso
 from pcollections import factories as dsf
 from pcollections import keys as dsk
 
+from . import datatypes
+
+
+### Constants ###
+
+_SERVER_PREFIX = "storagesrv"
+_INDEX_KEY_SECRETS = "secrets"
+
 
 ### Exceptions ###
-
-class ObjectDNE(Exception):
-
-    def __init__(self, key):
-
-        # Call Parent
-        msg = "Object '{:s}' does not exist".format(key)
-        super().__init__(msg)
 
 
 
 ### Objects ###
 
-class StorageServer(object):
+class StorageServer(datatypes.PersistentObjectServer):
 
-    prefix = "storagesrv"
-    type_secrets = dso.MutableSet
-    key_secrets = "secrets"
-
-    def __init__(self, ds_driver):
+    def __init__(self, driver):
 
         # Call Parent
-        super().__init__()
+        super().__init__(driver)
 
-        # Save Attrs
-        self._driver = ds_driver
+        # Setup Server Indexes
+        idx_key = _SERVER_PREFIX + _INDEX_KEY_SECRETS
+        self._index_secrets = datatypes.Index(self, idx_key)
+        idx_key = _SERVER_PREFIX + _INDEX_KEY_COLLECTIONS
+        self._index_collections = datatypes.Index(self, idx_key)
 
-        # Setup Driver-Bound Factories
-        self._srv_f_secrets = dsf.InstanceFactory(self._driver, self.type_secrets,
-                                                  key_type=dsk.StrKey)
-        self._sec_f_data = dsf.InstanceFactory(self._driver, Secret.type_data,
-                                               key_type=dsk.UUIDKey,
-                                               key_kwargs={'prefix': Secret.prefix,
-                                                           'postfix': Secret.postfix_data})
-
-        # Setup Local Collections
-        k = "{:s}_{:s}".format(self.prefix, self.key_secrets)
-        self._secrets = self._srv_f_secrets.from_raw(k)
-        if not self._secrets.exists():
-            self._secrets.create(set())
-
-    def wipe(self):
-        self._secrets.rem()
-
-    def secret_register(self, secret):
-        self._secrets.add(secret.uid)
-
-    def secret_unregister(self, secret):
-        self._secrets.discard(secret.uid)
-
-    def secret_exists(self, secret):
-        return secret.uid in self._secrets
+    def destroy(self):
+        self._index_secrets.destroy()
+        self._index_collections.destroy()
 
     def secret_from_new(self, data):
         """New Secret Constructor"""
@@ -73,29 +50,24 @@ class StorageServer(object):
         uid = uuid.uuid4()
         data = self._sec_f_data.from_new(uid, data)
         sec = Secret(self, uid, data)
-        self.secret_register(sec)
+        sec.register(_index_secrets)
         return sec
 
     def secret_from_existing(self, uid):
         """Existing Secret Constructor"""
 
         # Check input
-        if not uid in self._secrets:
-            raise ObjectDNE(uid)
+        if not uid in self._index_secrets.members():
+            raise datatypes.ObjectDNE(uid)
 
         uid = uuid.UUID(uid)
         data = self._sec_f_data.from_existing(uid)
         sec = Secret(self, uid, data)
         return sec
 
-class Secret(object):
+class Secret(datatypes.PersistentObject, datatypes.Indexed):
 
-    prefix = "secret"
-    type_uid = uuid.UUID
-    type_data = dso.String
-    postfix_data = "data"
-
-    def __init__(self, srv, uid, data):
+    def __init__(self, srv, uid, data, metadata):
         """Initialize Secret"""
 
         # Call Parent
