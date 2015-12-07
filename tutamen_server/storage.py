@@ -9,7 +9,6 @@
 import uuid
 
 from pcollections import be_redis_atomic as dso
-from pcollections import factories as dsf
 from pcollections import keys as dsk
 
 from . import datatypes
@@ -17,8 +16,16 @@ from . import datatypes
 
 ### Constants ###
 
-_SERVER_PREFIX = "storagesrv"
+SEPERATOR = datatypes.SEPERATOR
+
 _INDEX_KEY_SECRETS = "secrets"
+_INDEX_KEY_COLLECTIONS = "collections"
+
+_PREFIX_STORAGESERVER = "stroagesrv"
+
+_PREFIX_SECRET = "secret"
+_POSTFIX_SECRET_DATA = "data"
+_POSTFIX_SECRET_METADATA = "metadata"
 
 
 ### Exceptions ###
@@ -29,84 +36,70 @@ _INDEX_KEY_SECRETS = "secrets"
 
 class StorageServer(datatypes.PersistentObjectServer):
 
-    def __init__(self, driver):
+    def __init__(self, driver, prefix=_PREFIX_STORAGESERVER):
 
         # Call Parent
-        super().__init__(driver)
+        super().__init__(driver, prefix=prefix)
 
         # Setup Server Indexes
-        idx_key = _SERVER_PREFIX + _INDEX_KEY_SECRETS
-        self._index_secrets = datatypes.Index(self, idx_key)
-        idx_key = _SERVER_PREFIX + _INDEX_KEY_COLLECTIONS
-        self._index_collections = datatypes.Index(self, idx_key)
+        self._index_secrets = datatypes.Index(self, _INDEX_KEY_SECRETS, prefix=prefix)
+        self._index_collections = datatypes.Index(self, _INDEX_KEY_COLLECTIONS, prefix=prefix)
 
     def destroy(self):
+
+        # Cleanup Indexes
         self._index_secrets.destroy()
         self._index_collections.destroy()
 
-    def secret_from_new(self, data):
-        """New Secret Constructor"""
+        # Call Parent
+        super().destroy()
 
-        uid = uuid.uuid4()
-        data = self._sec_f_data.from_new(uid, data)
-        sec = Secret(self, uid, data)
-        sec.register(_index_secrets)
-        return sec
+class Secret(datatypes.PersistentObject):
 
-    def secret_from_existing(self, uid):
-        """Existing Secret Constructor"""
-
-        # Check input
-        if not uid in self._index_secrets.members():
-            raise datatypes.ObjectDNE(uid)
-
-        uid = uuid.UUID(uid)
-        data = self._sec_f_data.from_existing(uid)
-        sec = Secret(self, uid, data)
-        return sec
-
-class Secret(datatypes.PersistentObject, datatypes.Indexed):
-
-    def __init__(self, srv, uid, data, metadata):
+    def __init__(self, *args, create=False, overwrite=False, prefix=_PREFIX_SECRET,
+                 data="", metadata={}, **kwargs):
         """Initialize Secret"""
 
+        # Check Input
+        if overwrite:
+            raise TypeError("Secret does not support overwrite")
+
         # Call Parent
-        super().__init__()
+        super().__init__(*args, create=create, overwrite=overwrite,
+                         prefix=prefix, **kwargs)
 
-        # Check Args
-        if not isinstance(srv, StorageServer):
-            msg = "'srv' must be of type '{}', ".format(StorageServer)
-            msg += "not '{}'".format(type(srv))
-            raise TypeError(msg)
-        if not isinstance(uid, self.type_uid):
-            msg = "'uid' must be of type '{}', ".format(self.type_uid)
-            msg += "not '{}'".format(type(uid))
-            raise TypeError(msg)
-        if not isinstance(data, self.type_data):
-            msg = "'metadata' must be of type '{}', ".format(self.type_data)
-            msg += "not '{}'".format(type(data))
-            raise TypeError(msg)
+        # Setup Data
+        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
+        data_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _POSTFIX_SECRET_DATA
+        self._data = factory.from_raw(data_key)
+        if not self._data.exists():
+            if create:
+                self._data.create(data)
 
-        # Save Attrs
-        self._srv = srv
-        self._uid = uid
-        self._data = data
+        # Setup Metaaata
+        factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
+        metadata_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _POSTFIX_SECRET_METADATA
+        self._metadata = factory.from_raw(metadata_key)
+        if not self._metadata.exists():
+            if create:
+                self._metadata.create(metadata)
+
+    def destroy(self):
+        """Delete Secret"""
+
+        # Cleanup Objects
+        self._metadata.rem()
+        self._data.rem()
+
+        # Call Parent
+        super().destory()
 
     @property
     def data(self):
         """Return Secret Data"""
-        return str(self._data)
+        return self._data.get_val()
 
     @property
-    def uid(self):
-        """Return Secret UUID"""
-        return str(self._uid)
-
-    def exists(self):
-        """Secret Exists?"""
-        return self._srv.secret_exists(self)
-
-    def rem(self):
-        """Delete Secret"""
-        self._srv.secret_unregister(self)
-        self._data.rem()
+    def metadata(self):
+        """Return Secret Metadata"""
+        return self._metadata.get_val()
