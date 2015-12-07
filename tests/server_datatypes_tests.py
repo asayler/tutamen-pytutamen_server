@@ -45,15 +45,6 @@ class TestPersistentObjectServer(tutamen_server.datatypes.PersistentObjectServer
     def destroy(self):
         super().destroy()
 
-class TestPersistentObject(tutamen_server.datatypes.PersistentObject):
-
-    def __init__(self, srv, key, create=False, overwrite=False):
-        super().__init__(srv, key)
-
-    def destroy(self):
-        super().destroy()
-
-
 ### Base Class ###
 
 class BaseTestCase(unittest.TestCase):
@@ -129,7 +120,7 @@ class PersistentObjectTestCase(BaseTestCase):
 
         # Create Object
         key = "test_object"
-        obj = TestPersistentObject(self.srv, key, create=True, overwrite=False)
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=False)
         self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
 
         # Cleanup
@@ -139,8 +130,8 @@ class PersistentObjectTestCase(BaseTestCase):
 
         # Create Object
         key = "test_object"
-        TestPersistentObject(self.srv, key, create=True, overwrite=False)
-        obj = TestPersistentObject(self.srv, key, create=True, overwrite=False)
+        tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=False)
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=False)
         self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
 
         # Cleanup
@@ -150,8 +141,8 @@ class PersistentObjectTestCase(BaseTestCase):
 
         # Create Object
         key = "test_object"
-        TestPersistentObject(self.srv, key, create=True, overwrite=False)
-        obj = TestPersistentObject(self.srv, key, create=True, overwrite=True)
+        tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=False)
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=True)
         self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
 
         # Cleanup
@@ -161,12 +152,101 @@ class PersistentObjectTestCase(BaseTestCase):
 
         # Create Object
         key = "test_object"
-        TestPersistentObject(self.srv, key, create=True, overwrite=False)
-        obj = TestPersistentObject(self.srv, key, create=False, overwrite=False)
+        tutamen_server.datatypes.PersistentObject(self.srv, key, create=True, overwrite=False)
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=False, overwrite=False)
         self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
 
         # Cleanup
         obj.destroy()
+
+    def test_indexes_empty(self):
+
+        # Create Indexed Object
+        key = "test_object"
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
+
+        # Test Members
+        self.assertEqual(len(obj.indexes), 0)
+
+        # Cleanup
+        obj.destroy()
+
+    def test_indexes_populate(self):
+
+        # Create Indexed Object
+        key = "test_object"
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
+
+        # Create Indexes
+        indexes = []
+        for i in range(10):
+            key = "test_index_{}".format(i)
+            indexes.append(tutamen_server.datatypes.Index(self.srv, key, create=True))
+
+        # Test Populate (via Index.add())
+        cnt = 0
+        for index in indexes:
+            cnt += 1
+            index.add(obj)
+            self.assertIn(index.key, obj.indexes)
+            self.assertIn(obj.key, index.members)
+            self.assertEqual(len(obj.indexes), cnt)
+
+        # Cleanup
+        obj.destroy()
+        for index in indexes:
+            index.destroy()
+
+    def test_indexes_depopulate(self):
+
+        # Create Indexed Object
+        key = "test_object"
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
+
+       # Create Indexes
+        indexes = []
+        for i in range(10):
+            key = "test_index_{}".format(i)
+            index = tutamen_server.datatypes.Index(self.srv, key, create=True)
+            index.add(obj)
+            indexes.append(index)
+
+        # Test Depopulate (via Index.remove())
+        cnt = len(obj.indexes)
+        for index in indexes:
+            cnt -= 1
+            index.remove(obj)
+            self.assertNotIn(index.key, obj.indexes)
+            self.assertNotIn(obj.key, index.members)
+            self.assertEqual(len(obj.indexes), cnt)
+
+        # Cleanup
+        obj.destroy()
+        for index in indexes:
+            index.destroy()
+
+    def test_destroy(self):
+
+        # Create Indexed Object
+        key = "test_indexed_obj"
+        obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
+
+        # Create Indexes
+        indexes = []
+        for i in range(10):
+            key = "test_index_{}".format(i)
+            index = tutamen_server.datatypes.Index(self.srv, key, create=True)
+            index.add(obj)
+            indexes.append(index)
+
+        # Test Destroy
+        obj.destroy()
+        for index in indexes:
+            self.assertNotIn(obj.key, index.members)
+
+        # Cleanup
+        for index in indexes:
+            index.destroy()
 
 class IndexTestCase(BaseTestCase):
 
@@ -251,7 +331,7 @@ class IndexTestCase(BaseTestCase):
         objs = []
         for i in range(10):
             key = "test_indexed_obj_{}".format(i)
-            objs.append(tutamen_server.datatypes.Indexed(self.srv, key, create=True))
+            objs.append(tutamen_server.datatypes.PersistentObject(self.srv, key, create=True))
 
         # Test Add
         cnt = 0
@@ -276,8 +356,8 @@ class IndexTestCase(BaseTestCase):
         # Create Indexed Object
         objs = []
         for i in range(10):
-            key = "test_indexed_obj_{}".format(i)
-            obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
+            key = "test_object_{}".format(i)
+            obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
             objs.append(obj)
             index.add(obj)
 
@@ -305,7 +385,7 @@ class IndexTestCase(BaseTestCase):
         objs = []
         for i in range(10):
             key = "test_indexed_obj_{}".format(i)
-            obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
+            obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
             objs.append(obj)
             index.add(obj)
 
@@ -317,156 +397,6 @@ class IndexTestCase(BaseTestCase):
         # Cleanup
         for obj in objs:
             obj.destroy()
-
-class IndexedTestCase(BaseTestCase):
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-        # Setup Properties
-        self.srv = TestPersistentObjectServer(self.driver)
-
-    def tearDown(self):
-
-        # Teardown Properties
-        self.srv.destroy()
-
-        # Call Parent
-        super().tearDown()
-
-    def test_init_create_new(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.Indexed)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_init_create_existing(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.Indexed)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_init_create_overwrite(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True, overwrite=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.Indexed)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_init_existing(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=False)
-        self.assertIsInstance(obj, tutamen_server.datatypes.Indexed)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_indexes_empty(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-
-        # Test Members
-        self.assertEqual(len(obj.indexes), 0)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_register_via_add(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-
-        # Create Indexes
-        indexes = []
-        for i in range(10):
-            key = "test_index_{}".format(i)
-            indexes.append(tutamen_server.datatypes.Index(self.srv, key, create=True))
-
-        # Test Register (via Add)
-        cnt = 0
-        for index in indexes:
-            cnt += 1
-            index.add(obj)
-            self.assertIn(index.key, obj.indexes)
-            self.assertIn(obj.key, index.members)
-            self.assertEqual(len(obj.indexes), cnt)
-
-        # Cleanup
-        obj.destroy()
-        for index in indexes:
-            index.destroy()
-
-    def test_unregister_via_remove(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-
-        # Create Indexes
-        indexes = []
-        for i in range(10):
-            key = "test_index_{}".format(i)
-            index = tutamen_server.datatypes.Index(self.srv, key, create=True)
-            index.add(obj)
-            indexes.append(index)
-
-        # Test Unegister (via Remove)
-        cnt = len(obj.indexes)
-        for index in indexes:
-            cnt -= 1
-            index.remove(obj)
-            self.assertNotIn(index.key, obj.indexes)
-            self.assertNotIn(obj.key, index.members)
-            self.assertEqual(len(obj.indexes), cnt)
-
-        # Cleanup
-        obj.destroy()
-        for index in indexes:
-            index.destroy()
-
-    def test_destroy(self):
-
-        # Create Indexed Object
-        key = "test_indexed_obj"
-        obj = tutamen_server.datatypes.Indexed(self.srv, key, create=True)
-
-        # Create Indexes
-        indexes = []
-        for i in range(10):
-            key = "test_index_{}".format(i)
-            index = tutamen_server.datatypes.Index(self.srv, key, create=True)
-            index.add(obj)
-            indexes.append(index)
-
-        # Test Destroy
-        obj.destroy()
-        for index in indexes:
-            self.assertNotIn(obj.key, index.members)
-
-        # Cleanup
-        for index in indexes:
-            index.destroy()
 
 
 ### Main ###
