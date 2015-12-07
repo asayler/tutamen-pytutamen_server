@@ -6,7 +6,9 @@
 GET     /                                                none                 Welcome Message
 
 POST    /authorizations/                                 none                 Request Authorization
-GET     /authorizations/<uid>/                           none                 Get Authorization
+GET     /authorizations/<uid>/                           none                 Get Authorization Metadata
+GET     /authorizations/<uid>/status/                    none                 Get Authorization Status
+GET     /authorizations/<uid>/token/                     none                 Get Authorization Token
 
 ---------------------------------------------------------------------------------------
 

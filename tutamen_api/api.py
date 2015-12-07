@@ -113,6 +113,16 @@ def authenticate_client():
 
     return _decorator
 
+@httpauth.verify_password
+def verify_login(username, password):
+
+    # Note: Token limited to 255 chars
+    token = username
+    app.logger.debug("verify_token: token={}".format(token))
+
+    flask.g.token = None
+
+    return True
 
 ### Endpoints ###
 
@@ -125,11 +135,52 @@ def get_root():
     app.logger.debug("GET ROOT")
     return app.send_static_file('index.html')
 
+## Authroization Endpoints ##
+
+@app.route("/{}/".format(_KEY_AUTHORIZATIONS), methods=['GET'])
+@authenticate_client()
+def post_authorizations():
+
+    app.logger.debug("POST AUTHORIZATIONS")
+    json_in = flask.request.get_json(force=True)
+    app.logger.debug("json_in = '{}'".format(json_in))
+    permission = json_in['permission']
+    app.logger.debug("permission = '{}'".format(permission))
+    metadata = json_in['metadata']
+    app.logger.debug("metadata = '{}'".format(metadata))
+    # ath =
+    # app.logger.debug("ath = '{}'".format(ath))
+    json_out = {_KEY_AUTHORIZATIONS: [str(uuid.uuid4())]}
+    return flask.jsonify(json_out)
+
+@app.route("/{}/<auth_uid>/status/".format(_KEY_AUTHORIZATIONS), methods=['GET'])
+@authenticate_client()
+def get_authorizations_status(auth_uid):
+
+    app.logger.debug("GET AUTHORIZATIONS STATUS")
+    # ath =
+    # app.logger.debug("ath = '{}'".format(ath))
+    status = "granted"
+    json_out = {'status': status}
+    return flask.jsonify(json_out)
+
+@app.route("/{}/<auth_uid>/token/".format(_KEY_AUTHORIZATIONS), methods=['GET'])
+@authenticate_client()
+def get_authorizations_token(auth_uid):
+
+    app.logger.debug("GET AUTHORIZATIONS TOKEN")
+    # ath =
+    # app.logger.debug("ath = '{}'".format(ath))
+    token = "1128e2ad63a0309c9f1788780c5b5e237310d62acc120ad75167e08d9671da43"
+    json_out = {'token': token}
+    return flask.jsonify(json_out)
+
 
 ## Storage Endpoints ##
 
 @app.route("/{}/".format(_KEY_COLLECTIONS), methods=['POST'])
 @authenticate_client()
+@httpauth.login_required
 def post_collections():
 
     app.logger.debug("POST COLLECTIONS")
@@ -144,6 +195,7 @@ def post_collections():
 
 @app.route("/{}/<col_uid>/{}/".format(_KEY_COLLECTIONS, _KEY_SECRETS), methods=['POST'])
 @authenticate_client()
+@httpauth.login_required
 def post_collections_secrets(col_uid):
 
     app.logger.debug("POST COLLECTIONS SECRETS")
@@ -158,16 +210,18 @@ def post_collections_secrets(col_uid):
     json_out = {_KEY_SECRETS: [str(uuid.uuid4())]}
     return flask.jsonify(json_out)
 
-@app.route("/{}/<col_uid>/{}/<sec_uid>/".format(_KEY_COLLECTIONS, _KEY_SECRETS), methods=['GET'])
+@app.route("/{}/<col_uid>/{}/<sec_uid>/versions/latest/".format(_KEY_COLLECTIONS, _KEY_SECRETS),
+           methods=['GET'])
 @authenticate_client()
-def get_collections_secret(col_uid, sec_uid):
+@httpauth.login_required
+def get_collections_secret_versions_latest(col_uid, sec_uid):
 
-    app.logger.debug("GET COLLECTIONS SECRET")
-    # sec = flask.g.srv_storage.secret_from_existing(uid)
+    app.logger.debug("GET COLLECTIONS SECRET VERSIONS LATEST")
+    # sec =
     # app.logger.debug("sec = '{}'".format(sec))
     data = "TESTSECRET"
     metadata = {}
-    json_out = {'data': data, 'metadata': metadata}
+    json_out = {'data': data}
     return flask.jsonify(json_out)
 
 
