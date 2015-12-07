@@ -24,6 +24,7 @@ import tutamen_server.storage
 
 _REDIS_DB = 3
 
+_KEY_AUTHORIZATIONS = "authorizations"
 _KEY_COLLECTIONS = "collections"
 _KEY_SECRETS = "secrets"
 
