@@ -41,9 +41,9 @@ class ObjectDNE(Exception):
         super().__init__(msg)
 
 
-### Abstract Objects ###
+### Objects ###
 
-class PersistentObjectServer(object, metaclass=abc.ABCMeta):
+class PersistentObjectServer(object):
 
     def __init__(self, driver):
 
@@ -64,7 +64,6 @@ class PersistentObjectServer(object, metaclass=abc.ABCMeta):
     def driver(self):
         return self._driver
 
-    @abc.abstractmethod
     def destroy(self):
 
         # Cleanup Object Index
@@ -73,8 +72,6 @@ class PersistentObjectServer(object, metaclass=abc.ABCMeta):
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
         return dsf.InstanceFactory(self._driver, obj_type,
                                    key_type=key_type, key_kwargs=key_kwargs)
-
-### Objects ###
 
 class PersistentObject(object):
 

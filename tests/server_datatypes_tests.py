@@ -37,14 +37,6 @@ class RedisDatabaseNotEmpty(TestException):
         msg = "Redis DB not empty: {:d} keys".format(driver.dbsize())
         super().__init__(msg)
 
-
-### Dummy Test Objects ###
-
-class TestPersistentObjectServer(tutamen_server.datatypes.PersistentObjectServer):
-
-    def destroy(self):
-        super().destroy()
-
 ### Base Class ###
 
 class BaseTestCase(unittest.TestCase):
@@ -92,7 +84,7 @@ class PersistentObjectServerTestCase(BaseTestCase):
     def test_init(self):
 
         # Create Index
-        srv = TestPersistentObjectServer(self.driver)
+        srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
         self.assertIsInstance(srv, tutamen_server.datatypes.PersistentObjectServer)
 
         # Cleanup
@@ -106,7 +98,7 @@ class PersistentObjectTestCase(BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.srv = TestPersistentObjectServer(self.driver)
+        self.srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
 
     def tearDown(self):
 
@@ -256,7 +248,7 @@ class IndexTestCase(BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.srv = TestPersistentObjectServer(self.driver)
+        self.srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
 
     def tearDown(self):
 
