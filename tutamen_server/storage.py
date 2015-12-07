@@ -76,7 +76,7 @@ class Secret(datatypes.PersistentObject):
             if create:
                 self._data.create(data)
 
-        # Setup Metaaata
+        # Setup Metadata
         factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
         metadata_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _POSTFIX_SECRET_METADATA
         self._metadata = factory.from_raw(metadata_key)
