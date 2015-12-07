@@ -7,6 +7,7 @@
 
 ### Imports ###
 import functools
+import uuid
 
 import flask
 import flask.ext.httpauth
