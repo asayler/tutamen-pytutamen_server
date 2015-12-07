@@ -16,12 +16,13 @@ from pcollections import keys as dsk
 
 ### Constants ###
 
+SEPERATOR = "_"
 _INDEX_OBJ_TYPE = dso.MutableSet
 _INDEX_KEY_TYPE = dsk.StrKey
-_METAINDEX_POSTFIX = "_metaindex"
-_INDEX_POSTFIX = "_index"
-_SERVER_PREFIX = "srv_"
-_OBJECT_INDEX_KEY = "object"
+_INDEX_POSTFIX = "index"
+_METAINDEX_POSTFIX = "metaindex"
+_OBJINDEX_POSTFIX = "objindex"
+_OBJINDEX_KEY = "objects"
 
 
 ### Exceptions ###
@@ -45,7 +46,7 @@ class ObjectDNE(Exception):
 
 class PersistentObjectServer(object):
 
-    def __init__(self, driver):
+    def __init__(self, driver, prefix="srv"):
 
         # Check Args
         # TODO: Verify driver is of appropriate type
@@ -55,10 +56,11 @@ class PersistentObjectServer(object):
 
         # Save Attrs
         self._driver = driver
+        self._prefix = prefix
 
         # Setup Object Index
         factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        objidx_key = _SERVER_PREFIX + _OBJECT_INDEX_KEY
+        objidx_key = prefix + SEPERATOR + _OBJINDEX_KEY + SEPERATOR + _OBJINDEX_POSTFIX
         objidx = factory.from_raw(objidx_key)
         if not objidx.exists():
             objidx.create(set())
@@ -72,6 +74,10 @@ class PersistentObjectServer(object):
     @property
     def driver(self):
         return self._driver
+
+    @property
+    def prefix(self):
+        return self._prefix
 
     @property
     def objects(self):
@@ -116,7 +122,7 @@ class PersistentObjectServer(object):
 
 class PersistentObject(object):
 
-    def __init__(self, srv, key, create=False, overwrite=False):
+    def __init__(self, srv, key, create=False, overwrite=False, prefix="obj"):
         """Initialize Object"""
 
         #                    create  overwrite
@@ -134,14 +140,15 @@ class PersistentObject(object):
         # Call Parent
         super().__init__()
 
-        # Setup Metaindex
-        factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        metaindex_key = key + _METAINDEX_POSTFIX
-        metaindex = factory.from_raw(metaindex_key)
-
         # Save Attrs
         self._srv = srv
         self._key = key
+        self._prefix = prefix
+
+        # Setup Metaindex
+        factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        metaindex_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _METAINDEX_POSTFIX
+        metaindex = factory.from_raw(metaindex_key)
         self._metaindex = metaindex
 
         # Initialize
@@ -187,6 +194,11 @@ class PersistentObject(object):
         return self._key
 
     @property
+    def prefix(self):
+        """Return Object Prefix (Read-only Property)"""
+        return self._prefix
+
+    @property
     def srv(self):
         """Return Object Server (Read-only Property)"""
         return self._srv
@@ -208,7 +220,7 @@ class Index(PersistentObject):
 
         # Setup Index
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = self.key + _INDEX_POSTFIX
+        index_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _INDEX_POSTFIX
         index = factory.from_raw(index_key)
         if not index.exists():
             if create:
