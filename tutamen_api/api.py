@@ -23,6 +23,8 @@ import tutamen_server.storage
 
 _REDIS_DB = 3
 
+_KEY_COLLECTIONS = "collections"
+_KEY_SECRETS = "secrets"
 
 ### Global Setup ###
 
@@ -66,18 +68,19 @@ if not app.testing:
     #    logger.addHandler(handler_file)
 
 
-### Functions ###
+### Setup/Teardown ###
 
 @app.before_request
 def before_request():
-
-    driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
-    storage = tutamen_server.storage.StorageServer(driver)
-    flask.g.srv_storage = storage
+    pass
+    # driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
+    # storage = tutamen_server.storage.StorageServer(driver)
+    # flask.g.srv_storage = storage
 
 @app.teardown_request
 def teardown_request(exception):
     pass
+
 
 ### Auth Decorators ###
 
@@ -124,28 +127,47 @@ def get_root():
 
 ## Storage Endpoints ##
 
-@app.route("/secrets/", methods=['POST'])
+@app.route("/{}/".format(_KEY_COLLECTIONS), methods=['POST'])
 @authenticate_client()
-def post_secret():
+def post_collections():
 
-    app.logger.debug("POST SECRET")
-    d_in = flask.request.get_json(force=True)
-    app.logger.debug("d_in = '{}'".format(d_in))
-    data = d_in['data']
+    app.logger.debug("POST COLLECTIONS")
+    json_in = flask.request.get_json(force=True)
+    app.logger.debug("json_in = '{}'".format(json_in))
+    metadata = json_in['metadata']
+    app.logger.debug("metadata = '{}'".format(metadata))
+    # col =
+    # app.logger.debug("col = '{}'".format(col))
+    json_out = {_KEY_COLLECTIONS: [str(uuid.uuid4())]}
+    return flask.jsonify(json_out)
+
+@app.route("/{}/<col_uid>/{}/".format(_KEY_COLLECTIONS, _KEY_SECRETS), methods=['POST'])
+@authenticate_client()
+def post_collections_secrets(col_uid):
+
+    app.logger.debug("POST COLLECTIONS SECRETS")
+    json_in = flask.request.get_json(force=True)
+    app.logger.debug("json_in = '{}'".format(json_in))
+    data = json_in['data']
     app.logger.debug("data = '{}'".format(data))
-    sec = flask.g.srv_storage.secret_from_new(data)
-    app.logger.debug("sec = '{}'".format(sec))
-    d_out = {'secrets': [sec.uid]}
-    return flask.jsonify(d_out)
+    metadata = json_in['metadata']
+    app.logger.debug("metadata = '{}'".format(metadata))
+    # sec =
+    # app.logger.debug("sec = '{}'".format(sec))
+    json_out = {_KEY_SECRETS: [str(uuid.uuid4())]}
+    return flask.jsonify(json_out)
 
-@app.route("/secrets/<uid>/", methods=['GET'])
+@app.route("/{}/<col_uid>/{}/<sec_uid>/".format(_KEY_COLLECTIONS, _KEY_SECRETS), methods=['GET'])
 @authenticate_client()
-def get_secret(uid):
+def get_collections_secret(col_uid, sec_uid):
 
-    app.logger.debug("GET SECRET")
-    sec = flask.g.srv_storage.secret_from_existing(uid)
-    d_out = {'data': sec.data}
-    return flask.jsonify(d_out)
+    app.logger.debug("GET COLLECTIONS SECRET")
+    # sec = flask.g.srv_storage.secret_from_existing(uid)
+    # app.logger.debug("sec = '{}'".format(sec))
+    data = "TESTSECRET"
+    metadata = {}
+    json_out = {'data': data, 'metadata': metadata}
+    return flask.jsonify(json_out)
 
 
 ### Error Handling ###
