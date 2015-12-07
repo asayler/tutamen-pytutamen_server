@@ -158,7 +158,7 @@ class PersistentObjectTestCase(BaseTestCase):
         obj = tutamen_server.datatypes.PersistentObject(self.srv, key, create=True)
 
         # Test Members
-        self.assertEqual(len(obj.indexes), 0)
+        self.assertEqual(len(obj.indexes), 1)
 
         # Cleanup
         obj.destroy()
@@ -176,8 +176,9 @@ class PersistentObjectTestCase(BaseTestCase):
             indexes.append(tutamen_server.datatypes.Index(self.srv, key, create=True))
 
         # Test Populate (via Index.add())
-        cnt = 0
+        cnt = len(obj.indexes)
         for index in indexes:
+            self.assertEqual(len(obj.indexes), cnt)
             cnt += 1
             index.add(obj)
             self.assertIn(index.key, obj.indexes)

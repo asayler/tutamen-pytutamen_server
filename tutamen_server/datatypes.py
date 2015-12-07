@@ -55,19 +55,38 @@ class PersistentObjectServer(object):
 
         # Save Attrs
         self._driver = driver
+        self._objindex = None
 
         # Setup Object Index
         key = _SERVER_PREFIX + _OBJECT_INDEX_KEY
         self._objindex = Index(self, key, create=True, overwrite=False)
-
-    @property
-    def driver(self):
-        return self._driver
+        self._objindex.add(self._objindex)
 
     def destroy(self):
 
         # Cleanup Object Index
         self._objindex.destroy()
+
+    @property
+    def driver(self):
+        return self._driver
+
+    @property
+    def objects(self):
+        if self._objindex:
+            return self._objindex.members()
+        else:
+            return set()
+
+    def exists(self, obj):
+        if self._objindex:
+            return self._objindex.is_member(obj)
+        else:
+            return False
+
+    def register(self, obj):
+        if self._objindex:
+            self._objindex.add(obj)
 
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
         return dsf.InstanceFactory(self._driver, obj_type,
@@ -93,23 +112,35 @@ class PersistentObject(object):
         # Call Parent
         super().__init__()
 
-        # Save Attrs
-        self._srv = srv
-        self._key = key
-
         # Setup Metaindex
         factory = srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
         metaindex_key = key + _METAINDEX_POSTFIX
         metaindex = factory.from_raw(metaindex_key)
-        if not metaindex.exists():
+
+        # Save Attrs
+        self._srv = srv
+        self._key = key
+        self._metaindex = metaindex
+
+        # Initialize
+        if not self.exists():
             if create:
-                metaindex.create(set())
+                self.__create__()
             else:
                 raise ObjectDNE(self)
         else:
             if create and overwrite:
-                metaindex.set_val(set())
-        self._metaindex = metaindex
+                self.__create__()
+
+        # Register with Server
+        self.srv.register(self)
+
+    def __create__(self):
+
+        if not self._metaindex.exists():
+            self._metaindex.create(set())
+        else:
+            self._metaindex.set_val(set())
 
     def destroy(self):
         """Cleanup Object"""
@@ -121,6 +152,9 @@ class PersistentObject(object):
 
         # Cleanup metaindex
         self._metaindex.rem()
+
+    def exists(self):
+        return self._srv.exists(self)
 
     @property
     def key(self):
@@ -182,6 +216,18 @@ class Index(PersistentObject):
         """Return Index Memebership"""
 
         return set(self._index)
+
+    def is_member(self, obj):
+        """Check if object is in index"""
+
+        # Check Args
+        if not isinstance(obj, PersistentObject):
+            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Check Membership
+        return obj.key in self._index
 
     def add(self, obj):
         """Add Indexed Object to Index"""
