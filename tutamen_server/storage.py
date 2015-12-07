@@ -21,7 +21,7 @@ SEPERATOR = datatypes.SEPERATOR
 _INDEX_KEY_SECRETS = "secrets"
 _INDEX_KEY_COLLECTIONS = "collections"
 
-_PREFIX_STORAGESERVER = "stroagesrv"
+_PREFIX_STORAGESERVER = "storagesrv"
 
 _PREFIX_SECRET = "secret"
 _POSTFIX_SECRET_DATA = "data"
