@@ -55,17 +55,19 @@ class PersistentObjectServer(object):
 
         # Save Attrs
         self._driver = driver
-        self._objindex = None
 
         # Setup Object Index
-        key = _SERVER_PREFIX + _OBJECT_INDEX_KEY
-        self._objindex = Index(self, key, create=True, overwrite=False)
-        self._objindex.add(self._objindex)
+        factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
+        objidx_key = _SERVER_PREFIX + _OBJECT_INDEX_KEY
+        objidx = factory.from_raw(objidx_key)
+        if not objidx.exists():
+            objidx.create(set())
+        self._objindex = objidx
 
     def destroy(self):
 
         # Cleanup Object Index
-        self._objindex.destroy()
+        self._objindex.rem()
 
     @property
     def driver(self):
@@ -73,20 +75,40 @@ class PersistentObjectServer(object):
 
     @property
     def objects(self):
-        if self._objindex:
-            return self._objindex.members()
-        else:
-            return set()
+        return self._objindex.get_val()
 
     def exists(self, obj):
-        if self._objindex:
-            return self._objindex.is_member(obj)
-        else:
-            return False
 
-    def register(self, obj):
-        if self._objindex:
-            self._objindex.add(obj)
+        # Check Args
+        if not isinstance(obj, PersistentObject):
+            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Check Object Key
+        return obj.key in self._objindex
+
+    def _register(self, obj):
+
+        # Check Args
+        if not isinstance(obj, PersistentObject):
+            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Add Object key
+        self._objindex.add(obj.key)
+
+    def _unregister(self, obj):
+
+        # Check Args
+        if not isinstance(obj, PersistentObject):
+            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Discard Object Key
+        self._objindex.discard(obj.key)
 
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
         return dsf.InstanceFactory(self._driver, obj_type,
@@ -133,7 +155,7 @@ class PersistentObject(object):
                 self.__create__()
 
         # Register with Server
-        self.srv.register(self)
+        self.srv._register(self)
 
     def __create__(self):
 
@@ -149,6 +171,9 @@ class PersistentObject(object):
         for idx_key in self.indexes:
             index = Index(self._srv, idx_key)
             index.remove(self)
+
+        # Unregister from server
+        self.srv._unregister(self)
 
         # Cleanup metaindex
         self._metaindex.rem()
