@@ -138,7 +138,7 @@ def get_root():
 
 ## Authroization Endpoints ##
 
-@app.route("/{}/".format(_KEY_AUTHORIZATIONS), methods=['GET'])
+@app.route("/{}/".format(_KEY_AUTHORIZATIONS), methods=['POST'])
 @authenticate_client()
 def post_authorizations():
 
