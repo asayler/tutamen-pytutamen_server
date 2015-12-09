@@ -126,11 +126,11 @@ class PersistentObject(object):
     def __init__(self, srv, key=None, create=False, overwrite=False, prefix="obj"):
         """Initialize Object"""
 
-        #                    create  overwrite
-        # CREATE_OR_OPEN       Y         N
-        # CREATE_OVERWRITE     Y         Y
-        # OPEN_EXISTING        N         N
-        # ?????????????        N         Y
+        #                    create  overwrite  existing
+        # CREATE_OR_OPEN       Y         N         Y
+        # CREATE_OVERWRITE     Y         Y         Y
+        # CREATE_OR_FAIL       Y         *         N
+        # OPEN_EXISTING        N         *         *
 
         # Check Args
         if not isinstance(srv, PersistentObjectServer):
