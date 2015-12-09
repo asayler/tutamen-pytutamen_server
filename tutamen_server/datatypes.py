@@ -16,7 +16,7 @@ from pcollections import keys as dsk
 
 ### Constants ###
 
-SEPERATOR = "_"
+_SEPERATOR = "_"
 _INDEX_OBJ_TYPE = dso.MutableSet
 _INDEX_KEY_TYPE = dsk.StrKey
 _INDEX_POSTFIX = "index"
@@ -41,6 +41,18 @@ class ObjectDNE(Exception):
         msg = "Object '{:s}' does not exist".format(obj.key)
         super().__init__(msg)
 
+### Functions ###
+
+def build_key(base_key, prefix=None, postfix=None):
+
+    key = str()
+    if prefix is not None:
+        key += str(prefix) + _SEPERATOR
+    key += str(base_key)
+    if postfix is not None:
+        key += _SEPERATOR + str(postfix)
+
+    return key
 
 ### Objects ###
 
@@ -60,8 +72,7 @@ class PersistentObjectServer(object):
 
         # Setup Object Index
         factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        objidx_key = (str(self.prefix) + SEPERATOR +
-                      _OBJINDEX_KEY + SEPERATOR + _OBJINDEX_POSTFIX)
+        objidx_key = self._build_key(_OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX)
         objidx = factory.from_raw(objidx_key)
         if not objidx.exists():
             objidx.create(set())
@@ -71,6 +82,9 @@ class PersistentObjectServer(object):
 
         # Cleanup Object Index
         self._objindex.rem()
+
+    def _build_key(self, base_key, postfix=None):
+        return build_key(base_key, prefix=self.prefix, postfix=postfix)
 
     @property
     def driver(self):
@@ -151,8 +165,7 @@ class PersistentObject(object):
 
         # Setup Metaindex
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        metaindex_key = (str(self.prefix) + SEPERATOR +
-                         str(self.key) + SEPERATOR + _METAINDEX_POSTFIX)
+        metaindex_key = self._build_key(_METAINDEX_POSTFIX)
         metaindex = factory.from_raw(metaindex_key)
         self._metaindex = metaindex
 
@@ -175,6 +188,9 @@ class PersistentObject(object):
             self._metaindex.create(set())
         else:
             self._metaindex.set_val(set())
+
+    def _build_key(self, postfix):
+        return build_key(self.key, prefix=self.prefix, postfix=postfix)
 
     def destroy(self):
         """Cleanup Object"""
@@ -242,8 +258,7 @@ class Index(PersistentObject):
 
         # Setup Index
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = (str(self.prefix) + SEPERATOR +
-                     str(self.key) + SEPERATOR + _INDEX_POSTFIX)
+        index_key = self._build_key(_INDEX_POSTFIX)
         index = factory.from_raw(index_key)
         if not index.exists():
             if create:

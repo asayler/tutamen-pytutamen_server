@@ -67,6 +67,43 @@ class BaseTestCase(unittest.TestCase):
         # Call Parent
         super().tearDown()
 
+### Function Classes ###
+
+class FunctionsTestCase(BaseTestCase):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+    def tearDown(self):
+
+        # Call Parent
+        super().tearDown()
+
+    def test_build_key(self):
+
+        base_key = "test_base_key"
+        prefix = "prefix"
+        postfix = "postfix"
+        sep = "_"
+
+        # Test Base
+        key = tutamen_server.datatypes.build_key(base_key)
+        self.assertEqual(key, base_key)
+
+        # Test Prefix
+        key = tutamen_server.datatypes.build_key(base_key, prefix=prefix)
+        self.assertEqual(key, (prefix + sep + base_key))
+
+        # Test Postfix
+        key = tutamen_server.datatypes.build_key(base_key, postfix=postfix)
+        self.assertEqual(key, (base_key + sep + postfix))
+
+        # Test All
+        key = tutamen_server.datatypes.build_key(base_key, prefix=prefix, postfix=postfix)
+        self.assertEqual(key, (prefix + sep + base_key + sep + postfix))
+
 
 ### Object Classes ###
 
