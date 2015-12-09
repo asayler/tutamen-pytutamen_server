@@ -60,7 +60,8 @@ class PersistentObjectServer(object):
 
         # Setup Object Index
         factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        objidx_key = prefix + SEPERATOR + _OBJINDEX_KEY + SEPERATOR + _OBJINDEX_POSTFIX
+        objidx_key = (str(self.prefix) + SEPERATOR +
+                      _OBJINDEX_KEY + SEPERATOR + _OBJINDEX_POSTFIX)
         objidx = factory.from_raw(objidx_key)
         if not objidx.exists():
             objidx.create(set())
@@ -103,7 +104,7 @@ class PersistentObjectServer(object):
             raise TypeError(msg)
 
         # Add Object key
-        self._objindex.add(obj.key)
+        self._objindex.add(str(obj.key))
 
     def _unregister(self, obj):
 
@@ -114,7 +115,7 @@ class PersistentObjectServer(object):
             raise TypeError(msg)
 
         # Discard Object Key
-        self._objindex.discard(obj.key)
+        self._objindex.discard(str(obj.key))
 
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
         return dsf.InstanceFactory(self._driver, obj_type,
@@ -122,7 +123,7 @@ class PersistentObjectServer(object):
 
 class PersistentObject(object):
 
-    def __init__(self, srv, key, create=False, overwrite=False, prefix="obj"):
+    def __init__(self, srv, key=None, create=False, overwrite=False, prefix="obj"):
         """Initialize Object"""
 
         #                    create  overwrite
@@ -136,6 +137,9 @@ class PersistentObject(object):
             msg = "'srv' must be of type '{}', ".format(PersistentObjectServer)
             msg += "not '{}'".format(type(srv))
             raise TypeError(msg)
+        if not key:
+            msg = "Requires valid key"
+            raise TypeError(msg)
 
         # Call Parent
         super().__init__()
@@ -147,7 +151,8 @@ class PersistentObject(object):
 
         # Setup Metaindex
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        metaindex_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _METAINDEX_POSTFIX
+        metaindex_key = (str(self.prefix) + SEPERATOR +
+                         str(self.key) + SEPERATOR + _METAINDEX_POSTFIX)
         metaindex = factory.from_raw(metaindex_key)
         self._metaindex = metaindex
 
@@ -176,7 +181,7 @@ class PersistentObject(object):
 
         # Unregister from indexes
         for idx_key in self.indexes:
-            index = Index(self._srv, idx_key)
+            index = Index(self._srv, key=idx_key)
             index.remove(self)
 
         # Unregister from server
@@ -210,17 +215,35 @@ class PersistentObject(object):
         # Return registered indexes
         return set(self._metaindex)
 
+class UUIDObject(PersistentObject):
+
+    def __init__(self, srv, key=None, **kwargs):
+        """Initialize Object"""
+
+        # Check Args
+        if not key:
+            key = uuid.uuid4()
+        else:
+            if not isinstance(key, uuid.UUID):
+                msg = "'key' must be an instance of '{}', ".format(uuid.UUID)
+                msg += "not '{}'".format(type(key))
+                raise TypeError(msg)
+
+        # Call Parent
+        super().__init__(srv, key=key, **kwargs)
+
 class Index(PersistentObject):
 
-    def __init__(self, *args, create=False, overwrite=False, **kwargs):
+    def __init__(self, srv, create=False, overwrite=False, **kwargs):
         """Initialize Index Object"""
 
         # Call Parent
-        super().__init__(*args, create=create, overwrite=overwrite, **kwargs)
+        super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
 
         # Setup Index
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = self.prefix + SEPERATOR + self.key + SEPERATOR + _INDEX_POSTFIX
+        index_key = (str(self.prefix) + SEPERATOR +
+                     str(self.key) + SEPERATOR + _INDEX_POSTFIX)
         index = factory.from_raw(index_key)
         if not index.exists():
             if create:
@@ -239,8 +262,8 @@ class Index(PersistentObject):
 
         # Unregister objects
         for obj_key in self.members:
-            obj = PersistentObject(self._srv, obj_key)
-            obj._metaindex.discard(self.key)
+            obj = PersistentObject(self._srv, key=obj_key)
+            obj._metaindex.discard(str(self.key))
 
         # Cleanup backend object
         self._index.rem()
@@ -264,7 +287,7 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Check Membership
-        return obj.key in self._index
+        return str(obj.key) in self._index
 
     def add(self, obj):
         """Add Indexed Object to Index"""
@@ -276,8 +299,8 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Add Object Key and Register Index
-        obj._metaindex.add(self.key)
-        self._index.add(obj.key)
+        obj._metaindex.add(str(self.key))
+        self._index.add(str(obj.key))
 
     def remove(self, obj):
         """Remove Indexed Object to Index if Present"""
@@ -289,5 +312,5 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Remove Object Key and Unregister Index
-        self._index.discard(obj.key)
-        obj._metaindex.discard(self.key)
+        self._index.discard(str(obj.key))
+        obj._metaindex.discard(str(self.key))
