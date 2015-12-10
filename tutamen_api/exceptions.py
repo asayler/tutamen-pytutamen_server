@@ -9,11 +9,11 @@
 
 ### API Exceptions ###
 
-def APIError(Exception):
+class APIError(Exception):
     pass
 
-def SSLError(APIError):
+class SSLError(APIError):
     pass
 
-def SSLClientCertError(SSLError):
+class SSLClientCertError(SSLError):
     pass
