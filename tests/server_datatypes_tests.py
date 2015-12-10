@@ -25,16 +25,6 @@ import tutamen_server.datatypes
 
 class FunctionsTestCase(server_common.BaseTestCase):
 
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-    def tearDown(self):
-
-        # Call Parent
-        super().tearDown()
-
     def test_build_key(self):
 
         base_key = "test_base_key"
@@ -62,16 +52,6 @@ class FunctionsTestCase(server_common.BaseTestCase):
 ### Object Classes ###
 
 class PersistentObjectServerTestCase(server_common.BaseTestCase):
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-    def tearDown(self):
-
-        # Call Parent
-        super().tearDown()
 
     def test_init_and_destroy(self):
 
@@ -141,7 +121,7 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
         # Cleanup
         srv.destroy()
 
-class PersistentObjectTestCase(server_common.BaseTestCase):
+class PersistentObjectBasis(server_common.BaseTestCase):
 
     def setUp(self):
 
@@ -158,6 +138,8 @@ class PersistentObjectTestCase(server_common.BaseTestCase):
 
         # Call Parent
         super().tearDown()
+
+class PersistentObjectTestCase(PersistentObjectBasis):
 
     def test_init_create_new(self):
 
@@ -316,23 +298,7 @@ class PersistentObjectTestCase(server_common.BaseTestCase):
         for index in indexes:
             index.destroy()
 
-class UUIDObjectTestCase(server_common.BaseTestCase):
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-        # Setup Properties
-        self.srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
-
-    def tearDown(self):
-
-        # Teardown Properties
-        self.srv.destroy()
-
-        # Call Parent
-        super().tearDown()
+class UUIDObjectTestCase(PersistentObjectBasis):
 
     def test_init_new(self):
 
@@ -361,23 +327,7 @@ class UUIDObjectTestCase(server_common.BaseTestCase):
         obj.destroy()
 
 
-class IndexTestCase(server_common.BaseTestCase):
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-        # Setup Properties
-        self.srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
-
-    def tearDown(self):
-
-        # Teardown Properties
-        self.srv.destroy()
-
-        # Call Parent
-        super().tearDown()
+class IndexTestCase(PersistentObjectBasis):
 
     def test_init_create_new(self):
 
