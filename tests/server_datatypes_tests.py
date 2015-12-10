@@ -7,69 +7,23 @@
 # Tutamen Server Tests
 # Datatypes tests
 
+
 ### Imports ###
 
 ## stdlib ##
 import uuid
 import unittest
-import warnings
 
-## pcollections ##
-import pcollections.be_redis_atomic
+# Server Tests
+import server_common
 
 ## tutamen_server ##
 import tutamen_server.datatypes
 
 
-### Globals ###
-
-_REDIS_DB = 9
-
-
-### Exceptions ###
-
-class TestException(Exception):
-    """Base class for Test Exceptions"""
-    pass
-
-class RedisDatabaseNotEmpty(TestException):
-
-    def __init__(self, driver):
-        msg = "Redis DB not empty: {:d} keys".format(driver.dbsize())
-        super().__init__(msg)
-
-### Base Class ###
-
-class BaseTestCase(unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-        self.driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-        # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
-            raise RedisDatabaseNotEmpty(self.driver)
-
-    def tearDown(self):
-
-        # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
-            print("")
-            warnings.warn("Redis database not empty prior to tearDown")
-            self.driver.flushdb()
-
-        # Call Parent
-        super().tearDown()
-
 ### Function Classes ###
 
-class FunctionsTestCase(BaseTestCase):
+class FunctionsTestCase(server_common.BaseTestCase):
 
     def setUp(self):
 
@@ -107,7 +61,7 @@ class FunctionsTestCase(BaseTestCase):
 
 ### Object Classes ###
 
-class PersistentObjectServerTestCase(BaseTestCase):
+class PersistentObjectServerTestCase(server_common.BaseTestCase):
 
     def setUp(self):
 
@@ -187,7 +141,7 @@ class PersistentObjectServerTestCase(BaseTestCase):
         # Cleanup
         srv.destroy()
 
-class PersistentObjectTestCase(BaseTestCase):
+class PersistentObjectTestCase(server_common.BaseTestCase):
 
     def setUp(self):
 
@@ -362,7 +316,7 @@ class PersistentObjectTestCase(BaseTestCase):
         for index in indexes:
             index.destroy()
 
-class UUIDObjectTestCase(BaseTestCase):
+class UUIDObjectTestCase(server_common.BaseTestCase):
 
     def setUp(self):
 
@@ -407,7 +361,7 @@ class UUIDObjectTestCase(BaseTestCase):
         obj.destroy()
 
 
-class IndexTestCase(BaseTestCase):
+class IndexTestCase(server_common.BaseTestCase):
 
     def setUp(self):
 
