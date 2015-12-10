@@ -17,7 +17,7 @@ from . import exceptions
 
 import pcollections.be_redis_atomic
 
-import tutamen_server.storage
+#import tutamen_server.storage
 
 
 ### Constants ###
@@ -28,10 +28,12 @@ _KEY_AUTHORIZATIONS = "authorizations"
 _KEY_COLLECTIONS = "collections"
 _KEY_SECRETS = "secrets"
 
+
 ### Global Setup ###
 
 app = flask.Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
+app.debug = False
 cors = flask.ext.cors.CORS(app, headers=["Content-Type", "Authorization"])
 httpauth = flask.ext.httpauth.HTTPBasicAuth()
 
@@ -130,7 +132,6 @@ def verify_login(username, password):
 ## Root Endpoints ##
 
 @app.route("/", methods=['GET'])
-@authenticate_client()
 def get_root():
 
     app.logger.debug("GET ROOT")
@@ -251,6 +252,15 @@ def bad_type(error):
     err = { 'status': 400,
             'message': "{}".format(error) }
     app.logger.info("Client Error: TypeError: {}".format(err))
+    res = flask.jsonify(err)
+    res.status_code = err['status']
+    return res
+
+@app.errorhandler(exceptions.SSLClientCertError)
+def bad_cert(error):
+    err = { 'status': 401,
+            'message': "{}".format(error) }
+    app.logger.info("Client Error: SSLClientCertError: {}".format(err))
     res = flask.jsonify(err)
     res.status_code = err['status']
     return res
