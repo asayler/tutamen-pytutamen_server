@@ -174,7 +174,7 @@ class PersistentObjectServerTestCase(BaseTestCase):
 
         # Test Exists
         for obj in objs:
-            self.assertTrue(srv.exists(obj))
+            self.assertTrue(srv.exists(obj.key))
 
         # Cleanup Objects
         for obj in objs:
@@ -182,7 +182,7 @@ class PersistentObjectServerTestCase(BaseTestCase):
 
         # Test DNE
         for obj in objs:
-            self.assertFalse(srv.exists(obj))
+            self.assertFalse(srv.exists(obj.key))
 
         # Cleanup
         srv.destroy()
@@ -506,13 +506,13 @@ class IndexTestCase(BaseTestCase):
         obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test is_member() - False
-        self.assertFalse(index.is_member(obj))
+        self.assertFalse(index.is_member(obj.key))
 
         # Add Member
         index.add(obj)
 
         # Test is_member() - True
-        self.assertTrue(index.is_member(obj))
+        self.assertTrue(index.is_member(obj.key))
 
         # Cleanup
         obj.destroy()

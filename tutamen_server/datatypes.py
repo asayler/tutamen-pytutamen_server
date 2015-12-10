@@ -98,16 +98,8 @@ class PersistentObjectServer(object):
     def objects(self):
         return self._objindex.get_val()
 
-    def exists(self, obj):
-
-        # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
-
-        # Check Object Key
-        return obj.key in self._objindex
+    def exists(self, key):
+        return str(key) in self._objindex
 
     def _register(self, obj):
 
@@ -207,7 +199,7 @@ class PersistentObject(object):
         self._metaindex.rem()
 
     def exists(self):
-        return self._srv.exists(self)
+        return self._srv.exists(self.key)
 
     @property
     def key(self):
@@ -292,17 +284,9 @@ class Index(PersistentObject):
 
         return set(self._index)
 
-    def is_member(self, obj):
-        """Check if object is in index"""
-
-        # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
-
-        # Check Membership
-        return str(obj.key) in self._index
+    def is_member(self, key):
+        """Check if object key is in index"""
+        return str(key) in self._index
 
     def add(self, obj):
         """Add Indexed Object to Index"""
