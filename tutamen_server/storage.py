@@ -21,8 +21,10 @@ _INDEX_KEY_COLLECTIONS = "collections"
 
 _PREFIX_STORAGESERVER = "storagesrv"
 
+_PREFIX_COLLECTION = "collection"
 _PREFIX_SECRET = "secret"
-_POSTFIX_SECRET_DATA = "data"
+
+_POSTFIX_DATA = "data"
 _POSTFIX_METADATA = "metadata"
 
 
@@ -36,7 +38,9 @@ class StorageServer(datatypes.PersistentObjectServer):
         super().__init__(driver, prefix=prefix)
 
         # Setup Collections Index
-        self._collections = datatypes.Index(self, _INDEX_KEY_COLLECTIONS, prefix=prefix)
+        key = _INDEX_KEY_COLLECTIONS
+        self._collections = datatypes.Index(self, key=key, prefix=prefix,
+                                            create=True, overwrite=False)
 
     def destroy(self):
 
@@ -48,12 +52,36 @@ class StorageServer(datatypes.PersistentObjectServer):
 
     def collections_create(self, metadata={}):
         return Collection(self, create=True, metadata=metadata)
-    def collections_get(self, uid):
-        return Collection(self, create=False, key=uid)
+
+    def collections_get(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+
+        # Create
+        return Collection(self, create=False, key=key, uid=uid)
+
     def collections_list(self):
-        return self._collections.members()
-    def collections_exists(self, uid):
-        return self._collections.is_member(uid)
+        return self._collections.members
+
+    def collections_exists(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+        if uid:
+            if not isinstance(uid, uuid.UUID):
+                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
+                msg += "not '{}'".format(type(uid))
+                raise TypeError(msg)
+
+        # Convert key
+        if not key:
+            key = str(uid)
+
+        # Check membership
+        return self._collections.is_member(key)
 
 class Collection(datatypes.UUIDObject):
 
@@ -78,7 +106,9 @@ class Collection(datatypes.UUIDObject):
                 self._metadata.create(metadata)
 
         # Setup Secret Index
-        self._secrets = datatypes.Index(self, _INDEX_KEY_SECRETS, prefix=prefix)
+        key = self.key + _INDEX_KEY_SECRETS
+        self._secrets = datatypes.Index(self.srv, key=key, prefix=prefix,
+                                        create=create, overwrite=overwrite)
 
         # Register with Server
         if create:
@@ -97,7 +127,7 @@ class Collection(datatypes.UUIDObject):
         self._metadata.rem()
 
         # Call Parent
-        super().destory()
+        super().destroy()
 
     @property
     def metadata(self):
@@ -106,16 +136,40 @@ class Collection(datatypes.UUIDObject):
 
     def secrets_create(self, data="", metadata={}):
         return Secret(self, create=True, data=data, metadata=metadata)
-    def secrets_get(self, uid):
-        return Secret(self, create=False, key=uid)
+
+    def secrets_get(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+
+        # Create
+        return Secret(self, create=False, key=key, uid=uid)
+
     def secrets_list(self):
-        return self._secrets.members()
-    def secrets_exists(self, uid):
-        return self._secrets.is_member(uid)
+        return self._secrets.members
+
+    def secrets_exists(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+        if uid:
+            if not isinstance(uid, uuid.UUID):
+                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
+                msg += "not '{}'".format(type(uid))
+                raise TypeError(msg)
+
+        # Convert key
+        if not key:
+            key = str(uid)
+
+        # Check membership
+        return self._secrets.is_member(key)
 
 class Secret(datatypes.UUIDObject):
 
-    def __init__(self, collection, key=None, create=False, overwrite=False,
+    def __init__(self, collection, create=False, overwrite=False,
                  prefix=_PREFIX_SECRET, data="", metadata={}, **kwargs):
         """Initialize Secret"""
 
@@ -124,7 +178,7 @@ class Secret(datatypes.UUIDObject):
             raise TypeError("Secret does not support overwrite")
 
         # Call Parent
-        super().__init__(collection.srv, key=key, create=create, overwrite=overwrite,
+        super().__init__(collection.srv, create=create, overwrite=overwrite,
                          prefix=prefix, **kwargs)
 
         # Save Collection
@@ -132,7 +186,7 @@ class Secret(datatypes.UUIDObject):
 
         # Setup Data
         factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        data_key = self._build_key(_POSTFIX_SECRET_DATA)
+        data_key = self._build_key(_POSTFIX_DATA)
         self._data = factory.from_raw(data_key)
         if not self._data.exists():
             if create:
@@ -161,7 +215,7 @@ class Secret(datatypes.UUIDObject):
         self._data.rem()
 
         # Call Parent
-        super().destory()
+        super().destroy()
 
     @property
     def collection(self):

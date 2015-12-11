@@ -4,91 +4,126 @@
 
 # Andy Sayler
 # 2015
-# Tutamen Tests
+# Storage Tests
 
 
 ### Imports ###
 
 ## stdlib ##
 import unittest
-import warnings
+import uuid
 
-## pcollections ##
-import pcollections.be_redis_atomic
+# Tests Common
+import server_common
 
 ## tutamen_server ##
 import tutamen_server.storage
 
 
-### Globals ###
-
-_REDIS_DB = 9
-
-
-### Exceptions ###
-
-class TestException(Exception):
-    """Base class for Test Exceptions"""
-    pass
-
-class RedisDatabaseNotEmpty(TestException):
-
-    def __init__(self, driver):
-        msg = "Redis DB not empty: {:d} keys".format(driver.dbsize())
-        super().__init__(msg)
-
-
-### Base Class ###
-
-class BaseTestCase(unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-        self.driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
-
-    def setUp(self):
-
-        # Call Parent
-        super().setUp()
-
-        # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
-            raise RedisDatabaseNotEmpty(self.driver)
-
-    def tearDown(self):
-
-        # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
-            print("")
-            warnings.warn("Redis database not empty prior to tearDown")
-            self.driver.flushdb()
-
-        # Call Parent
-        super().tearDown()
-
-
 ### Object Classes ###
 
-class StorageServerTestCase(BaseTestCase):
+class StorageServerTestCase(server_common.BaseTestCase):
 
     def __init__(self, *args, **kwargs):
 
         # Call Parent
         super().__init__(*args, **kwargs)
 
-    def test_init(self):
+    def test_init_and_destroy(self):
 
         # Create Server
         ss = tutamen_server.storage.StorageServer(self.driver)
-        self.assertIsNotNone(ss)
         self.assertIsInstance(ss, tutamen_server.storage.StorageServer)
 
         # Cleanup
-        ss.wipe()
+        ss.destroy()
 
+    def test_collections_create(self):
 
-class SecretTestCase(BaseTestCase):
+        # Create Server
+        ss = tutamen_server.storage.StorageServer(self.driver)
+
+        # Create Collection
+        c = ss.collections_create()
+        self.assertIsInstance(c, tutamen_server.storage.Collection)
+        self.assertTrue(c.exists())
+
+        # Cleanup
+        c.destroy()
+        ss.destroy()
+
+    def test_collections_get(self):
+
+        # Create Server
+        ss = tutamen_server.storage.StorageServer(self.driver)
+
+        # Create Collection
+        key = ss.collections_create().key
+        c = ss.collections_get(key=key)
+        self.assertIsInstance(c, tutamen_server.storage.Collection)
+        self.assertTrue(c.exists())
+
+        # Cleanup
+        c.destroy()
+        ss.destroy()
+
+    def test_collections_list(self):
+
+        # Create Server
+        ss = tutamen_server.storage.StorageServer(self.driver)
+
+        # List Collections (Empty)
+        keys = ss.collections_list()
+        self.assertEqual(len(keys), 0)
+
+        # Create Collection
+        cols = []
+        for i in range(10):
+            cols.append(ss.collections_create())
+
+        # List Collections (Full)
+        keys = ss.collections_list()
+        self.assertEqual(len(keys), len(cols))
+        for col in cols:
+            self.assertTrue(col.key in keys)
+
+        # Delete Collections
+        for col in cols:
+            col.destroy()
+
+        # List Collections (Empty)
+        keys = ss.collections_list()
+        self.assertEqual(len(keys), 0)
+
+        # Cleanup
+        ss.destroy()
+
+    def test_collections_exists(self):
+
+        # Create Server
+        ss = tutamen_server.storage.StorageServer(self.driver)
+
+        # Test DNE
+        uid = uuid.uuid4()
+        self.assertFalse(ss.collections_exists(uid=uid))
+
+        # Create Collection
+        col = ss.collections_create()
+
+        # Test Exists
+        key = col.key
+        self.assertTrue(ss.collections_exists(key=key))
+
+        # Delete Collection
+        col.destroy()
+
+        # Test DNE
+        self.assertFalse(ss.collections_exists(key=key))
+
+        # Cleanup
+        ss.destroy()
+
+class SecretTestCase(server_common.BaseTestCase):
 
     def __init__(self, *args, **kwargs):
 
