@@ -90,6 +90,10 @@ class Collection(datatypes.UUIDObject):
         """Initialize Collection"""
 
         # Check Input
+        if not isinstance(srv, StorageServer):
+            msg = "'srv' must be an instance of '{}', ".format(StorageServer)
+            msg += "not '{}'".format(type(srv))
+            raise TypeError(msg)
         if overwrite:
             raise TypeError("Collection does not support overwrite")
 
@@ -113,6 +117,10 @@ class Collection(datatypes.UUIDObject):
         # Register with Server
         if create:
             self.srv._collections.add(self)
+        else:
+            if not self.srv.collections_exists(key=self.key):
+                msg = "Collection not associated with srv"
+                raise TypeError(msg)
 
     def destroy(self):
         """Delete Collection"""
@@ -174,6 +182,10 @@ class Secret(datatypes.UUIDObject):
         """Initialize Secret"""
 
         # Check Input
+        if not isinstance(col, Collection):
+            msg = "'col' must be an instance of '{}', ".format(Collection)
+            msg += "not '{}'".format(type(col))
+            raise TypeError(msg)
         if overwrite:
             raise TypeError("Secret does not support overwrite")
 
@@ -203,6 +215,10 @@ class Secret(datatypes.UUIDObject):
         # Register with Collection
         if create:
             self.col._secrets.add(self)
+        else:
+            if not self.col.secrets_exists(key=self.key):
+                msg = "Secret not associated with col '{}'".format(self.col.key)
+                raise TypeError(msg)
 
     def destroy(self):
         """Delete Secret"""
