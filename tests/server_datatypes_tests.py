@@ -14,7 +14,7 @@
 import uuid
 import unittest
 
-# Server Tests
+# Tests Common
 import server_common
 
 ## tutamen_server ##
@@ -303,14 +303,13 @@ class UUIDObjectTestCase(PersistentObjectBasis):
     def test_init_new(self):
 
         # Test Bad Key Type
-        key = "TestKey"
-        self.assertRaises(TypeError, tutamen_server.datatypes.UUIDObject,
+        key = "NotValidUUID"
+        self.assertRaises(ValueError, tutamen_server.datatypes.UUIDObject,
                           self.srv, key=key)
 
         # Test Create Object
         obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
         self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
-        self.assertIsInstance(obj.key, uuid.UUID)
 
         # Cleanup
         obj.destroy()
@@ -318,14 +317,35 @@ class UUIDObjectTestCase(PersistentObjectBasis):
     def test_init_existing(self):
 
         # Create Object
-        key = tutamen_server.datatypes.UUIDObject(self.srv, create=True).key
+        obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
+        key = obj.key
+        uid = obj.uuid
+
+        # Test Existing (via key)
         obj = tutamen_server.datatypes.UUIDObject(self.srv, key=key, create=True)
         self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
+        self.assertEqual(obj.uuid, uid)
+
+        # Test Existing (via uid)
+        obj = tutamen_server.datatypes.UUIDObject(self.srv, uid=uid, create=True)
+        self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
+        self.assertEqual(obj.key, key)
+        self.assertEqual(obj.uuid, uid)
 
         # Cleanup
         obj.destroy()
 
+    def test_uuid(self):
+
+        # Create Object
+        obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
+
+        # Test UUID
+        self.assertEqual(str(obj.uuid), obj.key)
+
+        # Cleanup
+        obj.destroy()
 
 class IndexTestCase(PersistentObjectBasis):
 

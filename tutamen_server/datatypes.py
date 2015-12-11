@@ -38,7 +38,7 @@ class ObjectDNE(Exception):
             raise TypeError(msg)
 
         # Call Parent
-        msg = "Object '{:s}' does not exist".format(obj.key)
+        msg = "Object '{}' does not exist".format(obj.key)
         super().__init__(msg)
 
 ### Functions ###
@@ -110,7 +110,7 @@ class PersistentObjectServer(object):
             raise TypeError(msg)
 
         # Add Object key
-        self._objindex.add(str(obj.key))
+        self._objindex.add(obj.key)
 
     def _unregister(self, obj):
 
@@ -121,7 +121,7 @@ class PersistentObjectServer(object):
             raise TypeError(msg)
 
         # Discard Object Key
-        self._objindex.discard(str(obj.key))
+        self._objindex.discard(obj.key)
 
     def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
         return dsf.InstanceFactory(self._driver, obj_type,
@@ -129,7 +129,7 @@ class PersistentObjectServer(object):
 
 class PersistentObject(object):
 
-    def __init__(self, srv, key=None, create=False, overwrite=False, prefix="obj"):
+    def __init__(self, srv, key=None, create=False, overwrite=False, prefix=""):
         """Initialize Object"""
 
         #                    create  overwrite  existing
@@ -143,8 +143,16 @@ class PersistentObject(object):
             msg = "'srv' must be of type '{}', ".format(PersistentObjectServer)
             msg += "not '{}'".format(type(srv))
             raise TypeError(msg)
+        if not isinstance(key, str):
+            msg = "'key' must be of type '{}', ".format(str)
+            msg += "not '{}'".format(type(key))
+            raise TypeError(msg)
+        if not isinstance(prefix, str):
+            msg = "'prefix' must be of type '{}', ".format(str)
+            msg += "not '{}'".format(type(prefix))
         if not key:
             msg = "Requires valid key"
+            raise TypeError(msg)
             raise TypeError(msg)
 
         # Call Parent
@@ -225,20 +233,35 @@ class PersistentObject(object):
 
 class UUIDObject(PersistentObject):
 
-    def __init__(self, srv, key=None, **kwargs):
+    def __init__(self, srv, key=None, uid=None, **kwargs):
         """Initialize Object"""
 
         # Check Args
-        if not key:
-            key = uuid.uuid4()
-        else:
-            if not isinstance(key, uuid.UUID):
-                msg = "'key' must be an instance of '{}', ".format(uuid.UUID)
-                msg += "not '{}'".format(type(key))
+        if uid:
+            if not isinstance(uid, uuid.UUID):
+                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
+                msg += "not '{}'".format(type(uid))
                 raise TypeError(msg)
+
+        # Setup key and uid
+        if not key:
+            if not uid:
+                uid = uuid.uuid4()
+                key = str(uid)
+            else:
+                key = str(uid)
+        if not uid:
+            uid = uuid.UUID(key)
 
         # Call Parent
         super().__init__(srv, key=key, **kwargs)
+
+        # Save UUID
+        self._uuid = uid
+
+    @property
+    def uuid(self):
+        return self._uuid
 
 class Index(PersistentObject):
 
@@ -270,7 +293,7 @@ class Index(PersistentObject):
         # Unregister objects
         for obj_key in self.members:
             obj = PersistentObject(self._srv, key=obj_key)
-            obj._metaindex.discard(str(self.key))
+            obj._metaindex.discard(self.key)
 
         # Cleanup backend object
         self._index.rem()
@@ -298,8 +321,8 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Add Object Key and Register Index
-        obj._metaindex.add(str(self.key))
-        self._index.add(str(obj.key))
+        obj._metaindex.add(self.key)
+        self._index.add(obj.key)
 
     def remove(self, obj):
         """Remove Indexed Object to Index if Present"""
@@ -311,5 +334,5 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Remove Object Key and Unregister Index
-        self._index.discard(str(obj.key))
-        obj._metaindex.discard(str(self.key))
+        self._index.discard(obj.key)
+        obj._metaindex.discard(self.key)
