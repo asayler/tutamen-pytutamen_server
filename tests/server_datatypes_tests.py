@@ -319,19 +319,19 @@ class UUIDObjectTestCase(PersistentObjectBasis):
         # Create Object
         obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
         key = obj.key
-        uid = obj.uuid
+        uid = obj.uid
 
         # Test Existing (via key)
         obj = tutamen_server.datatypes.UUIDObject(self.srv, key=key, create=True)
         self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
-        self.assertEqual(obj.uuid, uid)
+        self.assertEqual(obj.uid, uid)
 
         # Test Existing (via uid)
         obj = tutamen_server.datatypes.UUIDObject(self.srv, uid=uid, create=True)
         self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
-        self.assertEqual(obj.uuid, uid)
+        self.assertEqual(obj.uid, uid)
 
         # Cleanup
         obj.destroy()
@@ -342,7 +342,7 @@ class UUIDObjectTestCase(PersistentObjectBasis):
         obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
 
         # Test UUID
-        self.assertEqual(str(obj.uuid), obj.key)
+        self.assertEqual(str(obj.uid), obj.key)
 
         # Cleanup
         obj.destroy()

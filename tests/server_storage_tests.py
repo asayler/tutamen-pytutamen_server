@@ -60,7 +60,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
         # Create Collection
         col = ss.collections_create()
         key = col.key
-        uid = col.uuid
+        uid = col.uid
 
         # Test get (key)
         col = ss.collections_get(key=key)
@@ -123,7 +123,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
         # Create Collection
         col = ss.collections_create()
         key = col.key
-        uid = col.uuid
+        uid = col.uid
 
         # Test Exists (key)
         self.assertTrue(ss.collections_exists(key=key))

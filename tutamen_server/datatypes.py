@@ -257,11 +257,11 @@ class UUIDObject(PersistentObject):
         super().__init__(srv, key=key, **kwargs)
 
         # Save UUID
-        self._uuid = uid
+        self._uid = uid
 
     @property
-    def uuid(self):
-        return self._uuid
+    def uid(self):
+        return self._uid
 
 class Index(PersistentObject):
 
