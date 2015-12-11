@@ -163,31 +163,13 @@ class PersistentObject(object):
         self._key = key
         self._prefix = prefix
 
-        # Setup Metaindex
-        factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        metaindex_key = self._build_key(_METAINDEX_POSTFIX)
-        metaindex = factory.from_raw(metaindex_key)
-        self._metaindex = metaindex
-
-        # Initialize
+        # Check Existence
         if not self.exists():
-            if create:
-                self.__create__()
-            else:
+            if not create:
                 raise ObjectDNE(self)
-        else:
-            if create and overwrite:
-                self.__create__()
 
         # Register with Server
         self.srv._register(self)
-
-    def __create__(self):
-
-        if not self._metaindex.exists():
-            self._metaindex.create(set())
-        else:
-            self._metaindex.set_val(set())
 
     def _build_key(self, postfix):
         return build_key(self.key, prefix=self.prefix, postfix=postfix)
@@ -195,16 +177,8 @@ class PersistentObject(object):
     def destroy(self):
         """Cleanup Object"""
 
-        # Unregister from indexes
-        for idx_key in self.indexes:
-            index = Index(self._srv, key=idx_key)
-            index.remove(self)
-
         # Unregister from server
         self.srv._unregister(self)
-
-        # Cleanup metaindex
-        self._metaindex.rem()
 
     def exists(self):
         return self._srv.exists(self.key)
@@ -223,13 +197,6 @@ class PersistentObject(object):
     def srv(self):
         """Return Object Server (Read-only Property)"""
         return self._srv
-
-    @property
-    def indexes(self):
-        """Return Registered Indexes"""
-
-        # Return registered indexes
-        return set(self._metaindex)
 
 class UUIDObject(PersistentObject):
 
@@ -290,11 +257,6 @@ class Index(PersistentObject):
     def destroy(self):
         """Cleanup Index Object"""
 
-        # Unregister objects
-        for obj_key in self.members:
-            obj = PersistentObject(self._srv, key=obj_key)
-            obj._metaindex.discard(self.key)
-
         # Cleanup backend object
         self._index.rem()
 
@@ -321,7 +283,6 @@ class Index(PersistentObject):
             raise TypeError(msg)
 
         # Add Object Key and Register Index
-        obj._metaindex.add(self.key)
         self._index.add(obj.key)
 
     def remove(self, obj):
@@ -335,4 +296,3 @@ class Index(PersistentObject):
 
         # Remove Object Key and Unregister Index
         self._index.discard(obj.key)
-        obj._metaindex.discard(self.key)
