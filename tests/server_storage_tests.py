@@ -44,12 +44,12 @@ class StorageServerTestCase(server_common.BaseTestCase):
         ss = tutamen_server.storage.StorageServer(self.driver)
 
         # Create Collection
-        c = ss.collections_create()
-        self.assertIsInstance(c, tutamen_server.storage.Collection)
-        self.assertTrue(c.exists())
+        col = ss.collections_create()
+        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertTrue(col.exists())
 
         # Cleanup
-        c.destroy()
+        col.destroy()
         ss.destroy()
 
     def test_collections_get(self):
@@ -58,13 +58,22 @@ class StorageServerTestCase(server_common.BaseTestCase):
         ss = tutamen_server.storage.StorageServer(self.driver)
 
         # Create Collection
-        key = ss.collections_create().key
-        c = ss.collections_get(key=key)
-        self.assertIsInstance(c, tutamen_server.storage.Collection)
-        self.assertTrue(c.exists())
+        col = ss.collections_create()
+        key = col.key
+        uid = col.uuid
+
+        # Test get (key)
+        col = ss.collections_get(key=key)
+        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertTrue(col.exists())
+
+        # Test get (uuid)
+        col = ss.collections_get(uid=uid)
+        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertTrue(col.exists())
 
         # Cleanup
-        c.destroy()
+        col.destroy()
         ss.destroy()
 
     def test_collections_list(self):
@@ -103,16 +112,24 @@ class StorageServerTestCase(server_common.BaseTestCase):
         # Create Server
         ss = tutamen_server.storage.StorageServer(self.driver)
 
-        # Test DNE
+        # Test DNE (key)
+        key = "fakekey"
+        self.assertFalse(ss.collections_exists(key=key))
+
+        # Test DNE (uuid)
         uid = uuid.uuid4()
         self.assertFalse(ss.collections_exists(uid=uid))
 
         # Create Collection
         col = ss.collections_create()
-
-        # Test Exists
         key = col.key
+        uid = col.uuid
+
+        # Test Exists (key)
         self.assertTrue(ss.collections_exists(key=key))
+
+        # Test Exists (uuid)
+        self.assertTrue(ss.collections_exists(uid=uid))
 
         # Delete Collection
         col.destroy()
