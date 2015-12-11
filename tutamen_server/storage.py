@@ -223,11 +223,11 @@ class Secret(datatypes.UUIDObject):
         return self._collection
 
     @property
-    def data(self):
-        """Return Secret Data"""
-        return self._data.get_val()
-
-    @property
     def metadata(self):
         """Return Secret Metadata"""
         return self._metadata.get_val()
+
+    @property
+    def data(self):
+        """Return Secret Data"""
+        return self._data.get_val()
