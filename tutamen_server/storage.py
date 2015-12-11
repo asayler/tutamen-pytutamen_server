@@ -169,7 +169,7 @@ class Collection(datatypes.UUIDObject):
 
 class Secret(datatypes.UUIDObject):
 
-    def __init__(self, collection, create=False, overwrite=False,
+    def __init__(self, col, create=False, overwrite=False,
                  prefix=_PREFIX_SECRET, data="", metadata={}, **kwargs):
         """Initialize Secret"""
 
@@ -178,11 +178,11 @@ class Secret(datatypes.UUIDObject):
             raise TypeError("Secret does not support overwrite")
 
         # Call Parent
-        super().__init__(collection.srv, create=create, overwrite=overwrite,
+        super().__init__(col.srv, create=create, overwrite=overwrite,
                          prefix=prefix, **kwargs)
 
         # Save Collection
-        self._collection = collection
+        self._col = col
 
         # Setup Data
         factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
@@ -202,13 +202,13 @@ class Secret(datatypes.UUIDObject):
 
         # Register with Collection
         if create:
-            self.collection._secrets.add(self)
+            self.col._secrets.add(self)
 
     def destroy(self):
         """Delete Secret"""
 
         # Unregister with Collection
-        self.collection._secrets.remove(self)
+        self.col._secrets.remove(self)
 
         # Cleanup Objects
         self._metadata.rem()
@@ -218,9 +218,9 @@ class Secret(datatypes.UUIDObject):
         super().destroy()
 
     @property
-    def collection(self):
+    def col(self):
         """Return Collection"""
-        return self._collection
+        return self._col
 
     @property
     def metadata(self):

@@ -391,13 +391,13 @@ class SecretTestCase(server_common.BaseTestCase):
         # Cleanup
         sec.destroy()
 
-    def test_collection(self):
+    def test_col(self):
 
         # Create Collection
         sec = tutamen_server.storage.Secret(self.col, create=True)
 
         # Test Metadata
-        self.assertEqual(sec.collection, self.col)
+        self.assertEqual(sec.col, self.col)
 
         # Cleanup
         sec.destroy()
