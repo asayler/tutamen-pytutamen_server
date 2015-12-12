@@ -54,6 +54,12 @@ def build_key(base_key, prefix=None, postfix=None):
 
     return key
 
+def check_isinstance(obj, cls):
+
+    if not isinstance(obj, cls):
+        msg = "Object must be of type '{}', not '{}'".format(cls, type(obj))
+        raise TypeError(msg)
+
 ### Objects ###
 
 class PersistentObjectServer(object):
@@ -104,10 +110,7 @@ class PersistentObjectServer(object):
     def _register(self, obj):
 
         # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
+        check_isinstance(obj, PersistentObject)
 
         # Add Object key
         self._objindex.add(obj.key)
@@ -115,10 +118,7 @@ class PersistentObjectServer(object):
     def _unregister(self, obj):
 
         # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
+        check_isinstance(obj, PersistentObject)
 
         # Discard Object Key
         self._objindex.discard(obj.key)
@@ -139,17 +139,9 @@ class PersistentObject(object):
         # OPEN_EXISTING        N         *         *
 
         # Check Args
-        if not isinstance(srv, PersistentObjectServer):
-            msg = "'srv' must be of type '{}', ".format(PersistentObjectServer)
-            msg += "not '{}'".format(type(srv))
-            raise TypeError(msg)
-        if not isinstance(key, str):
-            msg = "'key' must be of type '{}', ".format(str)
-            msg += "not '{}'".format(type(key))
-            raise TypeError(msg)
-        if not isinstance(prefix, str):
-            msg = "'prefix' must be of type '{}', ".format(str)
-            msg += "not '{}'".format(type(prefix))
+        check_isinstance(srv, PersistentObjectServer)
+        check_isinstance(key, str)
+        check_isinstance(prefix, str)
         if not key:
             msg = "Requires valid key"
             raise TypeError(msg)
@@ -204,11 +196,10 @@ class UUIDObject(PersistentObject):
         """Initialize Object"""
 
         # Check Args
+        if key:
+            check_isinstance(key, str)
         if uid:
-            if not isinstance(uid, uuid.UUID):
-                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
-                msg += "not '{}'".format(type(uid))
-                raise TypeError(msg)
+            check_isinstance(uid, uuid.UUID)
 
         # Setup key and uid
         if not key:

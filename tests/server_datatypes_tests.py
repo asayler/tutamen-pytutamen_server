@@ -48,6 +48,13 @@ class FunctionsTestCase(server_common.BaseTestCase):
         key = tutamen_server.datatypes.build_key(base_key, prefix=prefix, postfix=postfix)
         self.assertEqual(key, (prefix + sep + base_key + sep + postfix))
 
+    def test_check_isinstance(self):
+
+        # Test Fail
+        self.assertRaises(TypeError, tutamen_server.datatypes.check_isinstance, 1, str)
+
+        # Test Pass
+        tutamen_server.datatypes.check_isinstance("test", str)
 
 ### Object Classes ###
 
