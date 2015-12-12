@@ -302,6 +302,56 @@ class UUIDObjectTestCase(PersistentObjectBasis):
         # Cleanup
         obj.destroy()
 
+class UserMetadataObjectTestCase(PersistentObjectBasis):
+
+    def test_init_new(self):
+
+        # Test Bad Metadata Type
+        key = "TestUserMetadataObject"
+        usermetadata = "NotValidMetadataType"
+        self.assertRaises(TypeError, tutamen_server.datatypes.UserMetadataObject,
+                          self.srv, cretae=True, key=key, usermetadata=usermetadata)
+
+        # Test Create Object
+        key = "TestUserMetadataObject"
+        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, create=True, key=key,
+                                                          usermetadata=usermetadata)
+        self.assertIsInstance(obj, tutamen_server.datatypes.UserMetadataObject)
+        self.assertEqual(obj.key, key)
+
+        # Cleanup
+        obj.destroy()
+
+    def test_init_existing(self):
+
+        # Create Object
+        key = "TestUserMetadataObject"
+        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, key=key, create=True)
+
+
+        # Test Existing
+        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, key=key, create=True)
+        self.assertIsInstance(obj, tutamen_server.datatypes.UserMetadataObject)
+        self.assertEqual(obj.key, key)
+
+        # Cleanup
+        obj.destroy()
+
+    def test_usermetadata(self):
+
+        # Create Object
+        key = "TestUserMetadataObject"
+        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, create=True, key=key,
+                                                          usermetadata=usermetadata)
+
+        # Test usermetadata
+        self.assertEqual(obj.usermetadata, usermetadata)
+
+        # Cleanup
+        obj.destroy()
+
 class IndexTestCase(PersistentObjectBasis):
 
     def test_init_create_new(self):

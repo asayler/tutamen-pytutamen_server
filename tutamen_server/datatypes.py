@@ -20,9 +20,10 @@ _SEPERATOR = "_"
 _INDEX_OBJ_TYPE = dso.MutableSet
 _INDEX_KEY_TYPE = dsk.StrKey
 _INDEX_POSTFIX = "index"
-_METAINDEX_POSTFIX = "metaindex"
 _OBJINDEX_POSTFIX = "objindex"
 _OBJINDEX_KEY = "objects"
+
+_USERMETADATA_POSTFIX = "usermetadata"
 
 
 ### Exceptions ###
@@ -220,6 +221,42 @@ class UUIDObject(PersistentObject):
     @property
     def uid(self):
         return self._uid
+
+class UserMetadataObject(PersistentObject):
+
+    def __init__(self, srv, create=False, overwrite=False, usermetadata={}, **kwargs):
+        """Initialize Object"""
+
+        # Check Args
+        check_isinstance(usermetadata, dict)
+        if overwrite:
+            raise TypeError("UserMetadataObject does not support overwrite")
+
+        # Call Parent
+        super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
+
+        # Setup Metadata
+        factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
+        usermetadata_key = self._build_key(_USERMETADATA_POSTFIX)
+        self._usermetadata = factory.from_raw(usermetadata_key)
+        if not self._usermetadata.exists():
+            if create:
+                self._usermetadata.create(usermetadata)
+            else:
+                raise ObjectDNE(self)
+
+    def destroy(self):
+        """Cleanup Object"""
+
+        # Cleanup backend object
+        self._usermetadata.rem()
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def usermetadata(self):
+        return self._usermetadata.get_val()
 
 class Index(PersistentObject):
 
