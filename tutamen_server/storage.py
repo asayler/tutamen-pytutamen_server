@@ -71,10 +71,7 @@ class StorageServer(datatypes.PersistentObjectServer):
         if not uid and not key:
             raise TypeError("Requires either uid or key")
         if uid:
-            if not isinstance(uid, uuid.UUID):
-                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
-                msg += "not '{}'".format(type(uid))
-                raise TypeError(msg)
+            datatypes.check_isinstance(uid, uuid.UUID)
 
         # Convert key
         if not key:
@@ -90,10 +87,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Initialize Collection"""
 
         # Check Input
-        if not isinstance(srv, StorageServer):
-            msg = "'srv' must be an instance of '{}', ".format(StorageServer)
-            msg += "not '{}'".format(type(srv))
-            raise TypeError(msg)
+        datatypes.check_isinstance(srv, StorageServer)
         if overwrite:
             raise TypeError("Collection does not support overwrite")
 
@@ -147,10 +141,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
         if not uid and not key:
             raise TypeError("Requires either uid or key")
         if uid:
-            if not isinstance(uid, uuid.UUID):
-                msg = "'uid' must be an instance of '{}', ".format(uuid.UUID)
-                msg += "not '{}'".format(type(uid))
-                raise TypeError(msg)
+            datatypes.check_isinstance(uid, uuid.UUID)
 
         # Convert key
         if not key:
@@ -167,9 +158,7 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Check Input
         if not isinstance(col, Collection):
-            msg = "'col' must be an instance of '{}', ".format(Collection)
-            msg += "not '{}'".format(type(col))
-            raise TypeError(msg)
+            datatypes.check_isinstance(col, Collection)
         if overwrite:
             raise TypeError("Secret does not support overwrite")
 
