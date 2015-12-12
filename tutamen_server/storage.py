@@ -72,6 +72,8 @@ class StorageServer(datatypes.PersistentObjectServer):
             raise TypeError("Requires either uid or key")
         if uid:
             datatypes.check_isinstance(uid, uuid.UUID)
+        if key:
+            datatypes.check_isinstance(key, str)
 
         # Convert key
         if not key:
@@ -142,6 +144,8 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
             raise TypeError("Requires either uid or key")
         if uid:
             datatypes.check_isinstance(uid, uuid.UUID)
+        if key:
+            datatypes.check_isinstance(key, str)
 
         # Convert key
         if not key:
