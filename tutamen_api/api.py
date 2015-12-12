@@ -14,8 +14,8 @@ import flask.ext.httpauth
 import flask.ext.cors
 
 from . import exceptions
-
-import pcollections.be_redis_atomic
+from tutamen_server import storage
+import pcollections.be_redis_atomic as dso
 
 #import tutamen_server.storage
 
@@ -76,10 +76,9 @@ if not app.testing:
 
 @app.before_request
 def before_request():
-    pass
-    # driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
-    # storage = tutamen_server.storage.StorageServer(driver)
-    # flask.g.srv_storage = storage
+    driver = dso.Driver(db=_REDIS_DB)
+    ss = storage.StorageServer(driver)
+    flask.g.srv_storage = ss
 
 @app.teardown_request
 def teardown_request(exception):
@@ -148,8 +147,8 @@ def post_authorizations():
     app.logger.debug("json_in = '{}'".format(json_in))
     permission = json_in['permission']
     app.logger.debug("permission = '{}'".format(permission))
-    metadata = json_in['metadata']
-    app.logger.debug("metadata = '{}'".format(metadata))
+    usermetadata = json_in['usermetadata']
+    app.logger.debug("usermetadata = '{}'".format(usermetadata))
     # ath =
     # app.logger.debug("ath = '{}'".format(ath))
     json_out = {_KEY_AUTHORIZATIONS: [str(uuid.uuid4())]}
@@ -186,13 +185,15 @@ def get_authorizations_token(auth_uid):
 def post_collections():
 
     app.logger.debug("POST COLLECTIONS")
+
     json_in = flask.request.get_json(force=True)
     app.logger.debug("json_in = '{}'".format(json_in))
-    metadata = json_in['metadata']
-    app.logger.debug("metadata = '{}'".format(metadata))
-    # col =
-    # app.logger.debug("col = '{}'".format(col))
-    json_out = {_KEY_COLLECTIONS: [str(uuid.uuid4())]}
+    usermetadata = json_in.get('usermetadata', {})
+    app.logger.debug("usermetadata = '{}'".format(usermetadata))
+
+    col = ss.collections_create(usermetadata=usermetadata)
+    app.logger.debug("col.key = '{}'".format(col.key))
+    json_out = {_KEY_COLLECTIONS: [col.key]}
     return flask.jsonify(json_out)
 
 @app.route("/{}/<col_uid>/{}/".format(_KEY_COLLECTIONS, _KEY_SECRETS), methods=['POST'])
@@ -201,15 +202,18 @@ def post_collections():
 def post_collections_secrets(col_uid):
 
     app.logger.debug("POST COLLECTIONS SECRETS")
+    col = ss.collections_get(key=col_uid)
+
     json_in = flask.request.get_json(force=True)
     app.logger.debug("json_in = '{}'".format(json_in))
-    data = json_in['data']
+    data = json_in.get('data', "")
     app.logger.debug("data = '{}'".format(data))
-    metadata = json_in['metadata']
-    app.logger.debug("metadata = '{}'".format(metadata))
-    # sec =
-    # app.logger.debug("sec = '{}'".format(sec))
-    json_out = {_KEY_SECRETS: [str(uuid.uuid4())]}
+    usermetadata = json_in.get('metadata', {})
+    app.logger.debug("usermetadata = '{}'".format(usermetadata))
+
+    sec = col.secrets_create(data=data, usermetadata=usermetadata)
+    app.logger.debug("sec.key = '{}'".format(sec.key))
+    json_out = {_KEY_SECRETS: [sec.key]}
     return flask.jsonify(json_out)
 
 @app.route("/{}/<col_uid>/{}/<sec_uid>/versions/latest/".format(_KEY_COLLECTIONS, _KEY_SECRETS),
@@ -219,11 +223,12 @@ def post_collections_secrets(col_uid):
 def get_collections_secret_versions_latest(col_uid, sec_uid):
 
     app.logger.debug("GET COLLECTIONS SECRET VERSIONS LATEST")
-    # sec =
-    # app.logger.debug("sec = '{}'".format(sec))
-    data = "TESTSECRET"
-    metadata = {}
-    json_out = {'data': data}
+    col = ss.collections_get(key=col_uid)
+    app.logger.debug("col.key = '{}'".format(col.key))
+    sec = col.secrets_get(key=sec_uid)
+    app.logger.debug("sec.key = '{}'".format(sec.key))
+
+    json_out = {'data': sec.data, 'usermetadata': sec.usermetadata}
     return flask.jsonify(json_out)
 
 
