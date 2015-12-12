@@ -187,6 +187,8 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
         if not self._data.exists():
             if create:
                 self._data.create(data)
+            else:
+                raise ObjectDNE(self)
 
         # Register with Collection
         if create:
