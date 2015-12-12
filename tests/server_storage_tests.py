@@ -216,14 +216,14 @@ class CollectionTestCase(server_common.BaseTestCase):
         self.assertFalse(self.ss.collections_exists(key=col.key))
         self.assertNotIn(col.key, self.ss.collections_list())
 
-    def test_metadata(self):
+    def test_usermetadata(self):
 
         # Create Collection
-        metadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        col = tutamen_server.storage.Collection(self.ss, create=True, metadata=metadata)
+        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        col = tutamen_server.storage.Collection(self.ss, create=True, usermetadata=usermetadata)
 
         # Test Metadata
-        self.assertEqual(col.metadata, metadata)
+        self.assertEqual(col.usermetadata, usermetadata)
 
         # Cleanup
         col.destroy()
@@ -402,14 +402,14 @@ class SecretTestCase(server_common.BaseTestCase):
         # Cleanup
         sec.destroy()
 
-    def test_metadata(self):
+    def test_usermetadata(self):
 
         # Create Collection
-        metadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        sec = tutamen_server.storage.Secret(self.col, create=True, metadata=metadata)
+        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        sec = tutamen_server.storage.Secret(self.col, create=True, usermetadata=usermetadata)
 
         # Test Metadata
-        self.assertEqual(sec.metadata, metadata)
+        self.assertEqual(sec.usermetadata, usermetadata)
 
         # Cleanup
         sec.destroy()

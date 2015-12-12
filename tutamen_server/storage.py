@@ -50,8 +50,8 @@ class StorageServer(datatypes.PersistentObjectServer):
         # Call Parent
         super().destroy()
 
-    def collections_create(self, metadata={}):
-        return Collection(self, create=True, metadata=metadata)
+    def collections_create(self, usermetadata={}):
+        return Collection(self, create=True, usermetadata=usermetadata)
 
     def collections_get(self, uid=None, key=None):
 
@@ -83,10 +83,10 @@ class StorageServer(datatypes.PersistentObjectServer):
         # Check membership
         return self._collections.is_member(key)
 
-class Collection(datatypes.UUIDObject):
+class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def __init__(self, srv, create=False, overwrite=False,
-                 prefix=_PREFIX_COLLECTION, metadata={}, **kwargs):
+                 prefix=_PREFIX_COLLECTION, **kwargs):
         """Initialize Collection"""
 
         # Check Input
@@ -100,14 +100,6 @@ class Collection(datatypes.UUIDObject):
         # Call Parent
         super().__init__(srv, create=create, overwrite=overwrite,
                          prefix=prefix, **kwargs)
-
-        # Setup Metadata
-        factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
-        metadata_key = self._build_key(_POSTFIX_METADATA)
-        self._metadata = factory.from_raw(metadata_key)
-        if not self._metadata.exists():
-            if create:
-                self._metadata.create(metadata)
 
         # Setup Secret Index
         key = self.key + _INDEX_KEY_SECRETS
@@ -131,19 +123,11 @@ class Collection(datatypes.UUIDObject):
         # Cleanup Indexes
         self._secrets.destroy()
 
-        # Cleanup Objects
-        self._metadata.rem()
-
         # Call Parent
         super().destroy()
 
-    @property
-    def metadata(self):
-        """Return Collection Metadata"""
-        return self._metadata.get_val()
-
-    def secrets_create(self, data="", metadata={}):
-        return Secret(self, create=True, data=data, metadata=metadata)
+    def secrets_create(self, data="", usermetadata={}):
+        return Secret(self, create=True, data=data, usermetadata=usermetadata)
 
     def secrets_get(self, uid=None, key=None):
 
@@ -175,10 +159,10 @@ class Collection(datatypes.UUIDObject):
         # Check membership
         return self._secrets.is_member(key)
 
-class Secret(datatypes.UUIDObject):
+class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def __init__(self, col, create=False, overwrite=False,
-                 prefix=_PREFIX_SECRET, data="", metadata={}, **kwargs):
+                 prefix=_PREFIX_SECRET, data="", **kwargs):
         """Initialize Secret"""
 
         # Check Input
@@ -204,14 +188,6 @@ class Secret(datatypes.UUIDObject):
             if create:
                 self._data.create(data)
 
-        # Setup Metadata
-        factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
-        metadata_key = self._build_key(_POSTFIX_METADATA)
-        self._metadata = factory.from_raw(metadata_key)
-        if not self._metadata.exists():
-            if create:
-                self._metadata.create(metadata)
-
         # Register with Collection
         if create:
             self.col._secrets.add(self)
@@ -227,7 +203,6 @@ class Secret(datatypes.UUIDObject):
         self.col._secrets.remove(self)
 
         # Cleanup Objects
-        self._metadata.rem()
         self._data.rem()
 
         # Call Parent
@@ -237,11 +212,6 @@ class Secret(datatypes.UUIDObject):
     def col(self):
         """Return Collection"""
         return self._col
-
-    @property
-    def metadata(self):
-        """Return Secret Metadata"""
-        return self._metadata.get_val()
 
     @property
     def data(self):
