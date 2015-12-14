@@ -25,7 +25,6 @@ _PREFIX_COLLECTION = "collection"
 _PREFIX_SECRET = "secret"
 
 _POSTFIX_DATA = "data"
-_POSTFIX_METADATA = "metadata"
 
 
 ### Objects ###
@@ -163,6 +162,8 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Check Input
         if not isinstance(col, Collection):
             datatypes.check_isinstance(col, Collection)
+        if create:
+            pass
         if overwrite:
             raise TypeError("Secret does not support overwrite")
 
