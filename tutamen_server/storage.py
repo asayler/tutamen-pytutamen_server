@@ -176,7 +176,7 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Setup Data
         factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        data_key = self._build_key(_POSTFIX_DATA)
+        data_key = self._build_subkey(_POSTFIX_DATA)
         self._data = factory.from_raw(data_key)
         if not self._data.exists():
             if create:

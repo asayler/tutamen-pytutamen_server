@@ -79,7 +79,7 @@ class PersistentObjectServer(object):
 
         # Setup Object Index
         factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        objidx_key = self._build_key(_OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX)
+        objidx_key = self._build_subkey(_OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX)
         objidx = factory.from_raw(objidx_key)
         if not objidx.exists():
             objidx.create(set())
@@ -90,7 +90,7 @@ class PersistentObjectServer(object):
         # Cleanup Object Index
         self._objindex.rem()
 
-    def _build_key(self, base_key, postfix=None):
+    def _build_subkey(self, base_key, postfix=None):
         return build_key(base_key, prefix=self.prefix, postfix=postfix)
 
     @property
@@ -164,7 +164,7 @@ class PersistentObject(object):
         # Register with Server
         self.srv._register(self)
 
-    def _build_key(self, postfix):
+    def _build_subkey(self, postfix):
         return build_key(self.key, prefix=self.prefix, postfix=postfix)
 
     def destroy(self):
@@ -237,7 +237,7 @@ class UserMetadataObject(PersistentObject):
 
         # Setup Metadata
         factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
-        usermetadata_key = self._build_key(_USERMETADATA_POSTFIX)
+        usermetadata_key = self._build_subkey(_USERMETADATA_POSTFIX)
         self._usermetadata = factory.from_raw(usermetadata_key)
         if not self._usermetadata.exists():
             if create:
@@ -268,7 +268,7 @@ class Index(PersistentObject):
 
         # Setup Index
         factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = self._build_key(_INDEX_POSTFIX)
+        index_key = self._build_subkey(_INDEX_POSTFIX)
         index = factory.from_raw(index_key)
         if not index.exists():
             if create:
