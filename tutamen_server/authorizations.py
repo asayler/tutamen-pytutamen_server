@@ -102,7 +102,11 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Check Input
         datatypes.check_isinstance(srv, AuthorizationServer)
         if create:
-            pass
+            datatypes.check_isinstance(clientuid, uuid.UUID)
+            datatypes.check_isinstance(expiration, float)
+            datatypes.check_isinstance(objperm, str)
+            datatypes.check_isinstance(objtype, str)
+            datatypes.check_isinstance(objuid, uuid.UUID)
         if overwrite:
             raise TypeError("Authorization does not support overwrite")
 
@@ -111,54 +115,18 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
                          prefix=prefix, **kwargs)
 
         # Setup Status and Token
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_CLIENTUID)
-        self._clientuid = factory.from_raw(key)
-        if not self._clientuid.exists():
-            if create:
-                self._clientuid.create(client)
-            else:
-                raise ObjectDNE(self)
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_EXPIRATION)
-        self._expiration = factory.from_raw(key)
-        if not self._expiration.exists():
-            if create:
-                self._expiration.create(expiration)
-            else:
-                raise ObjectDNE(self)
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_OBJPERM)
-        self._objperm = factory.from_raw(key)
-        if not self._objperm.exists():
-            if create:
-                self._objperm.create(permission)
-            else:
-                raise ObjectDNE(self)
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_OBJTYPE)
-        self._objtype = factory.from_raw(key)
-        if not self._objtype.exists():
-            if create:
-                self._objtype.create(objtype)
-            else:
-                raise ObjectDNE(self)
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_OBJUID)
-        self._objuid = factory.from_raw(key)
-        if not self._objuid.exists():
-            if create:
-                self._objuid.create(objuid)
-            else:
-                raise ObjectDNE(self)
-        factory = self.srv.make_factory(dso.MutableString, key_type=dsk.StrKey)
-        key = self._build_key(_POSTFIX_STATUS)
-        self._status = factory.from_raw(key)
-        if not self._status.exists():
-            if create:
-                self._status.create(_NEW_STATUS)
-            else:
-                raise ObjectDNE(self)
+        self._clientuid = self._build_subobj(dso.String, _POSTFIX_CLIENTUID,
+                                             create=create, value=str(clientuid))
+        self._expiration = self._build_subobj(dso.String, _POSTFIX_EXPIRATION,
+                                              create=create, value=str(expiration))
+        self._objperm = self._build_subobj(dso.String, _POSTFIX_OBJPERM,
+                                           create=create, value=objperm)
+        self._objtype = self._build_subobj(dso.String, _POSTFIX_OBJTYPE,
+                                           create=create, value=objtype)
+        self._objuid = self._build_subobj(dso.String, _POSTFIX_OBJUID,
+                                          create=create, value=str(objuid))
+        self._status = self._build_subobj(dso.MutableString, _POSTFIX_STATUS,
+                                          create=create, value=_NEW_STATUS)
 
         # Register with Server
         if create:
@@ -188,29 +156,29 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
     @property
     def clientuid(self):
         """Return Client UID"""
-        return self._clientuid
+        return uuid.UUID(self._clientuid.get_val())
 
     @property
     def expiration(self):
         """Return Expiration"""
-        return self._expiration
+        return float(self._expiration.get_val())
 
     @property
     def objperm(self):
         """Return Object Permission"""
-        return self._objperm
+        return self._objperm.get_val()
 
     @property
     def objtype(self):
         """Return Object Type"""
-        return self._objtype
+        return self._objtype.get_val()
 
     @property
     def objuid(self):
         """Return Object UID"""
-        return self._objuid
+        return uuid.UUID(self._objuid.get_val())
 
     @property
     def status(self):
         """Return Status"""
-        return self._status
+        return self._status.get_val()
