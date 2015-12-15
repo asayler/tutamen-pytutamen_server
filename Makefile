@@ -43,6 +43,7 @@ lint:
 test:
 	$(EXPORT_PATH) && $(PYTHON) $(TEST_DIR)/server_datatypes_tests.py -v
 	$(EXPORT_PATH) && $(PYTHON) $(TEST_DIR)/server_storage_tests.py -v
+	$(EXPORT_PATH) && $(PYTHON) $(TEST_DIR)/server_accesscontrol_tests.py -v
 
 clean:
 	$(RM) *~
