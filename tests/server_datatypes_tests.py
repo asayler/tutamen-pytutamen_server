@@ -5,7 +5,7 @@
 # Andy Sayler
 # 2015
 # Tutamen Server Tests
-# Datatypes tests
+# Datatypes Tests
 
 
 ### Imports ###
