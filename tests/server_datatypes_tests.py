@@ -377,18 +377,6 @@ class IndexTestCase(PersistentObjectBasis):
         # Cleanup
         index.destroy()
 
-    def test_init_create_overwrite(self):
-
-        # Create Index
-        key = "test_index"
-        tutamen_server.datatypes.Index(self.srv, key=key, create=True)
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True, overwrite=True)
-        self.assertIsInstance(index, tutamen_server.datatypes.Index)
-        self.assertEqual(index.key, key)
-
-        # Cleanup
-        index.destroy()
-
     def test_init_existing(self):
 
         # Create Index

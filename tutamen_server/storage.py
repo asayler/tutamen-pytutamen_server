@@ -175,14 +175,8 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
         self._col = col
 
         # Setup Data
-        factory = self.srv.make_factory(dso.String, key_type=dsk.StrKey)
-        data_key = self._build_subkey(_POSTFIX_DATA)
-        self._data = factory.from_raw(data_key)
-        if not self._data.exists():
-            if create:
-                self._data.create(data)
-            else:
-                raise ObjectDNE(self)
+        self._data = self._build_subobj(dso.String, _POSTFIX_DATA,
+                                        create=create, value=data)
 
         # Register with Collection
         if create:

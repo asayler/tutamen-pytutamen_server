@@ -17,9 +17,9 @@ from pcollections import keys as dsk
 ### Constants ###
 
 _SEPERATOR = "_"
-_INDEX_OBJ_TYPE = dso.MutableSet
-_INDEX_KEY_TYPE = dsk.StrKey
+
 _INDEX_POSTFIX = "index"
+
 _OBJINDEX_POSTFIX = "objindex"
 _OBJINDEX_KEY = "objects"
 
@@ -78,12 +78,9 @@ class PersistentObjectServer(object):
         self._prefix = prefix
 
         # Setup Object Index
-        factory = self.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        objidx_key = self._build_subkey(_OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX)
-        objidx = factory.from_raw(objidx_key)
-        if not objidx.exists():
-            objidx.create(set())
-        self._objindex = objidx
+        self._objindex = self._build_subobj(dso.MutableSet,
+                                            _OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX,
+                                            create=True, value=set())
 
     def destroy(self):
 
@@ -92,6 +89,20 @@ class PersistentObjectServer(object):
 
     def _build_subkey(self, base_key, postfix=None):
         return build_key(base_key, prefix=self.prefix, postfix=postfix)
+
+    def _build_subobj(self, obj_type, base_key, postfix=None, create=False, value=None):
+
+        factory = self.make_factory(obj_type)
+        subkey = self._build_subkey(base_key, postfix=postfix)
+        obj = factory.from_raw(subkey)
+
+        if not obj.exists():
+            if create:
+                obj.create(value)
+            else:
+                raise ObjectDNE(self)
+
+        return obj
 
     @property
     def driver(self):
@@ -167,6 +178,20 @@ class PersistentObject(object):
     def _build_subkey(self, postfix):
         return build_key(self.key, prefix=self.prefix, postfix=postfix)
 
+    def _build_subobj(self, obj_type, postfix, create=False, value=None):
+
+        factory = self.srv.make_factory(obj_type)
+        subkey = self._build_subkey(postfix)
+        obj = factory.from_raw(subkey)
+
+        if not obj.exists():
+            if create:
+                obj.create(value)
+            else:
+                raise ObjectDNE(self)
+
+        return obj
+
     def destroy(self):
         """Cleanup Object"""
 
@@ -236,14 +261,8 @@ class UserMetadataObject(PersistentObject):
         super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
 
         # Setup Metadata
-        factory = self.srv.make_factory(dso.MutableDictionary, key_type=dsk.StrKey)
-        usermetadata_key = self._build_subkey(_USERMETADATA_POSTFIX)
-        self._usermetadata = factory.from_raw(usermetadata_key)
-        if not self._usermetadata.exists():
-            if create:
-                self._usermetadata.create(usermetadata)
-            else:
-                raise ObjectDNE(self)
+        self._usermetadata = self._build_subobj(dso.MutableDictionary, _USERMETADATA_POSTFIX,
+                                                create=create, value=usermetadata)
 
     def destroy(self):
         """Cleanup Object"""
@@ -263,24 +282,16 @@ class Index(PersistentObject):
     def __init__(self, srv, create=False, overwrite=False, **kwargs):
         """Initialize Index Object"""
 
+        # Check Args
+        if overwrite:
+            raise TypeError("Index does not support overwrite")
+
         # Call Parent
         super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
 
         # Setup Index
-        factory = self.srv.make_factory(_INDEX_OBJ_TYPE, key_type=_INDEX_KEY_TYPE)
-        index_key = self._build_subkey(_INDEX_POSTFIX)
-        index = factory.from_raw(index_key)
-        if not index.exists():
-            if create:
-                index.create(set())
-            else:
-                raise ObjectDNE(self)
-        else:
-            if create and overwrite:
-                index.set_val(set())
-
-        # Save Attrs
-        self._index = index
+        self._index = self._build_subobj(dso.MutableSet, _INDEX_POSTFIX,
+                                         create=create, value=set())
 
     def destroy(self):
         """Cleanup Index Object"""
