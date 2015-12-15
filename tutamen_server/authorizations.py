@@ -18,7 +18,7 @@ from . import datatypes
 
 _INDEX_KEY_AUTHORIZATIONS = "authorizations"
 
-_PREFIX_AUTHORIZATIONSERVER = "authorizationsrv"
+_PREFIX_ACCESSCONTROLSERVER = "accesscontrolsrv"
 
 _PREFIX_AUTHORIZATION = "authorization"
 
@@ -34,9 +34,9 @@ _NEW_STATUS = "pending"
 
 ### Objects ###
 
-class AuthorizationServer(datatypes.PersistentObjectServer):
+class AccessControlServer(datatypes.PersistentObjectServer):
 
-    def __init__(self, driver, prefix=_PREFIX_AUTHORIZATIONSERVER):
+    def __init__(self, driver, prefix=_PREFIX_ACCESSCONTROLSERVER):
 
         # Call Parent
         super().__init__(driver, prefix=prefix)
