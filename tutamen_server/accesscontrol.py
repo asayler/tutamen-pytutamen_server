@@ -100,7 +100,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Initialize Authorization"""
 
         # Check Input
-        datatypes.check_isinstance(srv, AuthorizationServer)
+        datatypes.check_isinstance(srv, AccessControlServer)
         if create:
             datatypes.check_isinstance(clientuid, uuid.UUID)
             datatypes.check_isinstance(expiration, float)
