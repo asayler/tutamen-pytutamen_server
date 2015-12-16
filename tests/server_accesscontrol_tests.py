@@ -11,6 +11,7 @@
 ### Imports ###
 
 ## stdlib ##
+import functools
 import time
 import uuid
 import unittest
@@ -40,26 +41,115 @@ class AccessControlTestCase(server_common.BaseTestCase):
         return {'clientuid': clientuid, 'expiration': expiration,
                 'objperm': objperm, 'objtype': objtype, 'objuid': objuid}
 
-    def _create_authorization_via_acs(self, acs, **kwargs_user):
+    def _create_authorization(self, acs, direct=False, **kwargs_user):
 
         kwargs = self._get_authorization_kwargs()
         kwargs.update(kwargs_user)
-        auth = acs.authorizations_create(**kwargs)
-        return auth
+        if direct:
+            authorization = accesscontrol.Authorization(acs, create=True, **kwargs)
+        else:
+            authorization = acs.authorizations_create(**kwargs)
+        return authorization
 
-    def _create_authorization(self, acs, **kwargs_user):
+class ObjectsHelpers(object):
 
-        kwargs = self._get_authorization_kwargs()
-        kwargs.update(kwargs_user)
-        auth = accesscontrol.Authorization(acs, create=True, **kwargs)
-        return auth
+    def helper_test_obj_create(self, srv, objtype, create_obj):
 
-class AccessControlServerTestCase(AccessControlTestCase):
+        # Create Object
+        obj = create_obj(srv)
+        self.assertIsInstance(obj, objtype)
+        self.assertTrue(obj.exists())
+
+        # Cleanup
+        obj.destroy()
+
+    def helper_test_obj_existing(self, srv, objtype, create_obj, get_obj):
+
+        # Create Object
+        obj = create_obj(srv)
+        key = obj.key
+        uid = obj.uid
+
+        # Test get (key)
+        obj = get_obj(key=key)
+        self.assertIsInstance(obj, objtype)
+        self.assertTrue(obj.exists())
+        self.assertEqual(obj.key, key)
+        self.assertEqual(obj.uid, uid)
+
+        # Test get (uuid)
+        obj = get_obj(uid=uid)
+        self.assertIsInstance(obj, objtype)
+        self.assertTrue(obj.exists())
+        self.assertEqual(obj.key, key)
+        self.assertEqual(obj.uid, uid)
+
+        # Cleanup
+        obj.destroy()
+
+    def helper_test_objects_list(self, srv, objtype, create_objs, list_objs):
+
+        # List Objects (Empty)
+        keys = list_objs()
+        self.assertEqual(len(keys), 0)
+
+        # Create Objects
+        objs = []
+        for i in range(10):
+            objs.append(create_objs(srv))
+
+        # List Objects (Full)
+        keys = list_objs()
+        self.assertEqual(len(keys), len(objs))
+        for obj in objs:
+            self.assertTrue(obj.key in keys)
+
+        # Delete Objects
+        for obj in objs:
+            obj.destroy()
+
+        # List Objects (Empty)
+        keys = list_objs()
+        self.assertEqual(len(keys), 0)
+
+    def helper_test_objects_exists(self, srv, objtype, create_objs, exists_objs):
+
+        # Test DNE (key)
+        key = "fakekey"
+        self.assertFalse(exists_objs(key=key))
+
+        # Test DNE (uuid)
+        uid = uuid.uuid4()
+        self.assertFalse(exists_objs(uid=uid))
+
+        # Create Object
+        obj = create_objs(srv)
+        key = obj.key
+        uid = obj.uid
+
+        # Test Exists (key)
+        self.assertTrue(exists_objs(key=key))
+
+        # Test Exists (uuid)
+        self.assertTrue(exists_objs(uid=uid))
+
+        # Delete Object
+        obj.destroy()
+
+        # Test DNE (key)
+        self.assertFalse(exists_objs(key=key))
+
+        # Test DNE (uuid)
+        self.assertFalse(exists_objs(uid=uid))
+
+class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def __init__(self, *args, **kwargs):
 
         # Call Parent
         super().__init__(*args, **kwargs)
+
+    # Core Tests #
 
     def test_init_and_destroy(self):
 
@@ -70,18 +160,19 @@ class AccessControlServerTestCase(AccessControlTestCase):
         # Cleanup
         acs.destroy()
 
+    # Authorization Tests #
+
     def test_authorizations_create(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
-        # Create Authorization
-        auth = self._create_authorization_via_acs(acs)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
+        # Test Create
+        create_obj = functools.partial(self._create_authorization, direct=False)
+        self.helper_test_obj_create(acs, accesscontrol.Authorization,
+                                    create_obj)
 
         # Cleanup
-        auth.destroy()
         acs.destroy()
 
     def test_authorizations_get(self):
@@ -89,27 +180,13 @@ class AccessControlServerTestCase(AccessControlTestCase):
         # Create Server
         acs = self._create_accesscontrolserver()
 
-        # Create Authorization
-        auth = self._create_authorization_via_acs(acs)
-        key = auth.key
-        uid = auth.uid
-
-        # Test get (key)
-        auth = acs.authorizations_get(key=key)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
-        self.assertEqual(auth.key, key)
-        self.assertEqual(auth.uid, uid)
-
-        # Test get (uuid)
-        auth = acs.authorizations_get(uid=uid)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
-        self.assertEqual(auth.key, key)
-        self.assertEqual(auth.uid, uid)
+        # Test Get
+        create_obj = functools.partial(self._create_authorization, direct=False)
+        get_obj = functools.partial(acs.authorizations_get)
+        self.helper_test_obj_existing(acs, accesscontrol.Authorization,
+                                      create_obj, get_obj)
 
         # Cleanup
-        auth.destroy()
         acs.destroy()
 
     def test_authorizations_list(self):
@@ -117,28 +194,11 @@ class AccessControlServerTestCase(AccessControlTestCase):
         # Create Server
         acs = self._create_accesscontrolserver()
 
-        # List Authorizations (Empty)
-        keys = acs.authorizations_list()
-        self.assertEqual(len(keys), 0)
-
-        # Create Authorization
-        auths = []
-        for i in range(10):
-            auths.append(self._create_authorization_via_acs(acs))
-
-        # List Authorizations (Full)
-        keys = acs.authorizations_list()
-        self.assertEqual(len(keys), len(auths))
-        for auth in auths:
-            self.assertTrue(auth.key in keys)
-
-        # Delete Authorizations
-        for auth in auths:
-            auth.destroy()
-
-        # List Authorizations (Empty)
-        keys = acs.authorizations_list()
-        self.assertEqual(len(keys), 0)
+        # Test List
+        create_obj = functools.partial(self._create_authorization, direct=False)
+        list_objs = functools.partial(acs.authorizations_list)
+        self.helper_test_objects_list(acs, accesscontrol.Authorization,
+                                      create_obj, list_objs)
 
         # Cleanup
         acs.destroy()
@@ -148,38 +208,37 @@ class AccessControlServerTestCase(AccessControlTestCase):
         # Create Server
         acs = self._create_accesscontrolserver()
 
-        # Test DNE (key)
-        key = "fakekey"
-        self.assertFalse(acs.authorizations_exists(key=key))
-
-        # Test DNE (uuid)
-        uid = uuid.uuid4()
-        self.assertFalse(acs.authorizations_exists(uid=uid))
-
-        # Create Authorization
-        auth = self._create_authorization_via_acs(acs)
-        key = auth.key
-        uid = auth.uid
-
-        # Test Exists (key)
-        self.assertTrue(acs.authorizations_exists(key=key))
-
-        # Test Exists (uuid)
-        self.assertTrue(acs.authorizations_exists(uid=uid))
-
-        # Delete Authorization
-        auth.destroy()
-
-        # Test DNE (key)
-        self.assertFalse(acs.authorizations_exists(key=key))
-
-        # Test DNE (uuid)
-        self.assertFalse(acs.authorizations_exists(uid=uid))
+        # Test Exists
+        create_obj = functools.partial(self._create_authorization, direct=False)
+        exists_obj = functools.partial(acs.authorizations_exists)
+        self.helper_test_objects_exists(acs, accesscontrol.Authorization,
+                                        create_obj, exists_obj)
 
         # Cleanup
         acs.destroy()
 
-class AuthorizationTestCase(AccessControlTestCase):
+
+
+
+        # Cleanup
+        acs.destroy()
+
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+
+
+
+
+
+
+
+
+        # Cleanup
+        acs.destroy()
+
+class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def setUp(self):
 
@@ -199,43 +258,22 @@ class AuthorizationTestCase(AccessControlTestCase):
 
     def test_init_create(self):
 
-        # Test Create
-        auth = self._create_authorization(self.acs)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
-
-        # Cleanup
-        auth.destroy()
+        create_obj = functools.partial(self._create_authorization, direct=True)
+        self.helper_test_obj_create(self.acs, accesscontrol.Authorization,
+                                    create_obj)
 
     def test_init_existing(self):
 
-        # Create Authorization
-        auth = self._create_authorization(self.acs)
-        key = auth.key
-        uid = auth.uid
-
-        # Test get (key)
-        auth = accesscontrol.Authorization(self.acs, create=False, key=key)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
-        self.assertEqual(auth.key, key)
-        self.assertEqual(auth.uid, uid)
-
-        # Test get (uuid)
-        auth = accesscontrol.Authorization(self.acs, create=False, uid=uid)
-        self.assertIsInstance(auth, accesscontrol.Authorization)
-        self.assertTrue(auth.exists())
-        self.assertEqual(auth.key, key)
-        self.assertEqual(auth.uid, uid)
-
-        # Cleanup
-        auth.destroy()
+        create_obj = functools.partial(self._create_authorization, direct=True)
+        get_obj = functools.partial(accesscontrol.Authorization, self.acs, create=False)
+        self.helper_test_obj_existing(self.acs, accesscontrol.Authorization,
+                                      create_obj, get_obj)
 
     def test_clientuid(self):
 
         # Create Authorization
         clientuid = uuid.uuid4()
-        auth = self._create_authorization(self.acs, clientuid=clientuid)
+        auth = self._create_authorization(self.acs, direct=True, clientuid=clientuid)
 
         # Test Client UID
         self.assertEqual(auth.clientuid, clientuid)
@@ -247,7 +285,7 @@ class AuthorizationTestCase(AccessControlTestCase):
 
         # Create Authorization
         expiration = time.time()
-        auth = self._create_authorization(self.acs, expiration=expiration)
+        auth = self._create_authorization(self.acs, direct=True, expiration=expiration)
 
         # Test Expriation
         self.assertEqual(auth.expiration, expiration)
@@ -259,7 +297,7 @@ class AuthorizationTestCase(AccessControlTestCase):
 
         # Create Authorization
         objperm = 'TESTPERM2'
-        auth = self._create_authorization(self.acs, objperm=objperm)
+        auth = self._create_authorization(self.acs, direct=True, objperm=objperm)
 
         # Test Expriation
         self.assertEqual(auth.objperm, objperm)
@@ -271,7 +309,7 @@ class AuthorizationTestCase(AccessControlTestCase):
 
         # Create Authorization
         objtype = 'TESTOBJ'
-        auth = self._create_authorization(self.acs, objtype=objtype)
+        auth = self._create_authorization(self.acs, direct=True, objtype=objtype)
 
         # Test Expriation
         self.assertEqual(auth.objtype, objtype)
@@ -283,7 +321,7 @@ class AuthorizationTestCase(AccessControlTestCase):
 
         # Create Authorization
         objuid = uuid.uuid4()
-        auth = self._create_authorization(self.acs, objuid=objuid)
+        auth = self._create_authorization(self.acs, direct=True, objuid=objuid)
 
         # Test Expriation
         self.assertEqual(auth.objuid, objuid)
@@ -294,9 +332,9 @@ class AuthorizationTestCase(AccessControlTestCase):
     def test_status(self):
 
         # Create Authorization
-        auth = self._create_authorization(self.acs)
+        auth = self._create_authorization(self.acs, direct=True)
 
-        # Test Expriation
+        # Test Status
         self.assertEqual(auth.status, accesscontrol._NEW_STATUS)
 
         # Cleanup
