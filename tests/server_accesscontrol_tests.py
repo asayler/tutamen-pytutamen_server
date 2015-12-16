@@ -41,6 +41,11 @@ class AccessControlTestCase(server_common.BaseTestCase):
         return {'clientuid': clientuid, 'expiration': expiration,
                 'objperm': objperm, 'objtype': objtype, 'objuid': objuid}
 
+    def _get_authenticator_kwargs(self):
+
+        module = 'TESTMOD'
+        return {'module': module}
+
     def _create_authorization(self, acs, direct=False, **kwargs_user):
 
         kwargs = self._get_authorization_kwargs()
@@ -50,6 +55,16 @@ class AccessControlTestCase(server_common.BaseTestCase):
         else:
             authorization = acs.authorizations_create(**kwargs)
         return authorization
+
+    def _create_authenticator(self, acs, direct=False, **kwargs_user):
+
+        kwargs = self._get_authenticator_kwargs()
+        kwargs.update(kwargs_user)
+        if direct:
+            authenticator = accesscontrol.Authenticator(acs, create=True, **kwargs)
+        else:
+            authenticator = acs.authenticators_create(**kwargs)
+        return authenticator
 
 class ObjectsHelpers(object):
 
@@ -217,23 +232,59 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
+    # Authenticator Tests #
 
-
-
-        # Cleanup
-        acs.destroy()
-
+    def test_authenticators_create(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
+        # Test Create
+        create_obj = functools.partial(self._create_authenticator, direct=False)
+        self.helper_test_obj_create(acs, accesscontrol.Authenticator,
+                                    create_obj)
 
+        # Cleanup
+        acs.destroy()
 
+    def test_authenticators_get(self):
 
+        # Create Server
+        acs = self._create_accesscontrolserver()
 
+        # Test Get
+        create_obj = functools.partial(self._create_authenticator, direct=False)
+        get_obj = functools.partial(acs.authenticators_get)
+        self.helper_test_obj_existing(acs, accesscontrol.Authenticator,
+                                      create_obj, get_obj)
 
+        # Cleanup
+        acs.destroy()
 
+    def test_authenticators_list(self):
 
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test List
+        create_obj = functools.partial(self._create_authenticator, direct=False)
+        list_objs = functools.partial(acs.authenticators_list)
+        self.helper_test_objects_list(acs, accesscontrol.Authenticator,
+                                      create_obj, list_objs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_authenticators_exists(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test Exists
+        create_obj = functools.partial(self._create_authenticator, direct=False)
+        exists_obj = functools.partial(acs.authenticators_exists)
+        self.helper_test_objects_exists(acs, accesscontrol.Authenticator,
+                                        create_obj, exists_obj)
 
         # Cleanup
         acs.destroy()
@@ -336,6 +387,49 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
         # Test Status
         self.assertEqual(auth.status, accesscontrol._NEW_STATUS)
+
+        # Cleanup
+        auth.destroy()
+
+class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.acs = self._create_accesscontrolserver()
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.acs.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_create(self):
+
+        create_obj = functools.partial(self._create_authenticator, direct=True)
+        self.helper_test_obj_create(self.acs, accesscontrol.Authenticator,
+                                    create_obj)
+
+    def test_init_existing(self):
+
+        create_obj = functools.partial(self._create_authenticator, direct=True)
+        get_obj = functools.partial(accesscontrol.Authenticator, self.acs, create=False)
+        self.helper_test_obj_existing(self.acs, accesscontrol.Authenticator,
+                                      create_obj, get_obj)
+
+    def test_module(self):
+
+        # Create Authenticator
+        module = 'TESTMODULE'
+        auth = self._create_authenticator(self.acs, direct=True, module=module)
+
+        # Test Client UID
+        self.assertEqual(auth.module, module)
 
         # Cleanup
         auth.destroy()
