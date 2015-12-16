@@ -16,10 +16,9 @@ from . import datatypes
 
 ### Constants ###
 
-_INDEX_KEY_AUTHORIZATIONS = "authorizations"
+_KEY_AUTHORIZATIONS = "authorizations"
 
 _PREFIX_ACCESSCONTROLSERVER = "accesscontrolsrv"
-
 _PREFIX_AUTHORIZATION = "authorization"
 
 _POSTFIX_CLIENTUID = "clientuid"
@@ -42,8 +41,7 @@ class AccessControlServer(datatypes.PersistentObjectServer):
         super().__init__(driver, prefix=prefix)
 
         # Setup Collections Index
-        key = _INDEX_KEY_AUTHORIZATIONS
-        self._authorizations = datatypes.Index(self, key=key, prefix=prefix,
+        self._authorizations = datatypes.Index(self, key=_KEY_AUTHORIZATIONS, prefix=prefix,
                                                create=True, overwrite=False)
 
     def destroy(self):
@@ -54,13 +52,11 @@ class AccessControlServer(datatypes.PersistentObjectServer):
         # Call Parent
         super().destroy()
 
-    def authorizations_create(self, clientuid=None, expiration=None,
-                              objperm=None, objtype=None, objuid=None,
-                              usermetadata={}):
+    # Authorization Methods #
 
-        return Authorization(self, create=True, clientuid=clientuid, expiration=expiration,
-                             objperm=objperm, objtype=objtype, objuid=objuid,
-                             usermetadata=usermetadata)
+    def authorizations_create(self, **kwargs):
+
+        return Authorization(self, create=True, **kwargs)
 
     def authorizations_get(self, uid=None, key=None):
 
