@@ -15,15 +15,15 @@ import uuid
 import unittest
 
 # Tests Common
-import server_common
+import tests_common
 
 ## tutamen_server ##
-import tutamen_server.datatypes
+from pytutamen_server import datatypes
 
 
 ### Function Classes ###
 
-class FunctionsTestCase(server_common.BaseTestCase):
+class FunctionsTestCase(tests_common.BaseTestCase):
 
     def test_build_key(self):
 
@@ -33,38 +33,38 @@ class FunctionsTestCase(server_common.BaseTestCase):
         sep = "_"
 
         # Test Base
-        key = tutamen_server.datatypes.build_key(base_key)
+        key = datatypes.build_key(base_key)
         self.assertEqual(key, base_key)
 
         # Test Prefix
-        key = tutamen_server.datatypes.build_key(base_key, prefix=prefix)
+        key = datatypes.build_key(base_key, prefix=prefix)
         self.assertEqual(key, (prefix + sep + base_key))
 
         # Test Postfix
-        key = tutamen_server.datatypes.build_key(base_key, postfix=postfix)
+        key = datatypes.build_key(base_key, postfix=postfix)
         self.assertEqual(key, (base_key + sep + postfix))
 
         # Test All
-        key = tutamen_server.datatypes.build_key(base_key, prefix=prefix, postfix=postfix)
+        key = datatypes.build_key(base_key, prefix=prefix, postfix=postfix)
         self.assertEqual(key, (prefix + sep + base_key + sep + postfix))
 
     def test_check_isinstance(self):
 
         # Test Fail
-        self.assertRaises(TypeError, tutamen_server.datatypes.check_isinstance, 1, str)
+        self.assertRaises(TypeError, datatypes.check_isinstance, 1, str)
 
         # Test Pass
-        tutamen_server.datatypes.check_isinstance("test", str)
+        datatypes.check_isinstance("test", str)
 
 ### Object Classes ###
 
-class PersistentObjectServerTestCase(server_common.BaseTestCase):
+class PersistentObjectServerTestCase(tests_common.BaseTestCase):
 
     def test_init_and_destroy(self):
 
         # Create Server
-        srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
-        self.assertIsInstance(srv, tutamen_server.datatypes.PersistentObjectServer)
+        srv = datatypes.PersistentObjectServer(self.driver)
+        self.assertIsInstance(srv, datatypes.PersistentObjectServer)
 
         # Cleanup
         srv.destroy()
@@ -72,7 +72,7 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
     def test_driver(self):
 
         # Create Server
-        srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.driver)
 
         # Test Driver
         self.assertIs(srv.driver, self.driver)
@@ -83,7 +83,7 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
     def test_objects(self):
 
         # Create Server
-        srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.driver)
         objs = []
 
         # Test Empty
@@ -92,7 +92,7 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
         # Add Objects
         for i in range(10):
             key = "test_object_{}".format(i)
-            objs.append(tutamen_server.datatypes.PersistentObject(srv, key=key, create=True))
+            objs.append(datatypes.PersistentObject(srv, key=key, create=True))
 
         # Test Populated
         self.assertEqual(len(srv.objects), len(objs))
@@ -105,13 +105,13 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
     def test_exists(self):
 
         # Create Server
-        srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.driver)
         objs = []
 
         # Add Objects
         for i in range(10):
             key = "test_object_{}".format(i)
-            objs.append(tutamen_server.datatypes.PersistentObject(srv, key=key, create=True))
+            objs.append(datatypes.PersistentObject(srv, key=key, create=True))
 
         # Test Exists
         for obj in objs:
@@ -128,7 +128,7 @@ class PersistentObjectServerTestCase(server_common.BaseTestCase):
         # Cleanup
         srv.destroy()
 
-class PersistentObjectBasis(server_common.BaseTestCase):
+class PersistentObjectBasis(tests_common.BaseTestCase):
 
     def setUp(self):
 
@@ -136,7 +136,7 @@ class PersistentObjectBasis(server_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.srv = tutamen_server.datatypes.PersistentObjectServer(self.driver)
+        self.srv = datatypes.PersistentObjectServer(self.driver)
 
     def tearDown(self):
 
@@ -151,17 +151,17 @@ class PersistentObjectTestCase(PersistentObjectBasis):
     def test_init_create_new(self):
 
         # Test No Key
-        self.assertRaises(TypeError, tutamen_server.datatypes.PersistentObject, self.srv)
+        self.assertRaises(TypeError, datatypes.PersistentObject, self.srv)
 
         # Test DNE
         key = "test_object"
-        self.assertRaises(tutamen_server.datatypes.ObjectDNE,
-                          tutamen_server.datatypes.PersistentObject,
+        self.assertRaises(datatypes.ObjectDNE,
+                          datatypes.PersistentObject,
                           self.srv, key=key, create=False)
 
         # Test Create Object
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
+        self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -171,9 +171,9 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
+        datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
+        self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -183,9 +183,9 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True, overwrite=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
+        datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True, overwrite=True)
+        self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -195,9 +195,9 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=False)
-        self.assertIsInstance(obj, tutamen_server.datatypes.PersistentObject)
+        datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=False)
+        self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -207,7 +207,7 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test Exists
         self.assertTrue(obj.exists())
@@ -222,7 +222,7 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test key
         self.assertEqual(obj.key, key)
@@ -234,7 +234,7 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test key
         self.assertEqual(obj.srv, self.srv)
@@ -246,7 +246,7 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test Destroy
         obj.destroy()
@@ -259,12 +259,12 @@ class UUIDObjectTestCase(PersistentObjectBasis):
 
         # Test Bad Key Type
         key = "NotValidUUID"
-        self.assertRaises(ValueError, tutamen_server.datatypes.UUIDObject,
+        self.assertRaises(ValueError, datatypes.UUIDObject,
                           self.srv, key=key)
 
         # Test Create Object
-        obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
+        obj = datatypes.UUIDObject(self.srv, create=True)
+        self.assertIsInstance(obj, datatypes.UUIDObject)
 
         # Cleanup
         obj.destroy()
@@ -272,19 +272,19 @@ class UUIDObjectTestCase(PersistentObjectBasis):
     def test_init_existing(self):
 
         # Create Object
-        obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
+        obj = datatypes.UUIDObject(self.srv, create=True)
         key = obj.key
         uid = obj.uid
 
         # Test Existing (via key)
-        obj = tutamen_server.datatypes.UUIDObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
+        obj = datatypes.UUIDObject(self.srv, key=key, create=True)
+        self.assertIsInstance(obj, datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
         self.assertEqual(obj.uid, uid)
 
         # Test Existing (via uid)
-        obj = tutamen_server.datatypes.UUIDObject(self.srv, uid=uid, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.UUIDObject)
+        obj = datatypes.UUIDObject(self.srv, uid=uid, create=True)
+        self.assertIsInstance(obj, datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
         self.assertEqual(obj.uid, uid)
 
@@ -294,7 +294,7 @@ class UUIDObjectTestCase(PersistentObjectBasis):
     def test_uuid(self):
 
         # Create Object
-        obj = tutamen_server.datatypes.UUIDObject(self.srv, create=True)
+        obj = datatypes.UUIDObject(self.srv, create=True)
 
         # Test UUID
         self.assertEqual(str(obj.uid), obj.key)
@@ -309,15 +309,15 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
         # Test Bad Metadata Type
         key = "TestUserMetadataObject"
         usermetadata = "NotValidMetadataType"
-        self.assertRaises(TypeError, tutamen_server.datatypes.UserMetadataObject,
+        self.assertRaises(TypeError, datatypes.UserMetadataObject,
                           self.srv, cretae=True, key=key, usermetadata=usermetadata)
 
         # Test Create Object
         key = "TestUserMetadataObject"
         usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, create=True, key=key,
+        obj = datatypes.UserMetadataObject(self.srv, create=True, key=key,
                                                           usermetadata=usermetadata)
-        self.assertIsInstance(obj, tutamen_server.datatypes.UserMetadataObject)
+        self.assertIsInstance(obj, datatypes.UserMetadataObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -327,12 +327,12 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
 
         # Create Object
         key = "TestUserMetadataObject"
-        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, key=key, create=True)
+        obj = datatypes.UserMetadataObject(self.srv, key=key, create=True)
 
 
         # Test Existing
-        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, tutamen_server.datatypes.UserMetadataObject)
+        obj = datatypes.UserMetadataObject(self.srv, key=key, create=True)
+        self.assertIsInstance(obj, datatypes.UserMetadataObject)
         self.assertEqual(obj.key, key)
 
         # Cleanup
@@ -343,7 +343,7 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
         # Create Object
         key = "TestUserMetadataObject"
         usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        obj = tutamen_server.datatypes.UserMetadataObject(self.srv, create=True, key=key,
+        obj = datatypes.UserMetadataObject(self.srv, create=True, key=key,
                                                           usermetadata=usermetadata)
 
         # Test usermetadata
@@ -358,8 +358,8 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
-        self.assertIsInstance(index, tutamen_server.datatypes.Index)
+        index = datatypes.Index(self.srv, key=key, create=True)
+        self.assertIsInstance(index, datatypes.Index)
         self.assertEqual(index.key, key)
 
         # Cleanup
@@ -369,9 +369,9 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        tutamen_server.datatypes.Index(self.srv, key=key, create=True)
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
-        self.assertIsInstance(index, tutamen_server.datatypes.Index)
+        datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
+        self.assertIsInstance(index, datatypes.Index)
         self.assertEqual(index.key, key)
 
         # Cleanup
@@ -381,9 +381,9 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        tutamen_server.datatypes.Index(self.srv, key=key, create=True)
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=False)
-        self.assertIsInstance(index, tutamen_server.datatypes.Index)
+        datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=False)
+        self.assertIsInstance(index, datatypes.Index)
         self.assertEqual(index.key, key)
 
         # Cleanup
@@ -393,11 +393,11 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test Members - Empty
         self.assertEqual(len(index.members), 0)
@@ -416,11 +416,11 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
 
         # Create Object
         key = "test_object"
-        obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
 
         # Test is_member() - False
         self.assertFalse(index.is_member(obj.key))
@@ -439,13 +439,13 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
 
         # Create Indexed Object
         objs = []
         for i in range(10):
             key = "test_indexed_obj_{}".format(i)
-            objs.append(tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True))
+            objs.append(datatypes.PersistentObject(self.srv, key=key, create=True))
 
         # Test Add
         cnt = 0
@@ -464,13 +464,13 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
 
         # Create Indexed Object
         objs = []
         for i in range(10):
             key = "test_object_{}".format(i)
-            obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+            obj = datatypes.PersistentObject(self.srv, key=key, create=True)
             objs.append(obj)
             index.add(obj)
 
@@ -491,13 +491,13 @@ class IndexTestCase(PersistentObjectBasis):
 
         # Create Index
         key = "test_index"
-        index = tutamen_server.datatypes.Index(self.srv, key=key, create=True)
+        index = datatypes.Index(self.srv, key=key, create=True)
 
         # Create Objects
         objs = []
         for i in range(10):
             key = "test_object_{}".format(i)
-            obj = tutamen_server.datatypes.PersistentObject(self.srv, key=key, create=True)
+            obj = datatypes.PersistentObject(self.srv, key=key, create=True)
             objs.append(obj)
             index.add(obj)
 

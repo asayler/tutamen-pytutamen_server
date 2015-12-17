@@ -15,15 +15,15 @@ import unittest
 import uuid
 
 # Tests Common
-import server_common
+import tests_common
 
 ## tutamen_server ##
-import tutamen_server.storage
+from pytutamen_server import storage
 
 
 ### Object Classes ###
 
-class StorageServerTestCase(server_common.BaseTestCase):
+class StorageServerTestCase(tests_common.BaseTestCase):
 
     def __init__(self, *args, **kwargs):
 
@@ -33,8 +33,8 @@ class StorageServerTestCase(server_common.BaseTestCase):
     def test_init_and_destroy(self):
 
         # Create Server
-        ss = tutamen_server.storage.StorageServer(self.driver)
-        self.assertIsInstance(ss, tutamen_server.storage.StorageServer)
+        ss = storage.StorageServer(self.driver)
+        self.assertIsInstance(ss, storage.StorageServer)
 
         # Cleanup
         ss.destroy()
@@ -42,11 +42,11 @@ class StorageServerTestCase(server_common.BaseTestCase):
     def test_collections_create(self):
 
         # Create Server
-        ss = tutamen_server.storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.driver)
 
         # Create Collection
         col = ss.collections_create()
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
 
         # Cleanup
@@ -56,7 +56,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
     def test_collections_get(self):
 
         # Create Server
-        ss = tutamen_server.storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.driver)
 
         # Create Collection
         col = ss.collections_create()
@@ -65,14 +65,14 @@ class StorageServerTestCase(server_common.BaseTestCase):
 
         # Test get (key)
         col = ss.collections_get(key=key)
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
         self.assertEqual(col.key, key)
         self.assertEqual(col.uid, uid)
 
         # Test get (uuid)
         col = ss.collections_get(uid=uid)
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
         self.assertEqual(col.key, key)
         self.assertEqual(col.uid, uid)
@@ -84,7 +84,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
     def test_collections_list(self):
 
         # Create Server
-        ss = tutamen_server.storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.driver)
 
         # List Collections (Empty)
         keys = ss.collections_list()
@@ -115,7 +115,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
     def test_collections_exists(self):
 
         # Create Server
-        ss = tutamen_server.storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.driver)
 
         # Test DNE (key)
         key = "fakekey"
@@ -148,7 +148,7 @@ class StorageServerTestCase(server_common.BaseTestCase):
         # Cleanup
         ss.destroy()
 
-class CollectionTestCase(server_common.BaseTestCase):
+class CollectionTestCase(tests_common.BaseTestCase):
 
     def setUp(self):
 
@@ -156,7 +156,7 @@ class CollectionTestCase(server_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = tutamen_server.storage.StorageServer(self.driver)
+        self.ss = storage.StorageServer(self.driver)
 
     def tearDown(self):
 
@@ -169,8 +169,8 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_init_create(self):
 
         # Test Create
-        col = tutamen_server.storage.Collection(self.ss, create=True)
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        col = storage.Collection(self.ss, create=True)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
         self.assertTrue(self.ss.collections_exists(key=col.key))
         self.assertIn(col.key, self.ss.collections_list())
@@ -181,13 +181,13 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_init_existing(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
         key = col.key
         uid = col.uid
 
         # Test get (key)
-        col = tutamen_server.storage.Collection(self.ss, create=False, key=key)
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        col = storage.Collection(self.ss, create=False, key=key)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
         self.assertTrue(self.ss.collections_exists(key=col.key))
         self.assertIn(col.key, self.ss.collections_list())
@@ -195,8 +195,8 @@ class CollectionTestCase(server_common.BaseTestCase):
         self.assertEqual(col.uid, uid)
 
         # Test get (uuid)
-        col = tutamen_server.storage.Collection(self.ss, create=False, uid=uid)
-        self.assertIsInstance(col, tutamen_server.storage.Collection)
+        col = storage.Collection(self.ss, create=False, uid=uid)
+        self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
         self.assertTrue(self.ss.collections_exists(key=col.key))
         self.assertIn(col.key, self.ss.collections_list())
@@ -209,7 +209,7 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_destroy(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
 
         # Test Destroy
         col.destroy()
@@ -221,7 +221,7 @@ class CollectionTestCase(server_common.BaseTestCase):
 
         # Create Collection
         usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        col = tutamen_server.storage.Collection(self.ss, create=True, usermetadata=usermetadata)
+        col = storage.Collection(self.ss, create=True, usermetadata=usermetadata)
 
         # Test Metadata
         self.assertEqual(col.usermetadata, usermetadata)
@@ -232,11 +232,11 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_secrets_create(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
 
         # Create Secret
         sec = col.secrets_create()
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
 
         # Cleanup
@@ -246,7 +246,7 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_secrets_get(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
 
         # Create Secret
         sec = col.secrets_create()
@@ -255,14 +255,14 @@ class CollectionTestCase(server_common.BaseTestCase):
 
         # Test get (key)
         sec = col.secrets_get(key=key)
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
         self.assertEqual(sec.key, key)
         self.assertEqual(sec.uid, uid)
 
         # Test get (uuid)
         sec = col.secrets_get(uid=uid)
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
         self.assertEqual(sec.key, key)
         self.assertEqual(sec.uid, uid)
@@ -274,7 +274,7 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_secrets_list(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
 
         # List Secrets (Empty)
         keys = col.secrets_list()
@@ -305,7 +305,7 @@ class CollectionTestCase(server_common.BaseTestCase):
     def test_secrets_exists(self):
 
         # Create Collection
-        col = tutamen_server.storage.Collection(self.ss, create=True)
+        col = storage.Collection(self.ss, create=True)
 
         # Test DNE (key)
         key = "fakekey"
@@ -338,7 +338,7 @@ class CollectionTestCase(server_common.BaseTestCase):
         # Cleanup
         col.destroy()
 
-class SecretTestCase(server_common.BaseTestCase):
+class SecretTestCase(tests_common.BaseTestCase):
 
     def setUp(self):
 
@@ -346,7 +346,7 @@ class SecretTestCase(server_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = tutamen_server.storage.StorageServer(self.driver)
+        self.ss = storage.StorageServer(self.driver)
         self.col = self.ss.collections_create()
 
     def tearDown(self):
@@ -361,8 +361,8 @@ class SecretTestCase(server_common.BaseTestCase):
     def test_init_create(self):
 
         # Test Create
-        sec = tutamen_server.storage.Secret(self.col, create=True)
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        sec = storage.Secret(self.col, create=True)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
 
         # Cleanup
@@ -371,20 +371,20 @@ class SecretTestCase(server_common.BaseTestCase):
     def test_init_existing(self):
 
         # Create Secret
-        sec = tutamen_server.storage.Secret(self.col, create=True)
+        sec = storage.Secret(self.col, create=True)
         key = sec.key
         uid = sec.uid
 
         # Test get (key)
-        sec = tutamen_server.storage.Secret(self.col, create=False, key=key)
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        sec = storage.Secret(self.col, create=False, key=key)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
         self.assertEqual(sec.key, key)
         self.assertEqual(sec.uid, uid)
 
         # Test get (uuid)
-        sec = tutamen_server.storage.Secret(self.col, create=False, uid=uid)
-        self.assertIsInstance(sec, tutamen_server.storage.Secret)
+        sec = storage.Secret(self.col, create=False, uid=uid)
+        self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
         self.assertEqual(sec.key, key)
         self.assertEqual(sec.uid, uid)
@@ -395,7 +395,7 @@ class SecretTestCase(server_common.BaseTestCase):
     def test_col(self):
 
         # Create Collection
-        sec = tutamen_server.storage.Secret(self.col, create=True)
+        sec = storage.Secret(self.col, create=True)
 
         # Test Metadata
         self.assertEqual(sec.col, self.col)
@@ -407,7 +407,7 @@ class SecretTestCase(server_common.BaseTestCase):
 
         # Create Collection
         usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        sec = tutamen_server.storage.Secret(self.col, create=True, usermetadata=usermetadata)
+        sec = storage.Secret(self.col, create=True, usermetadata=usermetadata)
 
         # Test Metadata
         self.assertEqual(sec.usermetadata, usermetadata)
@@ -471,7 +471,7 @@ F5/o6qmSWoy2d38wLfwH1rMMFNBD0sAdgI/yf+k87nRlbmDymqEJcqV5YdQ5Bbg6
 AEnFf7VvhdEQQ7h1nL5a3yDGD39HUXQRjv8OYm4l0ahOW8nFmM92trkbrpc2wA==
 -----END FAKE RSA PRIVATE KEY-----
 '''
-        sec = tutamen_server.storage.Secret(self.col, create=True, data=data)
+        sec = storage.Secret(self.col, create=True, data=data)
 
         # Test Metadata
         self.assertEqual(sec.data, data)

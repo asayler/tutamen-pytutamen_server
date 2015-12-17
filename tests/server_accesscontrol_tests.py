@@ -17,14 +17,14 @@ import uuid
 import unittest
 
 # Tests Common
-import server_common
+import tests_common
 
 ## tutamen_server ##
-from tutamen_server import accesscontrol
+from pytutamen_server import accesscontrol
 
 ### Object Classes ###
 
-class AccessControlTestCase(server_common.BaseTestCase):
+class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_accesscontrolserver(self):
 

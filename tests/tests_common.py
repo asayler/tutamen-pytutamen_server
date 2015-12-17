@@ -16,9 +16,6 @@ import warnings
 ## pcollections ##
 import pcollections.be_redis_atomic
 
-## tutamen_server ##
-import tutamen_server.datatypes
-
 
 ### Globals ###
 
