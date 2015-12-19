@@ -60,15 +60,11 @@ class AccessControlTestCase(tests_common.BaseTestCase):
             authenticator = acs.authenticators_create(**kwargs)
         return authenticator
 
-    def _create_authset(self, acs, direct=False, **kwargs_user):
 
-        kwargs = self._get_authset_kwargs()
         kwargs.update(kwargs_user)
+
         if direct:
-            authset = accesscontrol.Authset(acs, create=True, **kwargs)
         else:
-            authset = acs.authsets_create(**kwargs)
-        return authset
 
 class ObjectsHelpers(object):
 
@@ -293,58 +289,42 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
-    # Authset Tests #
 
-    def test_authsets_create(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
         # Test Create
-        create_obj = functools.partial(self._create_authset, direct=False)
-        self.helper_test_obj_create(acs, accesscontrol.Authset,
                                     create_obj)
 
         # Cleanup
         acs.destroy()
 
-    def test_authsets_get(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
         # Test Get
-        create_obj = functools.partial(self._create_authset, direct=False)
-        get_obj = functools.partial(acs.authsets_get)
-        self.helper_test_obj_existing(acs, accesscontrol.Authset,
                                       create_obj, get_obj)
 
         # Cleanup
         acs.destroy()
 
-    def test_authsets_list(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
         # Test List
-        create_obj = functools.partial(self._create_authset, direct=False)
-        list_objs = functools.partial(acs.authsets_list)
-        self.helper_test_objects_list(acs, accesscontrol.Authset,
                                       create_obj, list_objs)
 
         # Cleanup
         acs.destroy()
 
-    def test_authsets_exists(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
         # Test Exists
-        create_obj = functools.partial(self._create_authset, direct=False)
-        exists_obj = functools.partial(acs.authsets_exists)
-        self.helper_test_objects_exists(acs, accesscontrol.Authset,
                                         create_obj, exists_obj)
 
         # Cleanup
@@ -495,90 +475,50 @@ class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         auth.destroy()
 
-    def test_authsets_by_key(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_key()), 0)
 
-        # Add to authsets
-        authset_objs = set()
-        authset_keys = set()
         for i in range(10):
-            authset = self._create_authset(self.acs)
-            authset.add(actr)
-            authset_objs.add(authset)
-            authset_keys.add(authset.key)
 
         # Test Full
-        self.assertEqual(actr.authsets_by_key(), authset_keys)
 
-        # Remove Authsets
-        for authset in authset_objs:
-            authset.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_key()), 0)
 
         # Cleanup
         actr.destroy()
 
-    def test_authsets_by_uid(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_uid()), 0)
 
-        # Add Authsets
-        authset_objs = set()
-        authset_uids = set()
         for i in range(10):
-            authset = self._create_authset(self.acs)
-            authset.add(actr)
-            authset_objs.add(authset)
-            authset_uids.add(authset.uid)
 
         # Test Full
-        self.assertEqual(actr.authsets_by_uid(), authset_uids)
 
-        # Remove Authsets
-        for authset in authset_objs:
-            authset.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_uid()), 0)
 
         # Cleanup
         actr.destroy()
 
-    def test_authsets_by_obj(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_obj()), 0)
 
-        # Add Authsets
-        authset_objs = set()
         for i in range(10):
-            authset = self._create_authset(self.acs)
-            authset.add(actr)
-            authset_objs.add(authset)
 
         # Test Full
-        self.assertEqual(actr.authsets_by_obj(), authset_objs)
 
-        # Remove Authsets
-        for authset in authset_objs:
-            authset.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.authsets_by_obj()), 0)
 
         # Cleanup
         actr.destroy()
