@@ -48,6 +48,16 @@ class AccessControlTestCase(tests_common.BaseTestCase):
             authorization = acs.authorizations_create(**kwargs)
         return authorization
 
+    def _create_verifier(self, acs, direct=False, **kwargs_user):
+
+        kwargs = {}
+        kwargs.update(kwargs_user)
+        if direct:
+            verifier = accesscontrol.Verifier(acs, create=True, **kwargs)
+        else:
+            verifier = acs.verifiers_create(**kwargs)
+        return verifier
+
     def _create_authenticator(self, acs, direct=False, **kwargs_user):
 
         module = 'TESTMOD'
@@ -233,6 +243,63 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         acs.destroy()
 
     # Authenticator Tests #
+    ## Verifier Tests ##
+
+    def test_verifiers_create(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test Create
+        create_obj = functools.partial(self._create_verifier, direct=False)
+        self.helper_test_obj_create(acs, accesscontrol.Verifier,
+                                    create_obj)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_verifiers_get(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test Get
+        create_obj = functools.partial(self._create_verifier, direct=False)
+        get_obj = functools.partial(acs.verifiers_get)
+        self.helper_test_obj_existing(acs, accesscontrol.Verifier,
+                                      create_obj, get_obj)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_verifiers_list(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test List
+        create_obj = functools.partial(self._create_verifier, direct=False)
+        list_objs = functools.partial(acs.verifiers_list)
+        self.helper_test_objects_list(acs, accesscontrol.Verifier,
+                                      create_obj, list_objs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_verifiers_exists(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver()
+
+        # Test Exists
+        create_obj = functools.partial(self._create_verifier, direct=False)
+        exists_obj = functools.partial(acs.verifiers_exists)
+        self.helper_test_objects_exists(acs, accesscontrol.Verifier,
+                                        create_obj, exists_obj)
+
+        # Cleanup
+        acs.destroy()
+
 
     def test_authenticators_create(self):
 
@@ -432,6 +499,160 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         auth.destroy()
 
+class VerifierTestCase(AccessControlTestCase, ObjectsHelpers):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.acs = self._create_accesscontrolserver()
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.acs.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_create(self):
+
+        create_obj = functools.partial(self._create_verifier, direct=True)
+        self.helper_test_obj_create(self.acs, accesscontrol.Verifier,
+                                    create_obj)
+
+    def test_init_existing(self):
+
+        create_obj = functools.partial(self._create_verifier, direct=True)
+        get_obj = functools.partial(accesscontrol.Verifier, self.acs, create=False)
+        self.helper_test_obj_existing(self.acs, accesscontrol.Verifier,
+                                      create_obj, get_obj)
+
+    def test_authenticators_by_key(self):
+
+        # Create Verifier
+        verf = self._create_verifier(self.acs, direct=True)
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_key()), 0)
+
+        # Add to authenticators
+        actr_objs = set()
+        actr_keys = set()
+        for i in range(10):
+            actr = self._create_authenticator(self.acs)
+            verf.authenticators_add(actr)
+            actr_objs.add(actr)
+            actr_keys.add(actr.key)
+
+        # Test Full
+        self.assertEqual(verf.authenticators_by_key(), actr_keys)
+
+        # Remove Authenticators
+        for actr in actr_objs:
+            actr.destroy()
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_key()), 0)
+
+        # Cleanup
+        verf.destroy()
+
+    def test_authenticators_by_uid(self):
+
+        # Create Verifier
+        verf = self._create_verifier(self.acs, direct=True)
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_uid()), 0)
+
+        # Add to authenticators
+        actr_objs = set()
+        actr_uids = set()
+        for i in range(10):
+            actr = self._create_authenticator(self.acs)
+            verf.authenticators_add(actr)
+            actr_objs.add(actr)
+            actr_uids.add(actr.uid)
+
+        # Test Full
+        self.assertEqual(verf.authenticators_by_uid(), actr_uids)
+
+        # Remove Authenticators
+        for actr in actr_objs:
+            actr.destroy()
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_uid()), 0)
+
+        # Cleanup
+        verf.destroy()
+
+    def test_authenticators_by_obj(self):
+
+        # Create Verifier
+        verf = self._create_verifier(self.acs, direct=True)
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_obj()), 0)
+
+        # Add to authenticators
+        actr_objs = set()
+        for i in range(10):
+            actr = self._create_authenticator(self.acs)
+            verf.authenticators_add(actr)
+            actr_objs.add(actr)
+
+        # Test Full
+        self.assertEqual(verf.authenticators_by_obj(), actr_objs)
+
+        # Remove Authenticators
+        for actr in actr_objs:
+            actr.destroy()
+
+        # Test Empty
+        self.assertEqual(len(verf.authenticators_by_obj()), 0)
+
+        # Cleanup
+        verf.destroy()
+
+    def test_authenticators_add_is_member(self):
+
+        # Create Verifier and Authenticator
+        verf = self._create_verifier(self.acs, direct=True)
+        actr = self._create_authenticator(self.acs)
+
+        # Test Add
+        self.assertFalse(verf.authenticators_is_member(actr))
+        self.assertFalse(verf in actr.verifiers_by_obj())
+        verf.authenticators_add(actr)
+        self.assertTrue(verf.authenticators_is_member(actr))
+        self.assertTrue(verf in actr.verifiers_by_obj())
+
+        # Cleanup
+        actr.destroy()
+        verf.destroy()
+
+    def test_authenticators_remove_is_member(self):
+
+        # Create Verifier and Authenticator
+        verf = self._create_verifier(self.acs, direct=True)
+        actr = self._create_authenticator(self.acs)
+        verf.authenticators_add(actr)
+
+        # Test Remove
+        self.assertTrue(verf.authenticators_is_member(actr))
+        self.assertTrue(verf in actr.verifiers_by_obj())
+        verf.authenticators_remove(actr)
+        self.assertFalse(verf.authenticators_is_member(actr))
+        self.assertFalse(verf in actr.verifiers_by_obj())
+
+        # Cleanup
+        actr.destroy()
+        verf.destroy()
+
 class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def setUp(self):
@@ -475,43 +696,94 @@ class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         auth.destroy()
 
+    def test_verifiers_by_key(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
+        self.assertEqual(len(actr.verifiers_by_key()), 0)
 
+        # Add to verifiers
+        verifier_objs = set()
+        verifier_keys = set()
         for i in range(10):
+            verifier = self._create_verifier(self.acs)
+            verifier.authenticators_add(actr)
+            verifier_objs.add(verifier)
+            verifier_keys.add(verifier.key)
 
         # Test Full
+        self.assertEqual(actr.verifiers_by_key(), verifier_keys)
 
+        # Remove Verifiers
+        for verifier in verifier_objs:
+            verifier.destroy()
 
         # Test Empty
+        self.assertEqual(len(actr.verifiers_by_key()), 0)
 
         # Cleanup
         actr.destroy()
 
+    def test_verifiers_by_uid(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
+        self.assertEqual(len(actr.verifiers_by_uid()), 0)
 
+        # Add Verifiers
+        verifier_objs = set()
+        verifier_uids = set()
         for i in range(10):
+            verifier = self._create_verifier(self.acs)
+            verifier.authenticators_add(actr)
+            verifier_objs.add(verifier)
+            verifier_uids.add(verifier.uid)
 
         # Test Full
+        self.assertEqual(actr.verifiers_by_uid(), verifier_uids)
 
+        # Remove Verifiers
+        for verifier in verifier_objs:
+            verifier.destroy()
 
         # Test Empty
+        self.assertEqual(len(actr.verifiers_by_uid()), 0)
 
         # Cleanup
         actr.destroy()
 
+    def test_verifiers_by_obj(self):
 
         # Create Authenticator
         actr = self._create_authenticator(self.acs, direct=True)
 
         # Test Empty
+        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+
+        # Add Verifiers
+        verifier_objs = set()
+        for i in range(10):
+            verifier = self._create_verifier(self.acs)
+            verifier.authenticators_add(actr)
+            verifier_objs.add(verifier)
+
+        # Test Full
+        self.assertEqual(actr.verifiers_by_obj(), verifier_objs)
+
+        # Remove Verifiers
+        for verifier in verifier_objs:
+            verifier.destroy()
+
+        # Test Empty
+        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+
+        # Cleanup
+        actr.destroy()
+
 
         for i in range(10):
 
