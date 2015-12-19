@@ -81,6 +81,17 @@ class AccessControlTestCase(tests_common.BaseTestCase):
             account = acs.accounts_create(**kwargs)
         return account
 
+    def _create_client(self, acct, direct=False, **kwargs_user):
+
+        kwargs = {}
+        kwargs.update(kwargs_user)
+
+        if direct:
+            client = accesscontrol.Client(acct, create=True, **kwargs)
+        else:
+            client = acct.clients_create(**kwargs)
+        return client
+
 class ObjectsHelpers(object):
 
     def helper_test_obj_create(self, srv, objtype, create_obj):
@@ -962,90 +973,191 @@ class AccountTestCase(AccessControlTestCase, ObjectsHelpers):
     def test_verifiers_by_key(self):
 
         # Create Account
-        actr = self._create_account(self.acs, direct=True)
+        acct = self._create_account(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_key()), 0)
+        self.assertEqual(len(acct.verifiers_by_key()), 0)
 
         # Add to verifiers
         verifier_objs = set()
         verifier_keys = set()
         for i in range(10):
             verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(actr)
+            verifier.accounts_add(acct)
             verifier_objs.add(verifier)
             verifier_keys.add(verifier.key)
 
         # Test Full
-        self.assertEqual(actr.verifiers_by_key(), verifier_keys)
+        self.assertEqual(acct.verifiers_by_key(), verifier_keys)
 
         # Remove Verifiers
         for verifier in verifier_objs:
             verifier.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_key()), 0)
+        self.assertEqual(len(acct.verifiers_by_key()), 0)
 
         # Cleanup
-        actr.destroy()
+        acct.destroy()
 
     def test_verifiers_by_uid(self):
 
         # Create Account
-        actr = self._create_account(self.acs, direct=True)
+        acct = self._create_account(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_uid()), 0)
+        self.assertEqual(len(acct.verifiers_by_uid()), 0)
 
         # Add Verifiers
         verifier_objs = set()
         verifier_uids = set()
         for i in range(10):
             verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(actr)
+            verifier.accounts_add(acct)
             verifier_objs.add(verifier)
             verifier_uids.add(verifier.uid)
 
         # Test Full
-        self.assertEqual(actr.verifiers_by_uid(), verifier_uids)
+        self.assertEqual(acct.verifiers_by_uid(), verifier_uids)
 
         # Remove Verifiers
         for verifier in verifier_objs:
             verifier.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_uid()), 0)
+        self.assertEqual(len(acct.verifiers_by_uid()), 0)
 
         # Cleanup
-        actr.destroy()
+        acct.destroy()
 
     def test_verifiers_by_obj(self):
 
         # Create Account
-        actr = self._create_account(self.acs, direct=True)
+        acct = self._create_account(self.acs, direct=True)
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+        self.assertEqual(len(acct.verifiers_by_obj()), 0)
 
         # Add Verifiers
         verifier_objs = set()
         for i in range(10):
             verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(actr)
+            verifier.accounts_add(acct)
             verifier_objs.add(verifier)
 
         # Test Full
-        self.assertEqual(actr.verifiers_by_obj(), verifier_objs)
+        self.assertEqual(acct.verifiers_by_obj(), verifier_objs)
 
         # Remove Verifiers
         for verifier in verifier_objs:
             verifier.destroy()
 
         # Test Empty
-        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+        self.assertEqual(len(acct.verifiers_by_obj()), 0)
 
         # Cleanup
-        actr.destroy()
+        acct.destroy()
+
+    ## Client Tests ##
+
+    def test_clients_create(self):
+
+        # Create Account
+        acct = self._create_account(self.acs, direct=True)
+
+        # Test Create
+        create_obj = functools.partial(self._create_client, direct=False)
+        self.helper_test_obj_create(acct, accesscontrol.Client,
+                                    create_obj)
+
+        # Cleanup
+        acct.destroy()
+
+    def test_clients_get(self):
+
+        # Create Account
+        acct = self._create_account(self.acs, direct=True)
+
+        # Test Get
+        create_obj = functools.partial(self._create_client, direct=False)
+        get_obj = functools.partial(acct.clients_get)
+        self.helper_test_obj_existing(acct, accesscontrol.Client,
+                                      create_obj, get_obj)
+
+        # Cleanup
+        acct.destroy()
+
+    def test_clients_list(self):
+
+        # Create Account
+        acct = self._create_account(self.acs, direct=True)
+
+        # Test List
+        create_obj = functools.partial(self._create_client, direct=False)
+        list_objs = functools.partial(acct.clients_list)
+        self.helper_test_objects_list(acct, accesscontrol.Client,
+                                      create_obj, list_objs)
+
+        # Cleanup
+        acct.destroy()
+
+    def test_clients_exists(self):
+
+        # Create Account
+        acct = self._create_account(self.acs, direct=True)
+
+        # Test Exists
+        create_obj = functools.partial(self._create_client, direct=False)
+        exists_obj = functools.partial(acct.clients_exists)
+        self.helper_test_objects_exists(acct, accesscontrol.Client,
+                                        create_obj, exists_obj)
+
+        # Cleanup
+        acct.destroy()
+
+class ClientTestCase(AccessControlTestCase, ObjectsHelpers):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.acs = self._create_accesscontrolserver()
+        self.acct = self._create_account(self.acs)
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.acct.destroy()
+        self.acs.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_create(self):
+
+        create_obj = functools.partial(self._create_client, direct=True)
+        self.helper_test_obj_create(self.acct, accesscontrol.Client,
+                                    create_obj)
+
+    def test_init_existing(self):
+
+        create_obj = functools.partial(self._create_client, direct=True)
+        get_obj = functools.partial(accesscontrol.Client, self.acct, create=False)
+        self.helper_test_obj_existing(self.acct, accesscontrol.Client,
+                                      create_obj, get_obj)
+
+    def test_account(self):
+
+        # Create Client
+        client = self._create_client(self.acct, direct=True)
+
+        # Test Account
+        self.assertEqual(client.account, self.acct)
+
+        # Cleanup
+        client.destroy()
 
 
 ### Main ###
