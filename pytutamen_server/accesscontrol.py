@@ -17,10 +17,12 @@ from . import datatypes
 ### Constants ###
 
 _KEY_AUTHORIZATIONS = "authorizations"
+_KEY_VERIFIERS = "verifiers"
 _KEY_AUTHENTICATORS = "authenticators"
 
 _PREFIX_ACCESSCONTROLSERVER = "accesscontrolsrv"
 _PREFIX_AUTHORIZATION = "authorization"
+_PREFIX_VERIFIER = "verifier"
 _PREFIX_AUTHENTICATOR = "authenticator"
 
 _POSTFIX_CLIENTUID = "clientuid"
@@ -30,6 +32,7 @@ _POSTFIX_OBJTYPE = "objtype"
 _POSTFIX_OBJUID = "objuid"
 _POSTFIX_STATUS = "status"
 _POSTFIX_MODULE = "module"
+_POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_AUTHENTICATORS = "authenticators"
 
 _NEW_STATUS = "pending"
@@ -47,6 +50,7 @@ class AccessControlServer(datatypes.PersistentObjectServer):
         # Setup Collections Index
         self._authorizations = datatypes.Index(self, key=_KEY_AUTHORIZATIONS, prefix=prefix,
                                                create=True, overwrite=False)
+        self._verifiers = datatypes.Index(self, key=_KEY_VERIFIERS, prefix=prefix,
         self._authenticators = datatypes.Index(self, key=_KEY_AUTHENTICATORS, prefix=prefix,
                                                create=True, overwrite=False)
                                          create=True, overwrite=False)
@@ -55,6 +59,7 @@ class AccessControlServer(datatypes.PersistentObjectServer):
 
         # Cleanup Indexes
         self._authenticators.destroy()
+        self._verifiers.destroy()
         self._authorizations.destroy()
 
         # Call Parent
@@ -94,6 +99,41 @@ class AccessControlServer(datatypes.PersistentObjectServer):
 
         # Check membership
         return self._authorizations.is_member(key)
+
+    # Verifier Methods #
+
+    def verifiers_create(self, **kwargs):
+
+        return Verifier(self, create=True, **kwargs)
+
+    def verifiers_get(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+
+        # Create
+        return Verifier(self, create=False, key=key, uid=uid)
+
+    def verifiers_list(self):
+        return self._verifiers.members
+
+    def verifiers_exists(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+        if uid:
+            datatypes.check_isinstance(uid, uuid.UUID)
+        if key:
+            datatypes.check_isinstance(key, str)
+
+        # Convert key
+        if not key:
+            key = str(uid)
+
+        # Check membership
+        return self._verifiers.is_member(key)
 
     # Authenticator Methods #
 
@@ -248,6 +288,101 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Return Status"""
         return self._status.get_val()
 
+class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
+
+    def __init__(self, srv, create=False, overwrite=False,
+                 prefix=_PREFIX_VERIFIER, **kwargs):
+        """Initialize Verifier"""
+
+        # Check Input
+        datatypes.check_isinstance(srv, AccessControlServer)
+        if create:
+            pass
+        if overwrite:
+            raise TypeError("Authenticator does not support overwrite")
+
+        # Call Parent
+        super().__init__(srv, create=create, overwrite=overwrite,
+                         prefix=prefix, **kwargs)
+
+        # Setup Vars
+        self._authenticators = self._build_subobj(dso.MutableSet, _POSTFIX_AUTHENTICATORS,
+                                                  create=create, value=set())
+        self._accounts = self._build_subobj(dso.MutableSet, _POSTFIX_ACCOUNTS,
+                                            create=create, value=set())
+
+        # Register with Server
+        if create:
+            self.srv._verifiers.add(self)
+        else:
+            if not self.srv.verifiers_exists(key=self.key):
+                msg = "Verifier not associated with srv"
+                raise TypeError(msg)
+
+    def destroy(self):
+        """Delete Authenticator"""
+
+        # Unregister with Server
+        self.srv._verifiers.remove(self)
+
+        # Unregister with Authenticators
+        for actr in self.authenticators_by_obj():
+            self.authenticators_remove(actr)
+
+        # Unregister with Accounts
+        for acct in self.accounts_by_obj():
+            self.accounts_remove(acct)
+
+        # Cleanup Status and Token
+        self._accounts.rem()
+        self._authenticators.rem()
+
+        # Call Parent
+        super().destroy()
+
+    # Authenticator Methods #
+
+    def authenticators_by_key(self):
+        """Return Authenticators as key strings"""
+        return self._authenticators.get_val()
+
+    def authenticators_by_uid(self):
+        """Return Authenticators as UUID objects"""
+        return set([self._val_to_uid(key) for key in self._authenticators])
+
+    def authenticators_by_obj(self):
+        """Return Authenticators as objects"""
+        return set([self._val_to_obj(key, obj=Authenticator) for key in self._authenticators])
+
+    def authenticators_is_member(self, val):
+        """Return if Authenticator is member"""
+
+        # Process Val
+        key = self._val_to_key(val, obj=Authenticator)
+
+        # Compute Membership
+        return key in self._authenticators
+
+    def authenticators_add(self, val):
+        """Add Authenticator"""
+
+        # Process Val
+        actr = self._val_to_obj(val, obj=Authenticator)
+
+        # Add Authenticator
+        self._authenticators.add(actr.key)
+        actr._verifiers.add(self.key)
+
+    def authenticators_remove(self, val):
+        """Remove Authenticator"""
+
+        # Process Val
+        actr = self._val_to_obj(val, obj=Authenticator)
+
+        # Remove Authenticator
+        actr._verifiers.discard(self.key)
+        self._authenticators.discard(actr.key)
+
 class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def __init__(self, srv, create=False, overwrite=False,
@@ -269,6 +404,7 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Setup Vars
         self._module = self._build_subobj(dso.String, _POSTFIX_MODULE,
                                           create=create, value=module)
+        self._verifiers = self._build_subobj(dso.MutableSet, _POSTFIX_VERIFIERS,
                                             create=create, value=set())
 
         # Register with Server
@@ -285,8 +421,12 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Unregister with Server
         self.srv._authenticators.remove(self)
 
+        # Unregister with Verifiers
+        for verifier in self.verifiers_by_obj():
+            verifier.authenticators_remove(self)
 
         # Cleanup Vars
+        self._verifiers.rem()
         self._module.rem()
 
         # Call Parent
@@ -297,8 +437,17 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Return Module"""
         return self._module.get_val()
 
+    def verifiers_by_key(self):
+        """Return Verifier Memberships as Keys"""
+        return self._verifiers.get_val()
 
+    def verifiers_by_uid(self):
+        """Return Verifier Memberships as UUIDs"""
+        return set([self._val_to_uid(key) for key in self._verifiers])
 
+    def verifiers_by_obj(self):
+        """Return Verifier Memberships as Objects"""
+        return set([self._val_to_obj(key, obj=Verifier) for key in self._verifiers])
 
 
     def __init__(self, srv, create=False, overwrite=False,
