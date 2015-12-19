@@ -216,14 +216,19 @@ class PersistentObject(object):
         # Unregister from server
         self.srv._unregister(self)
 
-    def _val_to_key(self, val):
+    def _val_to_key(self, val, obj=None):
 
-        if isinstance(val, type(self)):
+        if obj is None:
+            obj = type(self)
+        else:
+            check_issubclass(obj, PersistentObject)
+
+        if isinstance(val, obj):
             return val.key
         elif isinstance(val, str):
             return val
         else:
-            raise TypeError("val must be an {} or str".format(type(self)))
+            raise TypeError("val must be an {} or str".format(obj))
 
     def _val_to_obj(self, val, obj=None):
 
@@ -232,12 +237,12 @@ class PersistentObject(object):
         else:
             check_issubclass(obj, PersistentObject)
 
-        if isinstance(val, type(self)):
+        if isinstance(val, obj):
             return val
         elif isinstance(val, str):
             return obj(self.srv, key=val, create=False)
         else:
-            raise TypeError("val must be an {} or str".format(type(self)))
+            raise TypeError("val must be an {} or str".format(obj))
 
     def exists(self):
         return self._srv.exists(self.key)
@@ -284,16 +289,21 @@ class UUIDObject(PersistentObject):
         # Save UUID
         self._uid = uid
 
-    def _val_to_key(self, val):
+    def _val_to_key(self, val, obj=None):
 
-        if isinstance(val, type(self)):
+        if obj is None:
+            obj = type(self)
+        else:
+            check_issubclass(obj, UUIDObject)
+
+        if isinstance(val, obj):
             return val.key
         elif isinstance(val, uuid.UUID):
             return str(val)
         elif isinstance(val, str):
             return val
         else:
-            raise TypeError("val must be an {} or str".format(type(self)))
+            raise TypeError("val must be an {} or str".format(obj))
 
     def _val_to_obj(self, val, obj=None):
 
@@ -309,18 +319,23 @@ class UUIDObject(PersistentObject):
         elif isinstance(val, str):
             return obj(self.srv, key=val, create=False)
         else:
-            raise TypeError("val must be an {}, uuid, or str".format(type(self)))
+            raise TypeError("val must be an {}, uuid, or str".format(obj))
 
-    def _val_to_uid(self, val):
+    def _val_to_uid(self, val, obj=None):
 
-        if isinstance(val, type(self)):
+        if obj is None:
+            obj = type(self)
+        else:
+            check_issubclass(obj, UUIDObject)
+
+        if isinstance(val, obj):
             return val.uid
         elif isinstance(val, uuid.UUID):
             return val
         elif isinstance(val, str):
             return uuid.UUID(val)
         else:
-            raise TypeError("val must be an {}, uuid, or str".format(type(self)))
+            raise TypeError("val must be an {}, uuid, or str".format(obj))
 
     @property
     def uid(self):
