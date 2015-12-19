@@ -179,7 +179,7 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Call Parent
         super().__init__(*args, **kwargs)
 
-    # Core Tests #
+    ## Core Tests ##
 
     def test_init_and_destroy(self):
 
@@ -190,7 +190,7 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
-    # Authorization Tests #
+    ## Authorization Tests ##
 
     def test_authorizations_create(self):
 
@@ -247,7 +247,6 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
-    # Authenticator Tests #
     ## Verifier Tests ##
 
     def test_verifiers_create(self):
@@ -305,6 +304,7 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
+    ## Authenticator Tests ##
 
     def test_authenticators_create(self):
 
