@@ -115,6 +115,8 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Unregister with Server
         self.srv._collections.remove(self)
 
+        # ToDo: Delete Secrets
+
         # Cleanup Indexes
         self._secrets.destroy()
 
