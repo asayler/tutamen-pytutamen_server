@@ -31,29 +31,17 @@ class AccessControlTestCase(tests_common.BaseTestCase):
         acs = accesscontrol.AccessControlServer(self.driver)
         return acs
 
-    def _get_authorization_kwargs(self):
+    def _create_authorization(self, acs, direct=False, **kwargs_user):
 
         clientuid = uuid.uuid4()
         expiration = time.time()
         objperm = 'TESTPERM'
         objtype = 'TESTOBJ'
         objuid = uuid.uuid4()
-        return {'clientuid': clientuid, 'expiration': expiration,
-                'objperm': objperm, 'objtype': objtype, 'objuid': objuid}
-
-    def _get_authset_kwargs(self):
-
-        return {}
-
-    def _get_authenticator_kwargs(self):
-
-        module = 'TESTMOD'
-        return {'module': module}
-
-    def _create_authorization(self, acs, direct=False, **kwargs_user):
-
-        kwargs = self._get_authorization_kwargs()
+        kwargs = {'clientuid': clientuid, 'expiration': expiration,
+                  'objperm': objperm, 'objtype': objtype, 'objuid': objuid}
         kwargs.update(kwargs_user)
+
         if direct:
             authorization = accesscontrol.Authorization(acs, create=True, **kwargs)
         else:
@@ -62,8 +50,10 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_authenticator(self, acs, direct=False, **kwargs_user):
 
-        kwargs = self._get_authenticator_kwargs()
+        module = 'TESTMOD'
+        kwargs = {'module': module}
         kwargs.update(kwargs_user)
+
         if direct:
             authenticator = accesscontrol.Authenticator(acs, create=True, **kwargs)
         else:
