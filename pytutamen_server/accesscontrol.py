@@ -26,6 +26,7 @@ _PREFIX_AUTHORIZATION = "authorization"
 _PREFIX_VERIFIER = "verifier"
 _PREFIX_AUTHENTICATOR = "authenticator"
 _PREFIX_ACCOUNT = "account"
+_PREFIX_CLIENT = "client"
 
 _POSTFIX_CLIENTUID = "clientuid"
 _POSTFIX_EXPIRATION = "expiration"
@@ -37,6 +38,7 @@ _POSTFIX_MODULE = "module"
 _POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
+_POSTFIX_CLIENTS = "clients"
 
 _NEW_STATUS = "pending"
 
@@ -527,14 +529,16 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Setup Vars
         self._verifiers = self._build_subobj(dso.MutableSet, _POSTFIX_VERIFIERS,
-                                            create=create, value=set())
+                                             create=create, value=set())
+        self._clients = self._build_subobj(dso.MutableSet, _POSTFIX_CLIENTS,
+                                           create=create, value=set())
 
         # Register with Server
         if create:
             self.srv._accounts.add(self)
         else:
             if not self.srv.accounts_exists(key=self.key):
-                msg = "Authorization not associated with srv"
+                msg = "Account not associated with srv"
                 raise TypeError(msg)
 
     def destroy(self):
@@ -543,11 +547,14 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
         # Unregister with Server
         self.srv._accounts.remove(self)
 
+        # ToDo: Delete Clients
+
         # Unregister with Verifiers
         for verifier in self.verifiers_by_obj():
             verifier.accounts_remove(self)
 
         # Cleanup Vars
+        self._clients.rem()
         self._verifiers.rem()
 
         # Call Parent
@@ -564,3 +571,81 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
     def verifiers_by_obj(self):
         """Return Verifier Memberships as Objects"""
         return set([self._val_to_obj(key, obj=Verifier) for key in self._verifiers])
+
+    # Client Methods #
+
+    def clients_create(self, **kwargs):
+
+        return Client(self, create=True, **kwargs)
+
+    def clients_get(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+
+        # Create
+        return Client(self, create=False, key=key, uid=uid)
+
+    def clients_list(self):
+        return self._clients.get_val()
+
+    def clients_exists(self, uid=None, key=None):
+
+        # Check Args
+        if not uid and not key:
+            raise TypeError("Requires either uid or key")
+        if uid:
+            datatypes.check_isinstance(uid, uuid.UUID)
+        if key:
+            datatypes.check_isinstance(key, str)
+
+        # Convert key
+        if not key:
+            key = str(uid)
+
+        # Check membership
+        return key in self._clients
+
+class Client(datatypes.UUIDObject, datatypes.UserMetadataObject):
+
+    def __init__(self, account, create=False, overwrite=False,
+                 prefix=_PREFIX_CLIENT,
+                 **kwargs):
+        """Initialize Account"""
+
+        # Check Input
+        datatypes.check_isinstance(account, Account)
+        if create:
+            pass
+        if overwrite:
+            raise TypeError("Client does not support overwrite")
+
+        # Call Parent
+        super().__init__(account.srv, create=create, overwrite=overwrite,
+                         prefix=prefix, **kwargs)
+
+        # Save Account
+        self._account = account
+
+        # Register with Account
+        if create:
+            self.account._clients.add(self.key)
+        else:
+            if not self.account.clients_exists(key=self.key):
+                msg = "Client not associated with Account"
+                raise TypeError(msg)
+
+    def destroy(self):
+        """Delete Account"""
+
+        # Unregister with Account
+        self.account._clients.discard(self.key)
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def account(self):
+        """Return Account"""
+        return self._account
