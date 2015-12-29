@@ -22,13 +22,14 @@ import tests_common
 ## tutamen_server ##
 from pytutamen_server import accesscontrol
 
+
 ### Object Classes ###
 
 class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_accesscontrolserver(self):
 
-        acs = accesscontrol.AccessControlServer(self.driver)
+        acs = accesscontrol.AccessControlServer(self.backend)
         return acs
 
     def _create_authorization(self, acs, direct=False, **kwargs_user):

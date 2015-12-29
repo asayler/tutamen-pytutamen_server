@@ -8,9 +8,6 @@
 
 import uuid
 
-from pcollections import be_redis_atomic as dso
-from pcollections import keys as dsk
-
 from . import datatypes
 
 
@@ -47,20 +44,20 @@ _NEW_STATUS = "pending"
 
 class AccessControlServer(datatypes.PersistentObjectServer):
 
-    def __init__(self, driver, prefix=_PREFIX_ACCESSCONTROLSERVER):
+    def __init__(self, backend, prefix=_PREFIX_ACCESSCONTROLSERVER):
 
         # Call Parent
-        super().__init__(driver, prefix=prefix)
+        super().__init__(backend, prefix=prefix)
 
         # Setup Collections Index
-        self._authorizations = datatypes.Index(self, key=_KEY_AUTHORIZATIONS, prefix=prefix,
-                                               create=True, overwrite=False)
-        self._verifiers = datatypes.Index(self, key=_KEY_VERIFIERS, prefix=prefix,
-                                               create=True, overwrite=False)
-        self._authenticators = datatypes.Index(self, key=_KEY_AUTHENTICATORS, prefix=prefix,
-                                               create=True, overwrite=False)
-        self._accounts = datatypes.Index(self, key=_KEY_ACCOUNTS, prefix=prefix,
-                                         create=True, overwrite=False)
+        self._authorizations = datatypes.Index(self, key=_KEY_AUTHORIZATIONS,
+                                               prefix=prefix, create=True)
+        self._verifiers = datatypes.Index(self, key=_KEY_VERIFIERS,
+                                          prefix=prefix, create=True)
+        self._authenticators = datatypes.Index(self, key=_KEY_AUTHENTICATORS,
+                                               prefix=prefix, create=True)
+        self._accounts = datatypes.Index(self, key=_KEY_ACCOUNTS,
+                                         prefix=prefix, create=True)
 
     def destroy(self):
 
@@ -215,7 +212,7 @@ class AccessControlServer(datatypes.PersistentObjectServer):
 
 class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, srv, create=False, overwrite=False,
+    def __init__(self, srv, create=False,
                  prefix=_PREFIX_AUTHORIZATION,
                  clientuid=None, expiration=None,
                  objperm=None, objtype=None, objuid=None, **kwargs):
@@ -229,26 +226,29 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
             datatypes.check_isinstance(objperm, str)
             datatypes.check_isinstance(objtype, str)
             datatypes.check_isinstance(objuid, uuid.UUID)
-        if overwrite:
-            raise TypeError("Authorization does not support overwrite")
 
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Status and Token
-        self._clientuid = self._build_subobj(dso.String, _POSTFIX_CLIENTUID,
-                                             create=create, value=str(clientuid))
-        self._expiration = self._build_subobj(dso.String, _POSTFIX_EXPIRATION,
-                                              create=create, value=str(expiration))
-        self._objperm = self._build_subobj(dso.String, _POSTFIX_OBJPERM,
-                                           create=create, value=objperm)
-        self._objtype = self._build_subobj(dso.String, _POSTFIX_OBJTYPE,
-                                           create=create, value=objtype)
-        self._objuid = self._build_subobj(dso.String, _POSTFIX_OBJUID,
-                                          create=create, value=str(objuid))
-        self._status = self._build_subobj(dso.MutableString, _POSTFIX_STATUS,
-                                          create=create, value=_NEW_STATUS)
+        self._clientuid = self._build_subobj(self.srv.collection.String,
+                                             _POSTFIX_CLIENTUID,
+                                             create=datatypes.nos(clientuid))
+        self._expiration = self._build_subobj(self.srv.collection.String,
+                                              _POSTFIX_EXPIRATION,
+                                              create=datatypes.nos(expiration))
+        self._objperm = self._build_subobj(self.srv.collection.String,
+                                           _POSTFIX_OBJPERM,
+                                           create=objperm)
+        self._objtype = self._build_subobj(self.srv.collection.String,
+                                           _POSTFIX_OBJTYPE,
+                                           create=objtype)
+        self._objuid = self._build_subobj(self.srv.collection.String,
+                                          _POSTFIX_OBJUID,
+                                          create=datatypes.nos(objuid))
+        self._status = self._build_subobj(self.srv.collection.MutableString,
+                                          _POSTFIX_STATUS,
+                                          create=_NEW_STATUS)
 
         # Register with Server
         if create:
@@ -307,7 +307,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
 class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, srv, create=False, overwrite=False,
+    def __init__(self, srv, create=False,
                  prefix=_PREFIX_VERIFIER, **kwargs):
         """Initialize Verifier"""
 
@@ -315,18 +315,17 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         datatypes.check_isinstance(srv, AccessControlServer)
         if create:
             pass
-        if overwrite:
-            raise TypeError("Authenticator does not support overwrite")
 
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._authenticators = self._build_subobj(dso.MutableSet, _POSTFIX_AUTHENTICATORS,
-                                                  create=create, value=set())
-        self._accounts = self._build_subobj(dso.MutableSet, _POSTFIX_ACCOUNTS,
-                                            create=create, value=set())
+        self._authenticators = self._build_subobj(self.srv.collection.MutableSet,
+                                                  _POSTFIX_AUTHENTICATORS,
+                                                  create=set())
+        self._accounts = self._build_subobj(self.srv.collection.MutableSet,
+                                            _POSTFIX_ACCOUNTS,
+                                            create=set())
 
         # Register with Server
         if create:
@@ -445,7 +444,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
 class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, srv, create=False, overwrite=False,
+    def __init__(self, srv, create=False,
                  prefix=_PREFIX_AUTHENTICATOR,
                  module=None, **kwargs):
         """Initialize Authenticator"""
@@ -454,18 +453,17 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         datatypes.check_isinstance(srv, AccessControlServer)
         if create:
             datatypes.check_isinstance(module, str)
-        if overwrite:
-            raise TypeError("Authenticator does not support overwrite")
 
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._module = self._build_subobj(dso.String, _POSTFIX_MODULE,
-                                          create=create, value=module)
-        self._verifiers = self._build_subobj(dso.MutableSet, _POSTFIX_VERIFIERS,
-                                            create=create, value=set())
+        self._module = self._build_subobj(self.srv.collection.String,
+                                          _POSTFIX_MODULE,
+                                          create=module)
+        self._verifiers = self._build_subobj(self.srv.collection.MutableSet,
+                                             _POSTFIX_VERIFIERS,
+                                             create=set())
 
         # Register with Server
         if create:
@@ -511,7 +509,7 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
 class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, srv, create=False, overwrite=False,
+    def __init__(self, srv, create=False,
                  prefix=_PREFIX_ACCOUNT,
                  **kwargs):
         """Initialize Account"""
@@ -520,18 +518,17 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
         datatypes.check_isinstance(srv, AccessControlServer)
         if create:
             pass
-        if overwrite:
-            raise TypeError("Account does not support overwrite")
 
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._verifiers = self._build_subobj(dso.MutableSet, _POSTFIX_VERIFIERS,
-                                             create=create, value=set())
-        self._clients = self._build_subobj(dso.MutableSet, _POSTFIX_CLIENTS,
-                                           create=create, value=set())
+        self._verifiers = self._build_subobj(self.srv.collection.MutableSet,
+                                             _POSTFIX_VERIFIERS,
+                                             create=set())
+        self._clients = self._build_subobj(self.srv.collection.MutableSet,
+                                           _POSTFIX_CLIENTS,
+                                           create=set())
 
         # Register with Server
         if create:
@@ -609,7 +606,7 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
 class Client(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, account, create=False, overwrite=False,
+    def __init__(self, account, create=False,
                  prefix=_PREFIX_CLIENT,
                  **kwargs):
         """Initialize Account"""
@@ -618,12 +615,9 @@ class Client(datatypes.UUIDObject, datatypes.UserMetadataObject):
         datatypes.check_isinstance(account, Account)
         if create:
             pass
-        if overwrite:
-            raise TypeError("Client does not support overwrite")
 
         # Call Parent
-        super().__init__(account.srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(account.srv, create=create, prefix=prefix, **kwargs)
 
         # Save Account
         self._account = account

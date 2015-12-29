@@ -33,7 +33,7 @@ class StorageServerTestCase(tests_common.BaseTestCase):
     def test_init_and_destroy(self):
 
         # Create Server
-        ss = storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.backend)
         self.assertIsInstance(ss, storage.StorageServer)
 
         # Cleanup
@@ -42,7 +42,7 @@ class StorageServerTestCase(tests_common.BaseTestCase):
     def test_collections_create(self):
 
         # Create Server
-        ss = storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.backend)
 
         # Create Collection
         col = ss.collections_create()
@@ -56,7 +56,7 @@ class StorageServerTestCase(tests_common.BaseTestCase):
     def test_collections_get(self):
 
         # Create Server
-        ss = storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.backend)
 
         # Create Collection
         col = ss.collections_create()
@@ -84,7 +84,7 @@ class StorageServerTestCase(tests_common.BaseTestCase):
     def test_collections_list(self):
 
         # Create Server
-        ss = storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.backend)
 
         # List Collections (Empty)
         keys = ss.collections_list()
@@ -115,7 +115,7 @@ class StorageServerTestCase(tests_common.BaseTestCase):
     def test_collections_exists(self):
 
         # Create Server
-        ss = storage.StorageServer(self.driver)
+        ss = storage.StorageServer(self.backend)
 
         # Test DNE (key)
         key = "fakekey"
@@ -156,7 +156,7 @@ class CollectionTestCase(tests_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = storage.StorageServer(self.driver)
+        self.ss = storage.StorageServer(self.backend)
 
     def tearDown(self):
 
@@ -346,7 +346,7 @@ class SecretTestCase(tests_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = storage.StorageServer(self.driver)
+        self.ss = storage.StorageServer(self.backend)
         self.col = self.ss.collections_create()
 
     def tearDown(self):

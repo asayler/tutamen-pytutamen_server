@@ -9,9 +9,9 @@
 import abc
 import uuid
 
-from pcollections import be_redis_atomic as dso
-from pcollections import factories as dsf
-from pcollections import keys as dsk
+
+from pcollections import backends
+from pcollections import collections
 
 
 ### Constants ###
@@ -67,26 +67,32 @@ def check_issubclass(sub, sup):
         msg = "'{}' is not a subclass of '{}'".format(sub, sup)
         raise TypeError(msg)
 
+def nos(val):
+    """ None or Str"""
+    return str(val) if val is not None else None
+
+
 ### Objects ###
 
 class PersistentObjectServer(object):
 
-    def __init__(self, driver, prefix="srv"):
+    def __init__(self, backend, prefix="srv"):
 
-        # Check Args
-        # TODO: Verify driver is of appropriate type
+        # Check args
+        check_isinstance(backend, backends.Backend)
 
         # Call Parent
         super().__init__()
 
         # Save Attrs
-        self._driver = driver
+        self._backend = backend
+        self._collection = collections.PCollections(backend)
         self._prefix = prefix
 
         # Setup Object Index
-        self._objindex = self._build_subobj(dso.MutableSet,
+        self._objindex = self._build_subobj(self.collection.MutableSet,
                                             _OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX,
-                                            create=True, value=set())
+                                            create=set())
 
     def destroy(self):
 
@@ -96,23 +102,25 @@ class PersistentObjectServer(object):
     def _build_subkey(self, base_key, postfix=None):
         return build_key(base_key, prefix=self.prefix, postfix=postfix)
 
-    def _build_subobj(self, obj_type, base_key, postfix=None, create=False, value=None):
+    def _build_subobj(self, obj_type, base_key, postfix=None, create=None):
 
-        factory = self.make_factory(obj_type)
+        #                      create
+        # OPEN_EXISTING         None
+        # CREATE_OR_OPEN        Val
+
         subkey = self._build_subkey(base_key, postfix=postfix)
-        obj = factory.from_raw(subkey)
-
+        obj = obj_type(subkey, create=create, existing=None)
         if not obj.exists():
-            if create:
-                obj.create(value)
-            else:
-                raise ObjectDNE(self)
-
+            raise ObjectDNE(obj)
         return obj
 
     @property
-    def driver(self):
-        return self._driver
+    def backend(self):
+        return self._backend
+
+    @property
+    def collection(self):
+        return self._collection
 
     @property
     def prefix(self):
@@ -141,28 +149,22 @@ class PersistentObjectServer(object):
         # Discard Object Key
         self._objindex.discard(obj.key)
 
-    def make_factory(self, obj_type, key_type=dsk.StrKey, key_kwargs={}):
-        return dsf.InstanceFactory(self._driver, obj_type,
-                                   key_type=key_type, key_kwargs=key_kwargs)
-
 class PersistentObject(object):
 
-    def __init__(self, srv, key=None, create=False, overwrite=False, prefix=""):
+    def __init__(self, srv, key=None, create=False, prefix=""):
         """Initialize Object"""
 
-        #                    create  overwrite  existing
-        # CREATE_OR_OPEN       Y         N         Y
-        # CREATE_OVERWRITE     Y         Y         Y
-        # CREATE_OR_FAIL       Y         *         N
-        # OPEN_EXISTING        N         *         *
+        #                      create
+        # OPEN_EXISTING        False
+        # CREATE_OR_OPEN       True
 
         # Check Args
         check_isinstance(srv, PersistentObjectServer)
         check_isinstance(key, str)
+        check_isinstance(create, bool)
         check_isinstance(prefix, str)
         if not key:
             msg = "Requires valid key"
-            raise TypeError(msg)
             raise TypeError(msg)
 
         # Call Parent
@@ -184,18 +186,16 @@ class PersistentObject(object):
     def _build_subkey(self, postfix):
         return build_key(self.key, prefix=self.prefix, postfix=postfix)
 
-    def _build_subobj(self, obj_type, postfix, create=False, value=None):
+    def _build_subobj(self, obj_type, postfix, create=None):
 
-        factory = self.srv.make_factory(obj_type)
+        #                      create
+        # OPEN_EXISTING         None
+        # CREATE_OR_OPEN        Val
+
         subkey = self._build_subkey(postfix)
-        obj = factory.from_raw(subkey)
-
+        obj = obj_type(subkey, create=create, existing=None)
         if not obj.exists():
-            if create:
-                obj.create(value)
-            else:
-                raise ObjectDNE(self)
-
+            raise ObjectDNE(obj)
         return obj
 
     def __repr__(self):
@@ -245,7 +245,7 @@ class PersistentObject(object):
             raise TypeError("val must be an {} or str".format(obj))
 
     def exists(self):
-        return self._srv.exists(self.key)
+        return self.srv.exists(self.key)
 
     @property
     def key(self):
@@ -343,20 +343,16 @@ class UUIDObject(PersistentObject):
 
 class UserMetadataObject(PersistentObject):
 
-    def __init__(self, srv, create=False, overwrite=False, usermetadata={}, **kwargs):
+    def __init__(self, srv, create=False, usermetadata={}, **kwargs):
         """Initialize Object"""
 
-        # Check Args
-        check_isinstance(usermetadata, dict)
-        if overwrite:
-            raise TypeError("UserMetadataObject does not support overwrite")
-
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
+        super().__init__(srv, create=create, **kwargs)
 
         # Setup Metadata
-        self._usermetadata = self._build_subobj(dso.MutableDictionary, _USERMETADATA_POSTFIX,
-                                                create=create, value=usermetadata)
+        self._usermetadata = self._build_subobj(self.srv.collection.MutableDictionary,
+                                                _USERMETADATA_POSTFIX,
+                                                create=usermetadata)
 
     def destroy(self):
         """Cleanup Object"""
@@ -373,19 +369,15 @@ class UserMetadataObject(PersistentObject):
 
 class Index(PersistentObject):
 
-    def __init__(self, srv, create=False, overwrite=False, **kwargs):
+    def __init__(self, srv, create=False, **kwargs):
         """Initialize Index Object"""
 
-        # Check Args
-        if overwrite:
-            raise TypeError("Index does not support overwrite")
-
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite, **kwargs)
+        super().__init__(srv, create=create, **kwargs)
 
         # Setup Index
-        self._index = self._build_subobj(dso.MutableSet, _INDEX_POSTFIX,
-                                         create=create, value=set())
+        self._index = self._build_subobj(self.srv.collection.MutableSet,
+                                         _INDEX_POSTFIX, create=set())
 
     def destroy(self):
         """Cleanup Index Object"""

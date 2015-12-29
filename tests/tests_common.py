@@ -14,7 +14,8 @@ import unittest
 import warnings
 
 ## pcollections ##
-import pcollections.be_redis_atomic
+from pcollections import drivers
+from pcollections import backends
 
 
 ### Globals ###
@@ -30,8 +31,8 @@ class TestException(Exception):
 
 class RedisDatabaseNotEmpty(TestException):
 
-    def __init__(self, driver):
-        msg = "Redis DB not empty: {:d} keys".format(driver.dbsize())
+    def __init__(self, redis):
+        msg = "Redis DB not empty: {:d} keys".format(redis.dbsize())
         super().__init__(msg)
 
 
@@ -42,7 +43,8 @@ class BaseTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.driver = pcollections.be_redis_atomic.Driver(db=_REDIS_DB)
+        self.driver = drivers.RedisDriver(db=_REDIS_DB)
+        self.backend = backends.RedisBaseBackend(self.driver)
 
     def setUp(self):
 
@@ -50,16 +52,16 @@ class BaseTestCase(unittest.TestCase):
         super().setUp()
 
         # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
-            raise RedisDatabaseNotEmpty(self.driver)
+        if (self.driver.redis.dbsize() != 0):
+            raise RedisDatabaseNotEmpty(self.driver.redis)
 
     def tearDown(self):
 
         # Confirm Empty DB
-        if (self.driver.dbsize() != 0):
+        if (self.driver.redis.dbsize() != 0):
             print("")
             warnings.warn("Redis database not empty prior to tearDown")
-            self.driver.flushdb()
+            self.driver.redis.flushdb()
 
         # Call Parent
         super().tearDown()

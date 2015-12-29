@@ -8,9 +8,6 @@
 
 import uuid
 
-from pcollections import be_redis_atomic as dso
-from pcollections import keys as dsk
-
 from . import datatypes
 
 
@@ -31,15 +28,15 @@ _POSTFIX_DATA = "data"
 
 class StorageServer(datatypes.PersistentObjectServer):
 
-    def __init__(self, driver, prefix=_PREFIX_STORAGESERVER):
+    def __init__(self, backend, prefix=_PREFIX_STORAGESERVER):
 
         # Call Parent
-        super().__init__(driver, prefix=prefix)
+        super().__init__(backend, prefix=prefix)
 
         # Setup Collections Index
         key = _INDEX_KEY_COLLECTIONS
         self._collections = datatypes.Index(self, key=key, prefix=prefix,
-                                            create=True, overwrite=False)
+                                            create=True)
 
     def destroy(self):
 
@@ -83,23 +80,19 @@ class StorageServer(datatypes.PersistentObjectServer):
 
 class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, srv, create=False, overwrite=False,
-                 prefix=_PREFIX_COLLECTION, **kwargs):
+    def __init__(self, srv, create=False, prefix=_PREFIX_COLLECTION, **kwargs):
         """Initialize Collection"""
 
         # Check Input
         datatypes.check_isinstance(srv, StorageServer)
-        if overwrite:
-            raise TypeError("Collection does not support overwrite")
 
         # Call Parent
-        super().__init__(srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Secret Index
         key = self.key + _INDEX_KEY_SECRETS
         self._secrets = datatypes.Index(self.srv, key=key, prefix=prefix,
-                                        create=create, overwrite=overwrite)
+                                        create=create)
 
         # Register with Server
         if create:
@@ -157,8 +150,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
 class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
-    def __init__(self, col, create=False, overwrite=False,
-                 prefix=_PREFIX_SECRET, data="", **kwargs):
+    def __init__(self, col, create=False, prefix=_PREFIX_SECRET, data="", **kwargs):
         """Initialize Secret"""
 
         # Check Input
@@ -166,19 +158,16 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
             datatypes.check_isinstance(col, Collection)
         if create:
             pass
-        if overwrite:
-            raise TypeError("Secret does not support overwrite")
 
         # Call Parent
-        super().__init__(col.srv, create=create, overwrite=overwrite,
-                         prefix=prefix, **kwargs)
+        super().__init__(col.srv, create=create, prefix=prefix, **kwargs)
 
         # Save Collection
         self._col = col
 
         # Setup Data
-        self._data = self._build_subobj(dso.String, _POSTFIX_DATA,
-                                        create=create, value=data)
+        self._data = self._build_subobj(self.srv.collection.String, _POSTFIX_DATA,
+                                        create=data)
 
         # Register with Collection
         if create:

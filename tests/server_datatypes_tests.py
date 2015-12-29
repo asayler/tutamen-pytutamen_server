@@ -63,19 +63,19 @@ class PersistentObjectServerTestCase(tests_common.BaseTestCase):
     def test_init_and_destroy(self):
 
         # Create Server
-        srv = datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.backend)
         self.assertIsInstance(srv, datatypes.PersistentObjectServer)
 
         # Cleanup
         srv.destroy()
 
-    def test_driver(self):
+    def test_backend(self):
 
         # Create Server
-        srv = datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.backend)
 
-        # Test Driver
-        self.assertIs(srv.driver, self.driver)
+        # Test Backend
+        self.assertIs(srv.backend, self.backend)
 
         # Cleanup
         srv.destroy()
@@ -83,7 +83,7 @@ class PersistentObjectServerTestCase(tests_common.BaseTestCase):
     def test_objects(self):
 
         # Create Server
-        srv = datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.backend)
         objs = []
 
         # Test Empty
@@ -105,7 +105,7 @@ class PersistentObjectServerTestCase(tests_common.BaseTestCase):
     def test_exists(self):
 
         # Create Server
-        srv = datatypes.PersistentObjectServer(self.driver)
+        srv = datatypes.PersistentObjectServer(self.backend)
         objs = []
 
         # Add Objects
@@ -136,7 +136,7 @@ class PersistentObjectBasis(tests_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.srv = datatypes.PersistentObjectServer(self.driver)
+        self.srv = datatypes.PersistentObjectServer(self.backend)
 
     def tearDown(self):
 
@@ -173,18 +173,6 @@ class PersistentObjectTestCase(PersistentObjectBasis):
         key = "test_object"
         datatypes.PersistentObject(self.srv, key=key, create=True)
         obj = datatypes.PersistentObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, datatypes.PersistentObject)
-        self.assertEqual(obj.key, key)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_init_create_overwrite(self):
-
-        # Create Object
-        key = "test_object"
-        datatypes.PersistentObject(self.srv, key=key, create=True)
-        obj = datatypes.PersistentObject(self.srv, key=key, create=True, overwrite=True)
         self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
 
