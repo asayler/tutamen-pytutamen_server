@@ -14,8 +14,11 @@
 import uuid
 import unittest
 
-# Tests Common
+## Tests Common ##
 import tests_common
+
+## pcollections ##
+from pcollections import collections
 
 ## tutamen_server ##
 from pytutamen_server import datatypes
@@ -56,6 +59,17 @@ class FunctionsTestCase(tests_common.BaseTestCase):
         # Test Pass
         datatypes.check_isinstance("test", str)
 
+    def test_check_issubclass(self):
+
+        class substr(str):
+            pass
+
+        # Test Fail
+        self.assertRaises(TypeError, datatypes.check_issubclass, object, str)
+
+        # Test Pass
+        datatypes.check_issubclass(substr, str)
+
 ### Object Classes ###
 
 class PersistentObjectServerTestCase(tests_common.BaseTestCase):
@@ -76,6 +90,29 @@ class PersistentObjectServerTestCase(tests_common.BaseTestCase):
 
         # Test Backend
         self.assertIs(srv.backend, self.backend)
+
+        # Cleanup
+        srv.destroy()
+
+    def test_collections(self):
+
+        # Create Server
+        srv = datatypes.PersistentObjectServer(self.backend)
+
+        # Test Collections
+        self.assertIsInstance(srv.collections, collections.PCollections)
+
+        # Cleanup
+        srv.destroy()
+
+    def test_prefix(self):
+
+        # Create Server
+        test_pre = "testsrv"
+        srv = datatypes.PersistentObjectServer(self.backend, prefix=test_pre)
+
+        # Test prefix
+        self.assertEqual(srv.prefix, test_pre)
 
         # Cleanup
         srv.destroy()
@@ -128,6 +165,89 @@ class PersistentObjectServerTestCase(tests_common.BaseTestCase):
         # Cleanup
         srv.destroy()
 
+    def test_val_to_key(self):
+
+        # Create Server
+        srv = datatypes.PersistentObjectServer(self.backend)
+
+        # Test Str
+        key = "test_string"
+        val = key
+        self.assertEqual(srv.val_to_key(val), key)
+
+        # Test UUID
+        key = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        val = uuid.UUID(key)
+        self.assertEqual(srv.val_to_key(val), key)
+
+        # Test Object
+        key = "test_object"
+        val = datatypes.PersistentObject(srv, key=key, create=True)
+        self.assertEqual(srv.val_to_key(val), key)
+        val.destroy()
+
+        # Test Bad Type
+        self.assertRaises(TypeError, srv.val_to_key, None)
+
+        # Cleanup
+        srv.destroy()
+
+    def test_val_to_uid(self):
+
+        # Create Server
+        srv = datatypes.PersistentObjectServer(self.backend)
+
+        # Test UUID
+        uid = uuid.uuid4()
+        val = uid
+        self.assertEqual(srv.val_to_uid(val), uid)
+
+        # Test Str
+        val = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        uid = uuid.UUID(val)
+        self.assertEqual(srv.val_to_uid(val), uid)
+
+        # Test Object
+        uid = uuid.uuid4()
+        val = datatypes.UUIDObject(srv, uid=uid, create=True)
+        self.assertEqual(srv.val_to_uid(val), uid)
+        val.destroy()
+
+        # Test Bad Type
+        self.assertRaises(TypeError, srv.val_to_uid, None)
+
+        # Cleanup
+        srv.destroy()
+
+    def test_val_to_obj(self):
+
+        # Create Server
+        srv = datatypes.PersistentObjectServer(self.backend)
+
+        # Test Object
+        obj = datatypes.PersistentObject(srv, key="test_obj", create=True)
+        val = obj
+        self.assertEqual(srv.val_to_obj(val, datatypes.PersistentObject), obj)
+        obj.destroy()
+
+        # Test Str
+        val = "test_obj"
+        obj = datatypes.PersistentObject(srv, key=val, create=True)
+        self.assertEqual(srv.val_to_obj(val, datatypes.PersistentObject), obj)
+        obj.destroy()
+
+        # Test UUID
+        val = uuid.uuid4()
+        obj = datatypes.UUIDObject(srv, uid=val, create=True)
+        self.assertEqual(srv.val_to_obj(val, datatypes.UUIDObject), obj)
+        obj.destroy()
+
+        # Test Bad Type
+        self.assertRaises(TypeError, srv.val_to_obj, None, datatypes.PersistentObject)
+
+        # Cleanup
+        srv.destroy()
+
 class PersistentObjectBasis(tests_common.BaseTestCase):
 
     def setUp(self):
@@ -148,7 +268,7 @@ class PersistentObjectBasis(tests_common.BaseTestCase):
 
 class PersistentObjectTestCase(PersistentObjectBasis):
 
-    def test_init_create_new(self):
+    def test_init_create(self):
 
         # Test No Key
         self.assertRaises(TypeError, datatypes.PersistentObject, self.srv)
@@ -160,18 +280,6 @@ class PersistentObjectTestCase(PersistentObjectBasis):
                           self.srv, key=key, create=False)
 
         # Test Create Object
-        obj = datatypes.PersistentObject(self.srv, key=key, create=True)
-        self.assertIsInstance(obj, datatypes.PersistentObject)
-        self.assertEqual(obj.key, key)
-
-        # Cleanup
-        obj.destroy()
-
-    def test_init_create_existing(self):
-
-        # Create Object
-        key = "test_object"
-        datatypes.PersistentObject(self.srv, key=key, create=True)
         obj = datatypes.PersistentObject(self.srv, key=key, create=True)
         self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
@@ -218,6 +326,19 @@ class PersistentObjectTestCase(PersistentObjectBasis):
         # Cleanup
         obj.destroy()
 
+    def test_prefix(self):
+
+        # Create Object
+        key = "test_object"
+        prefix = "test_prefix"
+        obj = datatypes.PersistentObject(self.srv, key=key, create=True, prefix=prefix)
+
+        # Test key
+        self.assertEqual(obj.prefix, prefix)
+
+        # Cleanup
+        obj.destroy()
+
     def test_srv(self):
 
         # Create Object
@@ -243,7 +364,7 @@ class PersistentObjectTestCase(PersistentObjectBasis):
 
 class UUIDObjectTestCase(PersistentObjectBasis):
 
-    def test_init_new(self):
+    def test_init_create(self):
 
         # Test Bad Key Type
         key = "NotValidUUID"
@@ -292,7 +413,7 @@ class UUIDObjectTestCase(PersistentObjectBasis):
 
 class UserMetadataObjectTestCase(PersistentObjectBasis):
 
-    def test_init_new(self):
+    def test_init_create(self):
 
         # Test Bad Metadata Type
         key = "TestUserMetadataObject"
@@ -342,22 +463,10 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
 
 class IndexTestCase(PersistentObjectBasis):
 
-    def test_init_create_new(self):
+    def test_init_create(self):
 
         # Create Index
         key = "test_index"
-        index = datatypes.Index(self.srv, key=key, create=True)
-        self.assertIsInstance(index, datatypes.Index)
-        self.assertEqual(index.key, key)
-
-        # Cleanup
-        index.destroy()
-
-    def test_init_create_existing(self):
-
-        # Create Index
-        key = "test_index"
-        datatypes.Index(self.srv, key=key, create=True)
         index = datatypes.Index(self.srv, key=key, create=True)
         self.assertIsInstance(index, datatypes.Index)
         self.assertEqual(index.key, key)

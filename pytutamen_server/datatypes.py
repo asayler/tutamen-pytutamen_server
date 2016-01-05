@@ -245,7 +245,7 @@ class PersistentObject(object):
         return hash(self.key)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
+        if type(other) == type(self):
             return self.key == other.key
         else:
             return False
