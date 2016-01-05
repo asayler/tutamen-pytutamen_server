@@ -171,18 +171,18 @@ class PersistentObjectServer(object):
         else:
             raise TypeError("val must be a uuid.UUID, str, or UUIDObject")
 
-    def val_to_obj(self, val, obj_type):
+    def val_to_obj(self, val, obj_type, **kwargs):
 
         if isinstance(val, obj_type):
             return val
         elif isinstance(val, str):
             if issubclass(obj_type, PersistentObject):
-                return obj_type(self, key=val, create=False)
+                return obj_type(self, key=val, create=False, **kwargs)
             else:
                 raise TypeError("val can not be str unless obj_type is PersistentObject")
         elif isinstance(val, uuid.UUID):
             if issubclass(obj_type, UUIDObject):
-                return obj_type(self, uid=val, create=False)
+                return obj_type(self, uid=val, create=False, **kwargs)
             else:
                 raise TypeError("val can not be uuid.UUID unless obj_type is UUIDObject")
         else:
