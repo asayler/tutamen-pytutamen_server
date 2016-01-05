@@ -364,17 +364,17 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def authenticators_by_uid(self):
         """Return Authenticators as UUID objects"""
-        return set([self._val_to_uid(key) for key in self._authenticators])
+        return set([self.srv.val_to_uid(key) for key in self._authenticators])
 
     def authenticators_by_obj(self):
         """Return Authenticators as objects"""
-        return set([self._val_to_obj(key, obj=Authenticator) for key in self._authenticators])
+        return set([self.srv.val_to_obj(key, Authenticator) for key in self._authenticators])
 
     def authenticators_is_member(self, val):
         """Return if Authenticator is member"""
 
         # Process Val
-        key = self._val_to_key(val, obj=Authenticator)
+        key = self.srv.val_to_key(val)
 
         # Compute Membership
         return key in self._authenticators
@@ -383,7 +383,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Add Authenticator"""
 
         # Process Val
-        actr = self._val_to_obj(val, obj=Authenticator)
+        actr = self.srv.val_to_obj(val, Authenticator)
 
         # Add Authenticator
         self._authenticators.add(actr.key)
@@ -393,7 +393,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Remove Authenticator"""
 
         # Process Val
-        actr = self._val_to_obj(val, obj=Authenticator)
+        actr = self.srv.val_to_obj(val, Authenticator)
 
         # Remove Authenticator
         actr._verifiers.discard(self.key)
@@ -407,17 +407,17 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def accounts_by_uid(self):
         """Return Accounts as UUID objects"""
-        return set([self._val_to_uid(key) for key in self._accounts])
+        return set([self.srv.val_to_uid(key) for key in self._accounts])
 
     def accounts_by_obj(self):
         """Return Accounts as objects"""
-        return set([self._val_to_obj(key, obj=Account) for key in self._accounts])
+        return set([self.srv.val_to_obj(key, Account) for key in self._accounts])
 
     def accounts_is_member(self, val):
         """Return if Account is member"""
 
         # Process Val
-        key = self._val_to_key(val, obj=Account)
+        key = self.srv.val_to_key(val)
 
         # Compute Membership
         return key in self._accounts
@@ -426,7 +426,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Add Account"""
 
         # Process Val
-        acct = self._val_to_obj(val, obj=Account)
+        acct = self.srv.val_to_obj(val, Account)
 
         # Add Account
         self._accounts.add(acct.key)
@@ -436,7 +436,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Remove Account"""
 
         # Process Val
-        acct = self._val_to_obj(val, obj=Account)
+        acct = self.srv.val_to_obj(val, Account)
 
         # Remove Account
         acct._verifiers.discard(self.key)
@@ -501,11 +501,11 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def verifiers_by_uid(self):
         """Return Verifier Memberships as UUIDs"""
-        return set([self._val_to_uid(key) for key in self._verifiers])
+        return set([self.srv.val_to_uid(key) for key in self._verifiers])
 
     def verifiers_by_obj(self):
         """Return Verifier Memberships as Objects"""
-        return set([self._val_to_obj(key, obj=Verifier) for key in self._verifiers])
+        return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
 
 class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
@@ -563,11 +563,11 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
     def verifiers_by_uid(self):
         """Return Verifier Memberships as UUIDs"""
-        return set([self._val_to_uid(key) for key in self._verifiers])
+        return set([self.srv.val_to_uid(key) for key in self._verifiers])
 
     def verifiers_by_obj(self):
         """Return Verifier Memberships as Objects"""
-        return set([self._val_to_obj(key, obj=Verifier) for key in self._verifiers])
+        return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
 
     # Client Methods #
 
