@@ -86,11 +86,11 @@ class PersistentObjectServer(object):
 
         # Save Attrs
         self._backend = backend
-        self._collection = collections.PCollections(backend)
+        self._collections = collections.PCollections(backend)
         self._prefix = prefix
 
         # Setup Object Index
-        self._objindex = self._build_subobj(self.collection.MutableSet,
+        self._objindex = self._build_subobj(self.collections.MutableSet,
                                             _OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX,
                                             create=set())
 
@@ -119,8 +119,8 @@ class PersistentObjectServer(object):
         return self._backend
 
     @property
-    def collection(self):
-        return self._collection
+    def collections(self):
+        return self._collections
 
     @property
     def prefix(self):
@@ -350,7 +350,7 @@ class UserMetadataObject(PersistentObject):
         super().__init__(srv, create=create, **kwargs)
 
         # Setup Metadata
-        self._usermetadata = self._build_subobj(self.srv.collection.MutableDictionary,
+        self._usermetadata = self._build_subobj(self.srv.collections.MutableDictionary,
                                                 _USERMETADATA_POSTFIX,
                                                 create=usermetadata)
 
@@ -376,7 +376,7 @@ class Index(PersistentObject):
         super().__init__(srv, create=create, **kwargs)
 
         # Setup Index
-        self._index = self._build_subobj(self.srv.collection.MutableSet,
+        self._index = self._build_subobj(self.srv.collections.MutableSet,
                                          _INDEX_POSTFIX, create=set())
 
     def destroy(self):

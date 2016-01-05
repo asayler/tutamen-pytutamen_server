@@ -231,22 +231,22 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
         super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Status and Token
-        self._clientuid = self._build_subobj(self.srv.collection.String,
+        self._clientuid = self._build_subobj(self.srv.collections.String,
                                              _POSTFIX_CLIENTUID,
                                              create=datatypes.nos(clientuid))
-        self._expiration = self._build_subobj(self.srv.collection.String,
+        self._expiration = self._build_subobj(self.srv.collections.String,
                                               _POSTFIX_EXPIRATION,
                                               create=datatypes.nos(expiration))
-        self._objperm = self._build_subobj(self.srv.collection.String,
+        self._objperm = self._build_subobj(self.srv.collections.String,
                                            _POSTFIX_OBJPERM,
                                            create=objperm)
-        self._objtype = self._build_subobj(self.srv.collection.String,
+        self._objtype = self._build_subobj(self.srv.collections.String,
                                            _POSTFIX_OBJTYPE,
                                            create=objtype)
-        self._objuid = self._build_subobj(self.srv.collection.String,
+        self._objuid = self._build_subobj(self.srv.collections.String,
                                           _POSTFIX_OBJUID,
                                           create=datatypes.nos(objuid))
-        self._status = self._build_subobj(self.srv.collection.MutableString,
+        self._status = self._build_subobj(self.srv.collections.MutableString,
                                           _POSTFIX_STATUS,
                                           create=_NEW_STATUS)
 
@@ -320,10 +320,10 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._authenticators = self._build_subobj(self.srv.collection.MutableSet,
+        self._authenticators = self._build_subobj(self.srv.collections.MutableSet,
                                                   _POSTFIX_AUTHENTICATORS,
                                                   create=set())
-        self._accounts = self._build_subobj(self.srv.collection.MutableSet,
+        self._accounts = self._build_subobj(self.srv.collections.MutableSet,
                                             _POSTFIX_ACCOUNTS,
                                             create=set())
 
@@ -458,10 +458,10 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._module = self._build_subobj(self.srv.collection.String,
+        self._module = self._build_subobj(self.srv.collections.String,
                                           _POSTFIX_MODULE,
                                           create=module)
-        self._verifiers = self._build_subobj(self.srv.collection.MutableSet,
+        self._verifiers = self._build_subobj(self.srv.collections.MutableSet,
                                              _POSTFIX_VERIFIERS,
                                              create=set())
 
@@ -523,10 +523,10 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
         super().__init__(srv, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._verifiers = self._build_subobj(self.srv.collection.MutableSet,
+        self._verifiers = self._build_subobj(self.srv.collections.MutableSet,
                                              _POSTFIX_VERIFIERS,
                                              create=set())
-        self._clients = self._build_subobj(self.srv.collection.MutableSet,
+        self._clients = self._build_subobj(self.srv.collections.MutableSet,
                                            _POSTFIX_CLIENTS,
                                            create=set())
 

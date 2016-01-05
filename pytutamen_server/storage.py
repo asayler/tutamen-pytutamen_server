@@ -35,13 +35,13 @@ class StorageServer(datatypes.PersistentObjectServer):
 
         # Setup Collections Index
         key = _INDEX_KEY_COLLECTIONS
-        self._collections = datatypes.Index(self, key=key, prefix=prefix,
-                                            create=True)
+        self._collection_idx = datatypes.Index(self, key=key, prefix=prefix,
+                                               create=True)
 
     def destroy(self):
 
         # Cleanup Indexes
-        self._collections.destroy()
+        self._collection_idx.destroy()
 
         # Call Parent
         super().destroy()
@@ -59,7 +59,7 @@ class StorageServer(datatypes.PersistentObjectServer):
         return Collection(self, create=False, key=key, uid=uid)
 
     def collections_list(self):
-        return self._collections.members
+        return self._collection_idx.members
 
     def collections_exists(self, uid=None, key=None):
 
@@ -76,7 +76,7 @@ class StorageServer(datatypes.PersistentObjectServer):
             key = str(uid)
 
         # Check membership
-        return self._collections.is_member(key)
+        return self._collection_idx.is_member(key)
 
 class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
@@ -96,7 +96,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Register with Server
         if create:
-            self.srv._collections.add(self)
+            self.srv._collection_idx.add(self)
         else:
             if not self.srv.collections_exists(key=self.key):
                 msg = "Collection not associated with srv"
@@ -106,7 +106,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Delete Collection"""
 
         # Unregister with Server
-        self.srv._collections.remove(self)
+        self.srv._collection_idx.remove(self)
 
         # ToDo: Delete Secrets
 
@@ -166,7 +166,7 @@ class Secret(datatypes.UUIDObject, datatypes.UserMetadataObject):
         self._col = col
 
         # Setup Data
-        self._data = self._build_subobj(self.srv.collection.String, _POSTFIX_DATA,
+        self._data = self._build_subobj(self.srv.collections.String, _POSTFIX_DATA,
                                         create=data)
 
         # Register with Collection
