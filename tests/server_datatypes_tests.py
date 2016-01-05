@@ -462,6 +462,296 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
         # Cleanup
         obj.destroy()
 
+class ChildObjectTestCase(PersistentObjectBasis):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.parent = datatypes.PersistentObject(self.srv, create=True,
+                                                 key="TestParent")
+        self.index = datatypes.ChildIndex(self.parent, datatypes.ChildObject, "TestChildren")
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.index.destroy()
+        self.parent.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_create(self):
+
+        # Test Bad Index Type
+        key = "TestChild"
+        self.assertRaises(TypeError, datatypes.ChildObject,
+                          self.srv, index=None, create=True, key=key)
+
+        # Test Create Object
+        key = "TestChild"
+        obj = datatypes.ChildObject(self.srv, index=self.index, create=True, key=key)
+        self.assertIsInstance(obj, datatypes.ChildObject)
+        self.assertEqual(obj.key, key)
+
+        # Cleanup
+        obj.destroy()
+
+    def test_init_existing(self):
+
+        # Test Fail
+        key = "TestChild"
+        self.assertRaises(datatypes.ObjectDNE, datatypes.ChildObject, self.srv,
+                          index=self.index, key=key, create=False)
+
+        # Create Object
+        obj = datatypes.ChildObject(self.srv, index=self.index, key=key, create=True)
+
+        # Test Existing (create=False)
+        obj = datatypes.ChildObject(self.srv, index=self.index, key=key, create=False)
+        self.assertIsInstance(obj, datatypes.ChildObject)
+        self.assertEqual(obj.key, key)
+
+        # Test Existing (create=True)
+        obj = datatypes.ChildObject(self.srv, index=self.index, key=key, create=True)
+        self.assertIsInstance(obj, datatypes.ChildObject)
+        self.assertEqual(obj.key, key)
+
+        # Cleanup
+        obj.destroy()
+
+    def test_parent(self):
+
+        # Create Object
+        key = "TestChild"
+        obj = datatypes.ChildObject(self.srv, index=self.index, key=key, create=True)
+
+        # Test Parent
+        self.assertEqual(obj.parent, self.parent)
+
+        # Cleanup
+        obj.destroy()
+
+class ChildIndexTestCase(PersistentObjectBasis):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.parent = datatypes.PersistentObject(self.srv, create=True, key="TestParent")
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.parent.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_and_destroy(self):
+
+        # Test Bad Parent Type
+        self.assertRaises(TypeError, datatypes.ChildIndex,
+                          None, datatypes.ChildObject, "TestChildIndex")
+
+        # Test Bad Child Type
+        self.assertRaises(TypeError, datatypes.ChildIndex,
+                          self.parent, None, "TestChildIndex")
+
+        # Test Bad Label
+        self.assertRaises(TypeError, datatypes.ChildIndex,
+                          self.parent, datatypes.ChildObject, None)
+
+        # Test Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+        self.assertIsInstance(idx, datatypes.ChildIndex)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_parent(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Test Parent
+        self.assertEqual(idx.parent, self.parent)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_type_child(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Test Parent
+        self.assertEqual(idx.type_child, datatypes.ChildObject)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_create(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Creat Child
+        key = "test_child"
+        child = idx.create(key=key)
+        self.assertIsInstance(child, datatypes.ChildObject)
+        self.assertEqual(child.key, key)
+
+        # Cleanup
+        child.destroy()
+        idx.destroy()
+
+    def test_len(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Confirm Empty
+        self.assertEqual(len(idx), 0)
+
+        # Creat Children
+        children = set()
+        for i in range(10):
+            key = "child_{}".format(i)
+            child = idx.create(key=key)
+            children.add(child)
+
+        # Confirm Full
+        self.assertEqual(len(idx), 10)
+
+        # Delete Children
+        for child in children:
+            child.destroy()
+
+        # Confirm Empty
+        self.assertEqual(len(idx), 0)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_get(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Creat Child
+        key = "test_child"
+        idx.create(key=key)
+
+        # Get Child
+        child = idx.get(key=key)
+        self.assertIsInstance(child, datatypes.ChildObject)
+        self.assertEqual(child.key, key)
+
+        # Cleanup
+        child.destroy()
+        idx.destroy()
+
+    def test_exists(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+        key = "test_child"
+
+        # Test DNE
+        self.assertFalse(idx.exists(key))
+
+        # Creat Child
+        child = idx.create(key=key)
+
+        # Test Exists
+        self.assertTrue(idx.exists(key))
+
+        # Cleanup
+        child.destroy()
+        idx.destroy()
+
+    def test_by_key(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Creat Children
+        children = set()
+        keys = set()
+        for i in range(10):
+            key = "child_{}".format(i)
+            child = idx.create(key=key)
+            keys.add(key)
+            children.add(child)
+
+        # Test by_key
+        self.assertEqual(idx.by_key(), keys)
+
+        # Cleanup
+        for child in children:
+            child.destroy()
+        idx.destroy()
+
+    def test_by_uid(self):
+
+        class UUIDChild(datatypes.ChildObject, datatypes.UUIDObject):
+            pass
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, UUIDChild, label)
+
+        # Creat Children
+        children = set()
+        uids = set()
+        for i in range(10):
+            uid = uuid.uuid4()
+            child = idx.create(uid=uid)
+            uids.add(uid)
+            children.add(child)
+
+        # Test by_uid
+        self.assertEqual(idx.by_uid(), uids)
+
+        # Cleanup
+        for child in children:
+            child.destroy()
+        idx.destroy()
+
+    def test_by_obj(self):
+
+        # Create Index
+        label = "TestChildIndex"
+        idx = datatypes.ChildIndex(self.parent, datatypes.ChildObject, label)
+
+        # Creat Children
+        children = set()
+        for i in range(10):
+            key = "child_{}".format(i)
+            child = idx.create(key=key)
+            children.add(child)
+
+        # Test by_key
+        self.assertEqual(idx.by_obj(), children)
+
+        # Cleanup
+        for child in children:
+            child.destroy()
+        idx.destroy()
+
 class IndexTestCase(PersistentObjectBasis):
 
     def test_init_create(self):

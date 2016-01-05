@@ -334,6 +334,104 @@ class UserMetadataObject(PersistentObject):
     def usermetadata(self):
         return self._usermetadata.get_val()
 
+class ChildIndex(object):
+
+    def __init__(self, parent, type_child, label):
+        """Initialize Child Index"""
+
+        # Call Parent
+        super().__init__()
+
+        # Check Args
+        check_isinstance(parent, PersistentObject)
+        check_issubclass(type_child, ChildObject)
+        check_isinstance(label, str)
+
+        # Save Args
+        self._parent = parent
+        self._type_child = type_child
+        self._label = label
+
+        # Setup Index Set
+        self._children = parent._build_subobj(self.parent.srv.collections.MutableSet,
+                                              label, create=set())
+
+    def destroy(self):
+        """Cleanup Index"""
+
+        # ToDo: Delete children?
+
+        # Cleanup Set
+        self._children.rem()
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @property
+    def type_child(self):
+        return self._type_child
+
+    def __len__(self):
+        return len(self._children)
+
+    def create(self, **kwargs):
+        return self.type_child(self.parent.srv, index=self, create=True, **kwargs)
+
+    def get(self, **kwargs):
+        return self.type_child(self.parent.srv, index=self, create=False, **kwargs)
+
+    def exists(self, val):
+        key = self.parent.srv.val_to_key(val)
+        return key in self._children
+
+    def by_key(self):
+        return self._children.get_val()
+
+    def by_uid(self):
+        return set([self.parent.srv.val_to_uid(key)
+                    for key in self._children])
+
+    def by_obj(self):
+        return set([self.parent.srv.val_to_obj(key, self.type_child, index=self)
+                    for key in self._children])
+
+class ChildObject(PersistentObject):
+
+    def __init__(self, srv, create=False, index=None, **kwargs):
+        """Initialize Child"""
+
+        # Check Input
+        check_isinstance(index, ChildIndex)
+        if index.parent.srv != srv:
+            raise TypeError("parent and child must have common server")
+
+        # Call Parent
+        super().__init__(srv, create=create, **kwargs)
+
+        # Setup Vars
+        self._index = index
+
+        # Register with Index
+        if create:
+            self._index._children.add(self.key)
+        else:
+            if not self._index.exists(self.key):
+                raise TypeError("Child not associated with index")
+
+    def destroy(self):
+        """Delete Child"""
+
+        # Unregister with Index
+        self._index._children.discard(self.key)
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def parent(self):
+        return self._index.parent
+
 class Index(PersistentObject):
 
     def __init__(self, srv, create=False, **kwargs):
