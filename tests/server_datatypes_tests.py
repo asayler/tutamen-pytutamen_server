@@ -292,6 +292,8 @@ class PersistentObjectTestCase(PersistentObjectBasis):
         # Create Object
         key = "test_object"
         datatypes.PersistentObject(self.srv, key=key, create=True)
+
+        # Test Create Existing
         obj = datatypes.PersistentObject(self.srv, key=key, create=False)
         self.assertIsInstance(obj, datatypes.PersistentObject)
         self.assertEqual(obj.key, key)
@@ -386,13 +388,13 @@ class UUIDObjectTestCase(PersistentObjectBasis):
         uid = obj.uid
 
         # Test Existing (via key)
-        obj = datatypes.UUIDObject(self.srv, key=key, create=True)
+        obj = datatypes.UUIDObject(self.srv, key=key, create=False)
         self.assertIsInstance(obj, datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
         self.assertEqual(obj.uid, uid)
 
         # Test Existing (via uid)
-        obj = datatypes.UUIDObject(self.srv, uid=uid, create=True)
+        obj = datatypes.UUIDObject(self.srv, uid=uid, create=False)
         self.assertIsInstance(obj, datatypes.UUIDObject)
         self.assertEqual(obj.key, key)
         self.assertEqual(obj.uid, uid)
@@ -417,15 +419,14 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
 
         # Test Bad Metadata Type
         key = "TestUserMetadataObject"
-        usermetadata = "NotValidMetadataType"
         self.assertRaises(TypeError, datatypes.UserMetadataObject,
-                          self.srv, cretae=True, key=key, usermetadata=usermetadata)
+                          self.srv, create=True, key=key, usermetadata=None)
 
         # Test Create Object
         key = "TestUserMetadataObject"
         usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
         obj = datatypes.UserMetadataObject(self.srv, create=True, key=key,
-                                                          usermetadata=usermetadata)
+                                           usermetadata=usermetadata)
         self.assertIsInstance(obj, datatypes.UserMetadataObject)
         self.assertEqual(obj.key, key)
 
@@ -440,7 +441,7 @@ class UserMetadataObjectTestCase(PersistentObjectBasis):
 
 
         # Test Existing
-        obj = datatypes.UserMetadataObject(self.srv, key=key, create=True)
+        obj = datatypes.UserMetadataObject(self.srv, key=key, create=False)
         self.assertIsInstance(obj, datatypes.UserMetadataObject)
         self.assertEqual(obj.key, key)
 
