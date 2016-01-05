@@ -264,7 +264,7 @@ class PersistentObject(object):
 
 class UUIDObject(PersistentObject):
 
-    def __init__(self, srv, key=None, uid=None, **kwargs):
+    def __init__(self, srv, key=None, uid=None, create=False, **kwargs):
         """Initialize Object"""
 
         # Check Args
@@ -276,15 +276,18 @@ class UUIDObject(PersistentObject):
         # Setup key and uid
         if not key:
             if not uid:
-                uid = uuid.uuid4()
-                key = str(uid)
+                if create:
+                    uid = uuid.uuid4()
+                    key = str(uid)
+                else:
+                    raise TyepError("Requires either uid or key")
             else:
                 key = str(uid)
         if not uid:
             uid = uuid.UUID(key)
 
         # Call Parent
-        super().__init__(srv, key=key, **kwargs)
+        super().__init__(srv, key=key, create=create, **kwargs)
 
         # Save UUID
         self._uid = uid
