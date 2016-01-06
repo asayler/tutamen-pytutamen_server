@@ -73,14 +73,14 @@ def nos(val):
 
 class PersistentObject(object):
 
-    def __init__(self, backend, key=None, prefix="", create=False):
+    def __init__(self, pbackend, key=None, prefix="", create=False):
 
         #                      create
         # OPEN_EXISTING        False
         # CREATE_OR_OPEN       True
 
         # Check args
-        check_isinstance(backend, backends.Backend)
+        check_isinstance(pbackend, backends.Backend)
         check_isinstance(key, str)
         check_isinstance(prefix, str)
 
@@ -88,8 +88,8 @@ class PersistentObject(object):
         super().__init__()
 
         # Save Attrs
-        self._backend = backend
-        self._collections = collections.PCollections(backend)
+        self._pbackend = pbackend
+        self._pcollections = collections.PCollections(pbackend)
         self._key = key
         self._prefix = prefix
 
@@ -97,12 +97,12 @@ class PersistentObject(object):
         pass
 
     @property
-    def backend(self):
-        return self._backend
+    def pbackend(self):
+        return self._pbackend
 
     @property
-    def collections(self):
-        return self._collections
+    def pcollections(self):
+        return self._pcollections
 
     @property
     def key(self):
@@ -167,12 +167,12 @@ class PersistentObject(object):
             return val
         elif isinstance(val, str):
             if issubclass(obj_type, PersistentObject):
-                return obj_type(self.backend, key=val, **kwargs)
+                return obj_type(self.pbackend, key=val, **kwargs)
             else:
                 raise TypeError("val can not be str unless obj_type is PersistentObject")
         elif isinstance(val, uuid.UUID):
             if issubclass(obj_type, UUIDObject):
-                return obj_type(self.backend, uid=val, **kwargs)
+                return obj_type(self.pbackend, uid=val, **kwargs)
             else:
                 raise TypeError("val can not be uuid.UUID unless obj_type is UUIDObject")
         else:
@@ -218,21 +218,21 @@ class UUIDObject(PersistentObject):
 
 class UserDataObject(PersistentObject):
 
-    def __init__(self, backend, create=False, userdata={}, **kwargs):
+    def __init__(self, pbackend, create=False, userdata={}, **kwargs):
         """Initialize Object"""
 
         # Call Parent
-        super().__init__(backend, create=create, **kwargs)
+        super().__init__(pbackend, create=create, **kwargs)
 
         # Setup Metadata
-        self._userdata = self._build_pobj(self.collections.MutableDictionary,
+        self._userdata = self._build_pobj(self.pcollections.MutableDictionary,
                                           _USERDATA_POSTFIX,
                                           create=userdata)
 
     def destroy(self):
         """Cleanup Object"""
 
-        # Cleanup backend object
+        # Cleanup pbackend object
         self._userdata.rem()
 
         # Call Parent
@@ -244,10 +244,10 @@ class UserDataObject(PersistentObject):
 
 class ServerObject(PersistentObject):
 
-    def __init__(self, backend, **kwargs):
+    def __init__(self, pbackend, prefix="srv", **kwargs):
 
         # Call Parent
-        super().__init__(backend, **kwargs)
+        super().__init__(pbackend, prefix=prefix, **kwargs)
 
     def destroy(self):
 
@@ -256,7 +256,7 @@ class ServerObject(PersistentObject):
 
 class ChildObject(PersistentObject):
 
-    def __init__(self, backend, create=False, pindex=None, **kwargs):
+    def __init__(self, pbackend, create=False, pindex=None, **kwargs):
         """Initialize Child"""
 
         #                      create
@@ -265,11 +265,11 @@ class ChildObject(PersistentObject):
 
         # Check Input
         check_isinstance(pindex, ChildIndex)
-        if pindex.parent.backend != backend:
-            raise TypeError("parent and child must have common backend")
+        if pindex.parent.pbackend != pbackend:
+            raise TypeError("parent and child must have common pbackend")
 
         # Call Parent
-        super().__init__(backend, create=create, **kwargs)
+        super().__init__(pbackend, create=create, **kwargs)
 
         # Setup Vars
         self._pindex = pindex
@@ -320,7 +320,7 @@ class ChildIndex(object):
         self._label = label
 
         # Setup Index Set
-        self._children = parent._build_pobj(self.parent.collections.MutableSet,
+        self._children = parent._build_pobj(self.parent.pcollections.MutableSet,
                                             label, create=set())
 
     def destroy(self):
@@ -343,10 +343,10 @@ class ChildIndex(object):
         return len(self._children)
 
     def create(self, **kwargs):
-        return self.type_child(self.parent.backend, pindex=self, create=True, **kwargs)
+        return self.type_child(self.parent.pbackend, pindex=self, create=True, **kwargs)
 
     def get(self, **kwargs):
-        return self.type_child(self.parent.backend, pindex=self, create=False, **kwargs)
+        return self.type_child(self.parent.pbackend, pindex=self, create=False, **kwargs)
 
     def exists(self, val):
         key = self.parent.val_to_key(val)
@@ -365,20 +365,20 @@ class ChildIndex(object):
 
 class Index(PersistentObject):
 
-    def __init__(self, backend, create=False, **kwargs):
+    def __init__(self, pbackend, create=False, **kwargs):
         """Initialize Index Object"""
 
         # Call Parent
-        super().__init__(backend, create=create, **kwargs)
+        super().__init__(pbackend, create=create, **kwargs)
 
         # Setup Index
-        self._index = self._build_pobj(self.collections.MutableSet,
+        self._index = self._build_pobj(self.pcollections.MutableSet,
                                        _INDEX_POSTFIX, create=set())
 
     def destroy(self):
         """Cleanup Index Object"""
 
-        # Cleanup backend object
+        # Cleanup pbackend object
         self._index.rem()
 
         # Call Parent

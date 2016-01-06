@@ -43,8 +43,8 @@ class BaseTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.driver = drivers.RedisDriver(db=_REDIS_DB)
-        self.backend = backends.RedisBaseBackend(self.driver)
+        self.pdriver = drivers.RedisDriver(db=_REDIS_DB)
+        self.pbackend = backends.RedisBaseBackend(self.pdriver)
 
     def setUp(self):
 
@@ -52,16 +52,16 @@ class BaseTestCase(unittest.TestCase):
         super().setUp()
 
         # Confirm Empty DB
-        if (self.driver.redis.dbsize() != 0):
-            raise RedisDatabaseNotEmpty(self.driver.redis)
+        if (self.pdriver.redis.dbsize() != 0):
+            raise RedisDatabaseNotEmpty(self.pdriver.redis)
 
     def tearDown(self):
 
         # Confirm Empty DB
-        if (self.driver.redis.dbsize() != 0):
+        if (self.pdriver.redis.dbsize() != 0):
             print("")
             warnings.warn("Redis database not empty prior to tearDown")
-            self.driver.redis.flushdb()
+            self.pdriver.redis.flushdb()
 
         # Call Parent
         super().tearDown()
