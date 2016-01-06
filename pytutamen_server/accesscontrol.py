@@ -18,7 +18,8 @@ _KEY_VERIFIERS = "verifiers"
 _KEY_AUTHENTICATORS = "authenticators"
 _KEY_ACCOUNTS = "accounts"
 
-_PREFIX_ACCESSCONTROLSERVER = "accesscontrolsrv"
+_KEY_ACSRV = "accesscontrol"
+
 _PREFIX_AUTHORIZATION = "authorization"
 _PREFIX_VERIFIER = "verifier"
 _PREFIX_AUTHENTICATOR = "authenticator"
@@ -42,173 +43,45 @@ _NEW_STATUS = "pending"
 
 ### Objects ###
 
-class AccessControlServer(datatypes.PersistentObjectServer):
+class AccessControlServer(datatypes.ServerObject):
 
-    def __init__(self, backend, prefix=_PREFIX_ACCESSCONTROLSERVER):
+    def __init__(self, pbackend, key=_KEY_ACSRV):
 
         # Call Parent
-        super().__init__(backend, prefix=prefix)
+        super().__init__(pbackend, key=key)
 
         # Setup Collections Index
-        self._authorizations = datatypes.Index(self, key=_KEY_AUTHORIZATIONS,
-                                               prefix=prefix, create=True)
-        self._verifiers = datatypes.Index(self, key=_KEY_VERIFIERS,
-                                          prefix=prefix, create=True)
-        self._authenticators = datatypes.Index(self, key=_KEY_AUTHENTICATORS,
-                                               prefix=prefix, create=True)
-        self._accounts = datatypes.Index(self, key=_KEY_ACCOUNTS,
-                                         prefix=prefix, create=True)
+        self._authorizations = datatypes.ChildIndex(self, Authorization, _KEY_AUTHORIZATIONS)
+        # self._verifiers = datatypes.ChildIndex(self, Verifier, _KEY_VERIFIERS)
+        # self._authenticators = datatypes.Index(self, Authenticator, _KEY_AUTHENTICATORS)
+        # self._accounts = datatypes.Index(self, Account, _KEY_ACCOUNTS)
 
     def destroy(self):
 
         # Cleanup Indexes
-        self._accounts.destroy()
-        self._authenticators.destroy()
-        self._verifiers.destroy()
+        # self._accounts.destroy()
+        # self._authenticators.destroy()
+        # self._verifiers.destroy()
         self._authorizations.destroy()
 
         # Call Parent
         super().destroy()
 
-    # Authorization Methods #
+    @property
+    def authorizations(self):
+        return self._authorizations
 
-    def authorizations_create(self, **kwargs):
+    @property
+    def verifiers(self):
+        return self._verifiers
 
-        return Authorization(self, create=True, **kwargs)
+    @property
+    def authenticators(self):
+        return self._authenticators
 
-    def authorizations_get(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-
-        # Create
-        return Authorization(self, create=False, key=key, uid=uid)
-
-    def authorizations_list(self):
-        return self._authorizations.members
-
-    def authorizations_exists(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-        if uid:
-            datatypes.check_isinstance(uid, uuid.UUID)
-        if key:
-            datatypes.check_isinstance(key, str)
-
-        # Convert key
-        if not key:
-            key = str(uid)
-
-        # Check membership
-        return self._authorizations.is_member(key)
-
-    # Verifier Methods #
-
-    def verifiers_create(self, **kwargs):
-
-        return Verifier(self, create=True, **kwargs)
-
-    def verifiers_get(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-
-        # Create
-        return Verifier(self, create=False, key=key, uid=uid)
-
-    def verifiers_list(self):
-        return self._verifiers.members
-
-    def verifiers_exists(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-        if uid:
-            datatypes.check_isinstance(uid, uuid.UUID)
-        if key:
-            datatypes.check_isinstance(key, str)
-
-        # Convert key
-        if not key:
-            key = str(uid)
-
-        # Check membership
-        return self._verifiers.is_member(key)
-
-    # Authenticator Methods #
-
-    def authenticators_create(self, **kwargs):
-
-        return Authenticator(self, create=True, **kwargs)
-
-    def authenticators_get(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-
-        # Create
-        return Authenticator(self, create=False, key=key, uid=uid)
-
-    def authenticators_list(self):
-        return self._authenticators.members
-
-    def authenticators_exists(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-        if uid:
-            datatypes.check_isinstance(uid, uuid.UUID)
-        if key:
-            datatypes.check_isinstance(key, str)
-
-        # Convert key
-        if not key:
-            key = str(uid)
-
-        # Check membership
-        return self._authenticators.is_member(key)
-
-    # Account Methods #
-
-    def accounts_create(self, **kwargs):
-
-        return Account(self, create=True, **kwargs)
-
-    def accounts_get(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-
-        # Create
-        return Account(self, create=False, key=key, uid=uid)
-
-    def accounts_list(self):
-        return self._accounts.members
-
-    def accounts_exists(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-        if uid:
-            datatypes.check_isinstance(uid, uuid.UUID)
-        if key:
-            datatypes.check_isinstance(key, str)
-
-        # Convert key
-        if not key:
-            key = str(uid)
-
-        # Check membership
-        return self._accounts.is_member(key)
+    @property
+    def accounts(self):
+        return self._accounts
 
 class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
 

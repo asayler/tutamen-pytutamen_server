@@ -20,6 +20,7 @@ import unittest
 import tests_common
 
 ## tutamen_server ##
+from pytutamen_server import datatypes
 from pytutamen_server import accesscontrol
 
 
@@ -29,7 +30,7 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_accesscontrolserver(self):
 
-        acs = accesscontrol.AccessControlServer(self.backend)
+        acs = accesscontrol.AccessControlServer(self.pbackend)
         return acs
 
     def _create_authorization(self, acs, direct=False, **kwargs_user):
@@ -186,11 +187,6 @@ class ObjectsHelpers(object):
 
 class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
 
-    def __init__(self, *args, **kwargs):
-
-        # Call Parent
-        super().__init__(*args, **kwargs)
-
     ## Core Tests ##
 
     def test_init_and_destroy(self):
@@ -202,230 +198,15 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
-    ## Authorization Tests ##
-
-    def test_authorizations_create(self):
+    def test_authorizations(self):
 
         # Create Server
         acs = self._create_accesscontrolserver()
 
-        # Test Create
-        create_obj = functools.partial(self._create_authorization, direct=False)
-        self.helper_test_obj_create(acs, accesscontrol.Authorization,
-                                    create_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authorizations_get(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Get
-        create_obj = functools.partial(self._create_authorization, direct=False)
-        get_obj = functools.partial(acs.authorizations_get)
-        self.helper_test_obj_existing(acs, accesscontrol.Authorization,
-                                      create_obj, get_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authorizations_list(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test List
-        create_obj = functools.partial(self._create_authorization, direct=False)
-        list_objs = functools.partial(acs.authorizations_list)
-        self.helper_test_objects_list(acs, accesscontrol.Authorization,
-                                      create_obj, list_objs)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authorizations_exists(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Exists
-        create_obj = functools.partial(self._create_authorization, direct=False)
-        exists_obj = functools.partial(acs.authorizations_exists)
-        self.helper_test_objects_exists(acs, accesscontrol.Authorization,
-                                        create_obj, exists_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    ## Verifier Tests ##
-
-    def test_verifiers_create(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Create
-        create_obj = functools.partial(self._create_verifier, direct=False)
-        self.helper_test_obj_create(acs, accesscontrol.Verifier,
-                                    create_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_verifiers_get(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Get
-        create_obj = functools.partial(self._create_verifier, direct=False)
-        get_obj = functools.partial(acs.verifiers_get)
-        self.helper_test_obj_existing(acs, accesscontrol.Verifier,
-                                      create_obj, get_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_verifiers_list(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test List
-        create_obj = functools.partial(self._create_verifier, direct=False)
-        list_objs = functools.partial(acs.verifiers_list)
-        self.helper_test_objects_list(acs, accesscontrol.Verifier,
-                                      create_obj, list_objs)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_verifiers_exists(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Exists
-        create_obj = functools.partial(self._create_verifier, direct=False)
-        exists_obj = functools.partial(acs.verifiers_exists)
-        self.helper_test_objects_exists(acs, accesscontrol.Verifier,
-                                        create_obj, exists_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    ## Authenticator Tests ##
-
-    def test_authenticators_create(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Create
-        create_obj = functools.partial(self._create_authenticator, direct=False)
-        self.helper_test_obj_create(acs, accesscontrol.Authenticator,
-                                    create_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authenticators_get(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Get
-        create_obj = functools.partial(self._create_authenticator, direct=False)
-        get_obj = functools.partial(acs.authenticators_get)
-        self.helper_test_obj_existing(acs, accesscontrol.Authenticator,
-                                      create_obj, get_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authenticators_list(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test List
-        create_obj = functools.partial(self._create_authenticator, direct=False)
-        list_objs = functools.partial(acs.authenticators_list)
-        self.helper_test_objects_list(acs, accesscontrol.Authenticator,
-                                      create_obj, list_objs)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_authenticators_exists(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Exists
-        create_obj = functools.partial(self._create_authenticator, direct=False)
-        exists_obj = functools.partial(acs.authenticators_exists)
-        self.helper_test_objects_exists(acs, accesscontrol.Authenticator,
-                                        create_obj, exists_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    ## Account Tests ##
-
-    def test_accounts_create(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Create
-        create_obj = functools.partial(self._create_account, direct=False)
-        self.helper_test_obj_create(acs, accesscontrol.Account,
-                                    create_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_accounts_get(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Get
-        create_obj = functools.partial(self._create_account, direct=False)
-        get_obj = functools.partial(acs.accounts_get)
-        self.helper_test_obj_existing(acs, accesscontrol.Account,
-                                      create_obj, get_obj)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_accounts_list(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test List
-        create_obj = functools.partial(self._create_account, direct=False)
-        list_objs = functools.partial(acs.accounts_list)
-        self.helper_test_objects_list(acs, accesscontrol.Account,
-                                      create_obj, list_objs)
-
-        # Cleanup
-        acs.destroy()
-
-    def test_accounts_exists(self):
-
-        # Create Server
-        acs = self._create_accesscontrolserver()
-
-        # Test Exists
-        create_obj = functools.partial(self._create_account, direct=False)
-        exists_obj = functools.partial(acs.accounts_exists)
-        self.helper_test_objects_exists(acs, accesscontrol.Account,
-                                        create_obj, exists_obj)
+        # Test Authorizations
+        self.assertIsInstance(acs.authorizations, datatypes.ChildIndex)
+        self.assertEqual(acs.authorizations.type_child, accesscontrol.Authorization)
+        self.assertEqual(acs.authorizations.parent, acs)
 
         # Cleanup
         acs.destroy()
