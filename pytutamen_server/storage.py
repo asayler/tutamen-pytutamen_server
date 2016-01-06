@@ -35,8 +35,8 @@ class StorageServer(datatypes.PersistentObjectServer):
 
         # Setup Collections Index
         key = _INDEX_KEY_COLLECTIONS
-        self._collection_idx = datatypes.Index(self, key=key, prefix=prefix,
-                                               create=True)
+        self._collection_idx = datatypes.ChildIndex(self, key=key, prefix=prefix,
+                                                    create=True)
 
     def destroy(self):
 

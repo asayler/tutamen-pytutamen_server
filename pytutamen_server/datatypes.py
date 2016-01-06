@@ -20,10 +20,7 @@ _SEPERATOR = "_"
 
 _INDEX_POSTFIX = "index"
 
-_OBJINDEX_POSTFIX = "objindex"
-_OBJINDEX_KEY = "objects"
-
-_USERMETADATA_POSTFIX = "usermetadata"
+_USERDATA_POSTFIX = "userdata"
 
 
 ### Exceptions ###
@@ -44,7 +41,7 @@ class ObjectDNE(Exception):
 
 ### Functions ###
 
-def build_key(base_key, prefix=None, postfix=None):
+def build_pkey(base_key, prefix=None, postfix=None):
 
     key = str()
     if prefix is not None:
@@ -74,12 +71,18 @@ def nos(val):
 
 ### Objects ###
 
-class PersistentObjectServer(object):
+class PersistentObject(object):
 
-    def __init__(self, backend, prefix="srv"):
+    def __init__(self, backend, key=None, prefix="", create=False):
+
+        #                      create
+        # OPEN_EXISTING        False
+        # CREATE_OR_OPEN       True
 
         # Check args
         check_isinstance(backend, backends.Backend)
+        check_isinstance(key, str)
+        check_isinstance(prefix, str)
 
         # Call Parent
         super().__init__()
@@ -87,32 +90,11 @@ class PersistentObjectServer(object):
         # Save Attrs
         self._backend = backend
         self._collections = collections.PCollections(backend)
+        self._key = key
         self._prefix = prefix
 
-        # Setup Object Index
-        self._objindex = self._build_subobj(self.collections.MutableSet,
-                                            _OBJINDEX_KEY, postfix=_OBJINDEX_POSTFIX,
-                                            create=set())
-
     def destroy(self):
-
-        # Cleanup Object Index
-        self._objindex.rem()
-
-    def _build_subkey(self, base_key, postfix=None):
-        return build_key(base_key, prefix=self.prefix, postfix=postfix)
-
-    def _build_subobj(self, obj_type, base_key, postfix=None, create=None):
-
-        #                      create
-        # OPEN_EXISTING         None
-        # CREATE_OR_OPEN        Val
-
-        subkey = self._build_subkey(base_key, postfix=postfix)
-        obj = obj_type(subkey, create=create, existing=None)
-        if not obj.exists():
-            raise ObjectDNE(obj)
-        return obj
+        pass
 
     @property
     def backend(self):
@@ -123,31 +105,39 @@ class PersistentObjectServer(object):
         return self._collections
 
     @property
+    def key(self):
+        return self._key
+
+    @property
     def prefix(self):
         return self._prefix
 
-    @property
-    def objects(self):
-        return self._objindex.get_val()
+    def __repr__(self):
+        return "{:s}_{:s}".format(type(self).__name__, self.key)
 
-    def exists(self, key):
-        return str(key) in self._objindex
+    def __hash__(self):
+        return hash(self.key)
 
-    def _register(self, obj):
+    def __eq__(self, other):
+        if type(other) == type(self):
+            return self.key == other.key
+        else:
+            return False
 
-        # Check Args
-        check_isinstance(obj, PersistentObject)
+    def _build_pkey(self, postfix):
+        return build_pkey(self.key, prefix=self.prefix, postfix=postfix)
 
-        # Add Object key
-        self._objindex.add(obj.key)
+    def _build_pobj(self, obj_type, postfix, create=None):
 
-    def _unregister(self, obj):
+        #                      create
+        # OPEN_EXISTING         None
+        # CREATE_OR_OPEN        Val
 
-        # Check Args
-        check_isinstance(obj, PersistentObject)
-
-        # Discard Object Key
-        self._objindex.discard(obj.key)
+        pkey = self._build_pkey(postfix=postfix)
+        pobj = obj_type(pkey, create=create, existing=None)
+        if not pobj.exists():
+            raise ObjectDNE(pobj)
+        return pobj
 
     def val_to_key(self, val):
 
@@ -177,107 +167,25 @@ class PersistentObjectServer(object):
             return val
         elif isinstance(val, str):
             if issubclass(obj_type, PersistentObject):
-                return obj_type(self, key=val, create=False, **kwargs)
+                return obj_type(self.backend, key=val, **kwargs)
             else:
                 raise TypeError("val can not be str unless obj_type is PersistentObject")
         elif isinstance(val, uuid.UUID):
             if issubclass(obj_type, UUIDObject):
-                return obj_type(self, uid=val, create=False, **kwargs)
+                return obj_type(self.backend, uid=val, **kwargs)
             else:
                 raise TypeError("val can not be uuid.UUID unless obj_type is UUIDObject")
         else:
             raise TypeError("val must be an {}, str, or uuid.UUID".format(obj_type))
 
+class UUIDObject(PersistentObject):
 
-class PersistentObject(object):
-
-    def __init__(self, srv, key=None, create=False, prefix=""):
+    def __init__(self, srv, key=None, uid=None, create=False, **kwargs):
         """Initialize Object"""
 
         #                      create
         # OPEN_EXISTING        False
         # CREATE_OR_OPEN       True
-
-        # Check Args
-        check_isinstance(srv, PersistentObjectServer)
-        check_isinstance(key, str)
-        check_isinstance(create, bool)
-        check_isinstance(prefix, str)
-        if not key:
-            msg = "Requires valid key"
-            raise TypeError(msg)
-
-        # Call Parent
-        super().__init__()
-
-        # Save Attrs
-        self._srv = srv
-        self._key = key
-        self._prefix = prefix
-
-        # Check Existence
-        if not self.exists():
-            if not create:
-                raise ObjectDNE(self)
-
-        # Register with Server
-        self.srv._register(self)
-
-    def _build_subkey(self, postfix):
-        return build_key(self.key, prefix=self.prefix, postfix=postfix)
-
-    def _build_subobj(self, obj_type, postfix, create=None):
-
-        #                      create
-        # OPEN_EXISTING         None
-        # CREATE_OR_OPEN        Val
-
-        subkey = self._build_subkey(postfix)
-        obj = obj_type(subkey, create=create, existing=None)
-        if not obj.exists():
-            raise ObjectDNE(obj)
-        return obj
-
-    def __repr__(self):
-        return "{:s}_{:s}".format(type(self).__name__, self.key)
-
-    def __hash__(self):
-        return hash(self.key)
-
-    def __eq__(self, other):
-        if type(other) == type(self):
-            return self.key == other.key
-        else:
-            return False
-
-    def destroy(self):
-        """Cleanup Object"""
-
-        # Unregister from server
-        self.srv._unregister(self)
-
-    def exists(self):
-        return self.srv.exists(self.key)
-
-    @property
-    def key(self):
-        """Return Object Key (Read-only Property)"""
-        return self._key
-
-    @property
-    def prefix(self):
-        """Return Object Prefix (Read-only Property)"""
-        return self._prefix
-
-    @property
-    def srv(self):
-        """Return Object Server (Read-only Property)"""
-        return self._srv
-
-class UUIDObject(PersistentObject):
-
-    def __init__(self, srv, key=None, uid=None, create=False, **kwargs):
-        """Initialize Object"""
 
         # Check Args
         if key:
@@ -292,7 +200,7 @@ class UUIDObject(PersistentObject):
                     uid = uuid.uuid4()
                     key = str(uid)
                 else:
-                    raise TyepError("Requires either uid or key")
+                    raise TypeError("Requires either uid or key")
             else:
                 key = str(uid)
         if not uid:
@@ -308,31 +216,90 @@ class UUIDObject(PersistentObject):
     def uid(self):
         return self._uid
 
-class UserMetadataObject(PersistentObject):
+class UserDataObject(PersistentObject):
 
-    def __init__(self, srv, create=False, usermetadata={}, **kwargs):
+    def __init__(self, backend, create=False, userdata={}, **kwargs):
         """Initialize Object"""
 
         # Call Parent
-        super().__init__(srv, create=create, **kwargs)
+        super().__init__(backend, create=create, **kwargs)
 
         # Setup Metadata
-        self._usermetadata = self._build_subobj(self.srv.collections.MutableDictionary,
-                                                _USERMETADATA_POSTFIX,
-                                                create=usermetadata)
+        self._userdata = self._build_pobj(self.collections.MutableDictionary,
+                                          _USERDATA_POSTFIX,
+                                          create=userdata)
 
     def destroy(self):
         """Cleanup Object"""
 
         # Cleanup backend object
-        self._usermetadata.rem()
+        self._userdata.rem()
 
         # Call Parent
         super().destroy()
 
     @property
-    def usermetadata(self):
-        return self._usermetadata.get_val()
+    def userdata(self):
+        return self._userdata.get_val()
+
+class ServerObject(PersistentObject):
+
+    def __init__(self, backend, **kwargs):
+
+        # Call Parent
+        super().__init__(backend, **kwargs)
+
+    def destroy(self):
+
+        # Call Parent
+        super().destroy()
+
+class ChildObject(PersistentObject):
+
+    def __init__(self, backend, create=False, pindex=None, **kwargs):
+        """Initialize Child"""
+
+        #                      create
+        # OPEN_EXISTING        False
+        # CREATE_OR_OPEN       True
+
+        # Check Input
+        check_isinstance(pindex, ChildIndex)
+        if pindex.parent.backend != backend:
+            raise TypeError("parent and child must have common backend")
+
+        # Call Parent
+        super().__init__(backend, create=create, **kwargs)
+
+        # Setup Vars
+        self._pindex = pindex
+
+        # Register with Index
+        if create:
+            self._pindex._children.add(self.key)
+        else:
+            if not self._pindex.exists(self.key):
+                raise ObjectDNE(self)
+
+    def destroy(self):
+        """Cleanup Object"""
+
+        # Unregister with Index
+        self._pindex._children.discard(self.key)
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def pindex(self):
+        return self._pindex
+
+    @property
+    def parent(self):
+        return self._pindex.parent
+
+    def exists(self):
+        return self._pindex.exists(self.key)
 
 class ChildIndex(object):
 
@@ -353,8 +320,8 @@ class ChildIndex(object):
         self._label = label
 
         # Setup Index Set
-        self._children = parent._build_subobj(self.parent.srv.collections.MutableSet,
-                                              label, create=set())
+        self._children = parent._build_pobj(self.parent.collections.MutableSet,
+                                            label, create=set())
 
     def destroy(self):
         """Cleanup Index"""
@@ -376,73 +343,37 @@ class ChildIndex(object):
         return len(self._children)
 
     def create(self, **kwargs):
-        return self.type_child(self.parent.srv, index=self, create=True, **kwargs)
+        return self.type_child(self.parent.backend, pindex=self, create=True, **kwargs)
 
     def get(self, **kwargs):
-        return self.type_child(self.parent.srv, index=self, create=False, **kwargs)
+        return self.type_child(self.parent.backend, pindex=self, create=False, **kwargs)
 
     def exists(self, val):
-        key = self.parent.srv.val_to_key(val)
+        key = self.parent.val_to_key(val)
         return key in self._children
 
     def by_key(self):
         return self._children.get_val()
 
     def by_uid(self):
-        return set([self.parent.srv.val_to_uid(key)
+        return set([self.parent.val_to_uid(key)
                     for key in self._children])
 
     def by_obj(self):
-        return set([self.parent.srv.val_to_obj(key, self.type_child, index=self)
+        return set([self.parent.val_to_obj(key, self.type_child, pindex=self)
                     for key in self._children])
-
-class ChildObject(PersistentObject):
-
-    def __init__(self, srv, create=False, index=None, **kwargs):
-        """Initialize Child"""
-
-        # Check Input
-        check_isinstance(index, ChildIndex)
-        if index.parent.srv != srv:
-            raise TypeError("parent and child must have common server")
-
-        # Call Parent
-        super().__init__(srv, create=create, **kwargs)
-
-        # Setup Vars
-        self._index = index
-
-        # Register with Index
-        if create:
-            self._index._children.add(self.key)
-        else:
-            if not self._index.exists(self.key):
-                raise TypeError("Child not associated with index")
-
-    def destroy(self):
-        """Delete Child"""
-
-        # Unregister with Index
-        self._index._children.discard(self.key)
-
-        # Call Parent
-        super().destroy()
-
-    @property
-    def parent(self):
-        return self._index.parent
 
 class Index(PersistentObject):
 
-    def __init__(self, srv, create=False, **kwargs):
+    def __init__(self, backend, create=False, **kwargs):
         """Initialize Index Object"""
 
         # Call Parent
-        super().__init__(srv, create=create, **kwargs)
+        super().__init__(backend, create=create, **kwargs)
 
         # Setup Index
-        self._index = self._build_subobj(self.srv.collections.MutableSet,
-                                         _INDEX_POSTFIX, create=set())
+        self._index = self._build_pobj(self.collections.MutableSet,
+                                       _INDEX_POSTFIX, create=set())
 
     def destroy(self):
         """Cleanup Index Object"""
