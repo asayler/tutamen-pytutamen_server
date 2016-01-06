@@ -72,6 +72,11 @@ class Collection(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Child
         super().destroy()
 
     @property
+    def server(self):
+        """Return Storage Server"""
+        return self.parent
+
+    @property
     def secrets(self):
         return self._secrets
 
@@ -100,6 +105,11 @@ class Secret(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
 
         # Call Parent
         super().destroy()
+
+    @property
+    def server(self):
+        """Return Storage Server"""
+        return self.collection.server
 
     @property
     def collection(self):

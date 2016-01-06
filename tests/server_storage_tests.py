@@ -150,6 +150,17 @@ class CollectionTestCase(tests_common.BaseTestCase):
         # Cleanup
         col.destroy()
 
+    def test_server(self):
+
+        # Create Collection
+        col = self.ss.collections.create()
+
+        # Test Server
+        self.assertEqual(col.server, self.ss)
+
+        # Cleanup
+        col.destroy()
+
     def test_secrets(self):
 
         # Create Collection
@@ -238,12 +249,23 @@ class SecretTestCase(tests_common.BaseTestCase):
         # Cleanup
         sec.destroy()
 
-    def test_collection(self):
+    def test_server(self):
 
-        # Create Collection
+        # Create Secret
         sec = self.col.secrets.create()
 
-        # Test Collection
+        # Test Server
+        self.assertEqual(sec.server, self.ss)
+
+        # Cleanup
+        sec.destroy()
+
+    def test_collection(self):
+
+        # Create Secret
+        sec = self.col.secrets.create()
+
+        # Test Collections
         self.assertEqual(sec.collection, self.col)
 
         # Cleanup
@@ -251,7 +273,7 @@ class SecretTestCase(tests_common.BaseTestCase):
 
     def test_userdata(self):
 
-        # Create Collection
+        # Create Secret
         userdata = {"key1": "val1", "key2": "val2", "key3": "val3"}
         sec = self.col.secrets.create(userdata=userdata)
 
@@ -263,7 +285,7 @@ class SecretTestCase(tests_common.BaseTestCase):
 
     def test_data(self):
 
-        # Create Collection
+        # Create Secret
         data = '''
 -----BEGIN FAKE RSA PRIVATE KEY-----
 MIIJKgIBAAKCAgEA3yHl/dDQYLIvgAi+3wKuhD65eiDyP0Y/uxJtQ7k7f2B/CNcL
