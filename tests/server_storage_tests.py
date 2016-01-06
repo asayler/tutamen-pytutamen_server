@@ -14,10 +14,15 @@
 import unittest
 import uuid
 
-# Tests Common
+## Tests Common ##
 import tests_common
 
+## pcollections ##
+from pcollections import collections
+from pcollections import abc_base
+
 ## tutamen_server ##
+from pytutamen_server import datatypes
 from pytutamen_server import storage
 
 
@@ -25,125 +30,25 @@ from pytutamen_server import storage
 
 class StorageServerTestCase(tests_common.BaseTestCase):
 
-    def __init__(self, *args, **kwargs):
-
-        # Call Parent
-        super().__init__(*args, **kwargs)
-
     def test_init_and_destroy(self):
 
         # Create Server
-        ss = storage.StorageServer(self.backend)
+        ss = storage.StorageServer(self.pbackend)
         self.assertIsInstance(ss, storage.StorageServer)
 
         # Cleanup
         ss.destroy()
 
-    def test_collections_create(self):
+    def test_collections(self):
 
         # Create Server
-        ss = storage.StorageServer(self.backend)
+        ss = storage.StorageServer(self.pbackend)
+        self.assertIsInstance(ss, storage.StorageServer)
 
-        # Create Collection
-        col = ss.collections_create()
-        self.assertIsInstance(col, storage.Collection)
-        self.assertTrue(col.exists())
-
-        # Cleanup
-        col.destroy()
-        ss.destroy()
-
-    def test_collections_get(self):
-
-        # Create Server
-        ss = storage.StorageServer(self.backend)
-
-        # Create Collection
-        col = ss.collections_create()
-        key = col.key
-        uid = col.uid
-
-        # Test get (key)
-        col = ss.collections_get(key=key)
-        self.assertIsInstance(col, storage.Collection)
-        self.assertTrue(col.exists())
-        self.assertEqual(col.key, key)
-        self.assertEqual(col.uid, uid)
-
-        # Test get (uuid)
-        col = ss.collections_get(uid=uid)
-        self.assertIsInstance(col, storage.Collection)
-        self.assertTrue(col.exists())
-        self.assertEqual(col.key, key)
-        self.assertEqual(col.uid, uid)
-
-        # Cleanup
-        col.destroy()
-        ss.destroy()
-
-    def test_collections_list(self):
-
-        # Create Server
-        ss = storage.StorageServer(self.backend)
-
-        # List Collections (Empty)
-        keys = ss.collections_list()
-        self.assertEqual(len(keys), 0)
-
-        # Create Collection
-        cols = []
-        for i in range(10):
-            cols.append(ss.collections_create())
-
-        # List Collections (Full)
-        keys = ss.collections_list()
-        self.assertEqual(len(keys), len(cols))
-        for col in cols:
-            self.assertTrue(col.key in keys)
-
-        # Delete Collections
-        for col in cols:
-            col.destroy()
-
-        # List Collections (Empty)
-        keys = ss.collections_list()
-        self.assertEqual(len(keys), 0)
-
-        # Cleanup
-        ss.destroy()
-
-    def test_collections_exists(self):
-
-        # Create Server
-        ss = storage.StorageServer(self.backend)
-
-        # Test DNE (key)
-        key = "fakekey"
-        self.assertFalse(ss.collections_exists(key=key))
-
-        # Test DNE (uuid)
-        uid = uuid.uuid4()
-        self.assertFalse(ss.collections_exists(uid=uid))
-
-        # Create Collection
-        col = ss.collections_create()
-        key = col.key
-        uid = col.uid
-
-        # Test Exists (key)
-        self.assertTrue(ss.collections_exists(key=key))
-
-        # Test Exists (uuid)
-        self.assertTrue(ss.collections_exists(uid=uid))
-
-        # Delete Collection
-        col.destroy()
-
-        # Test DNE (key)
-        self.assertFalse(ss.collections_exists(key=key))
-
-        # Test DNE (uuid)
-        self.assertFalse(ss.collections_exists(uid=uid))
+        # Test Collections
+        self.assertIsInstance(ss.collections, datatypes.ChildIndex)
+        self.assertEqual(ss.collections.type_child, storage.Collection)
+        self.assertEqual(ss.collections.parent, ss)
 
         # Cleanup
         ss.destroy()
@@ -156,7 +61,7 @@ class CollectionTestCase(tests_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = storage.StorageServer(self.backend)
+        self.ss = storage.StorageServer(self.pbackend)
 
     def tearDown(self):
 
@@ -168,39 +73,54 @@ class CollectionTestCase(tests_common.BaseTestCase):
 
     def test_init_create(self):
 
-        # Test Create
-        col = storage.Collection(self.ss, create=True)
+        # Test Create (Random)
+        col = self.ss.collections.create()
         self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
-        self.assertTrue(self.ss.collections_exists(key=col.key))
-        self.assertIn(col.key, self.ss.collections_list())
+        self.assertTrue(self.ss.collections.exists(col))
+        col.destroy()
 
-        # Cleanup
+        # Test Create (Key)
+        key = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        col = self.ss.collections.create(key=key)
+        self.assertIsInstance(col, storage.Collection)
+        self.assertTrue(col.exists())
+        self.assertTrue(self.ss.collections.exists(col))
+        self.assertEqual(col.key, key)
+        col.destroy()
+
+        # Test Create (UID)
+        uid = uuid.uuid4()
+        col = self.ss.collections.create(uid=uid)
+        self.assertIsInstance(col, storage.Collection)
+        self.assertTrue(col.exists())
+        self.assertTrue(self.ss.collections.exists(col))
+        self.assertEqual(col.uid, uid)
         col.destroy()
 
     def test_init_existing(self):
 
+        # Test DNE
+        uid = uuid.uuid4()
+        self.assertRaises(datatypes.ObjectDNE, self.ss.collections.get, uid=uid)
+
         # Create Collection
-        col = storage.Collection(self.ss, create=True)
+        col = self.ss.collections.create()
         key = col.key
         uid = col.uid
 
         # Test get (key)
-        col = storage.Collection(self.ss, create=False, key=key)
+        col = self.ss.collections.get(key=key)
         self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
-        self.assertTrue(self.ss.collections_exists(key=col.key))
-        self.assertIn(col.key, self.ss.collections_list())
+        self.assertTrue(self.ss.collections.exists(col))
         self.assertEqual(col.key, key)
-        self.assertEqual(col.uid, uid)
 
         # Test get (uuid)
-        col = storage.Collection(self.ss, create=False, uid=uid)
+        col = self.ss.collections.get(uid=uid)
         self.assertIsInstance(col, storage.Collection)
         self.assertTrue(col.exists())
-        self.assertTrue(self.ss.collections_exists(key=col.key))
-        self.assertIn(col.key, self.ss.collections_list())
-        self.assertEqual(col.key, key)
+        self.assertTrue(self.ss.collections.exists(col))
         self.assertEqual(col.uid, uid)
 
         # Cleanup
@@ -209,131 +129,36 @@ class CollectionTestCase(tests_common.BaseTestCase):
     def test_destroy(self):
 
         # Create Collection
-        col = storage.Collection(self.ss, create=True)
+        col = self.ss.collections.create()
+        self.assertTrue(col.exists())
+        self.assertTrue(self.ss.collections.exists(col))
 
         # Test Destroy
         col.destroy()
         self.assertFalse(col.exists())
-        self.assertFalse(self.ss.collections_exists(key=col.key))
-        self.assertNotIn(col.key, self.ss.collections_list())
+        self.assertFalse(self.ss.collections.exists(col))
 
-    def test_usermetadata(self):
+    def test_userdata(self):
 
         # Create Collection
-        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        col = storage.Collection(self.ss, create=True, usermetadata=usermetadata)
+        userdata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        col = self.ss.collections.create(userdata=userdata)
 
         # Test Metadata
-        self.assertEqual(col.usermetadata, usermetadata)
+        self.assertEqual(col.userdata, userdata)
 
         # Cleanup
         col.destroy()
 
-    def test_secrets_create(self):
+    def test_secrets(self):
 
         # Create Collection
-        col = storage.Collection(self.ss, create=True)
+        col = self.ss.collections.create()
 
-        # Create Secret
-        sec = col.secrets_create()
-        self.assertIsInstance(sec, storage.Secret)
-        self.assertTrue(sec.exists())
-
-        # Cleanup
-        sec.destroy()
-        col.destroy()
-
-    def test_secrets_get(self):
-
-        # Create Collection
-        col = storage.Collection(self.ss, create=True)
-
-        # Create Secret
-        sec = col.secrets_create()
-        key = sec.key
-        uid = sec.uid
-
-        # Test get (key)
-        sec = col.secrets_get(key=key)
-        self.assertIsInstance(sec, storage.Secret)
-        self.assertTrue(sec.exists())
-        self.assertEqual(sec.key, key)
-        self.assertEqual(sec.uid, uid)
-
-        # Test get (uuid)
-        sec = col.secrets_get(uid=uid)
-        self.assertIsInstance(sec, storage.Secret)
-        self.assertTrue(sec.exists())
-        self.assertEqual(sec.key, key)
-        self.assertEqual(sec.uid, uid)
-
-        # Cleanup
-        sec.destroy()
-        col.destroy()
-
-    def test_secrets_list(self):
-
-        # Create Collection
-        col = storage.Collection(self.ss, create=True)
-
-        # List Secrets (Empty)
-        keys = col.secrets_list()
-        self.assertEqual(len(keys), 0)
-
-        # Create Secret
-        secs = []
-        for i in range(10):
-            secs.append(col.secrets_create())
-
-        # List Secrets (Full)
-        keys = col.secrets_list()
-        self.assertEqual(len(keys), len(secs))
-        for sec in secs:
-            self.assertTrue(sec.key in keys)
-
-        # Delete Secrets
-        for sec in secs:
-            sec.destroy()
-
-        # List Secrets (Empty)
-        keys = col.secrets_list()
-        self.assertEqual(len(keys), 0)
-
-        # Cleanup
-        col.destroy()
-
-    def test_secrets_exists(self):
-
-        # Create Collection
-        col = storage.Collection(self.ss, create=True)
-
-        # Test DNE (key)
-        key = "fakekey"
-        self.assertFalse(col.secrets_exists(key=key))
-
-        # Test DNE (uuid)
-        uid = uuid.uuid4()
-        self.assertFalse(col.secrets_exists(uid=uid))
-
-        # Create Secret
-        sec = col.secrets_create()
-        key = sec.key
-        uid = sec.uid
-
-        # Test Exists (key)
-        self.assertTrue(col.secrets_exists(key=key))
-
-        # Test Exists (uuid)
-        self.assertTrue(col.secrets_exists(uid=uid))
-
-        # Delete Secret
-        sec.destroy()
-
-        # Test DNE (key)
-        self.assertFalse(col.secrets_exists(key=key))
-
-        # Test DNE (uuid)
-        self.assertFalse(col.secrets_exists(uid=uid))
+        # Test Secrets
+        self.assertIsInstance(col.secrets, datatypes.ChildIndex)
+        self.assertEqual(col.secrets.type_child, storage.Secret)
+        self.assertEqual(col.secrets.parent, col)
 
         # Cleanup
         col.destroy()
@@ -346,8 +171,8 @@ class SecretTestCase(tests_common.BaseTestCase):
         super().setUp()
 
         # Setup Properties
-        self.ss = storage.StorageServer(self.backend)
-        self.col = self.ss.collections_create()
+        self.ss = storage.StorageServer(self.pbackend)
+        self.col = self.ss.collections.create()
 
     def tearDown(self):
 
@@ -360,57 +185,78 @@ class SecretTestCase(tests_common.BaseTestCase):
 
     def test_init_create(self):
 
-        # Test Create
-        sec = storage.Secret(self.col, create=True)
+        # Test Create (Random)
+        sec = self.col.secrets.create()
         self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
+        self.assertTrue(self.col.secrets.exists(sec))
+        sec.destroy()
 
-        # Cleanup
+        # Test Create (Key)
+        key = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        sec = self.col.secrets.create(key=key)
+        self.assertIsInstance(sec, storage.Secret)
+        self.assertTrue(sec.exists())
+        self.assertTrue(self.col.secrets.exists(sec))
+        self.assertEqual(sec.key, key)
+        sec.destroy()
+
+        # Test Create (UID)
+        uid = uuid.uuid4()
+        sec = self.col.secrets.create(uid=uid)
+        self.assertIsInstance(sec, storage.Secret)
+        self.assertTrue(sec.exists())
+        self.assertTrue(self.col.secrets.exists(sec))
+        self.assertEqual(sec.uid, uid)
         sec.destroy()
 
     def test_init_existing(self):
 
+        # Test DNE
+        uid = uuid.uuid4()
+        self.assertRaises(datatypes.ObjectDNE, self.col.secrets.get, uid=uid)
+
         # Create Secret
-        sec = storage.Secret(self.col, create=True)
+        sec = self.col.secrets.create()
         key = sec.key
         uid = sec.uid
 
         # Test get (key)
-        sec = storage.Secret(self.col, create=False, key=key)
+        sec = self.col.secrets.get(key=key)
         self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
+        self.assertTrue(self.col.secrets.exists(sec))
         self.assertEqual(sec.key, key)
-        self.assertEqual(sec.uid, uid)
 
         # Test get (uuid)
-        sec = storage.Secret(self.col, create=False, uid=uid)
+        sec = self.col.secrets.get(uid=uid)
         self.assertIsInstance(sec, storage.Secret)
         self.assertTrue(sec.exists())
-        self.assertEqual(sec.key, key)
+        self.assertTrue(self.col.secrets.exists(sec))
         self.assertEqual(sec.uid, uid)
 
         # Cleanup
         sec.destroy()
 
-    def test_col(self):
+    def test_collection(self):
 
         # Create Collection
-        sec = storage.Secret(self.col, create=True)
+        sec = self.col.secrets.create()
 
-        # Test Metadata
-        self.assertEqual(sec.col, self.col)
+        # Test Collection
+        self.assertEqual(sec.collection, self.col)
 
         # Cleanup
         sec.destroy()
 
-    def test_usermetadata(self):
+    def test_userdata(self):
 
         # Create Collection
-        usermetadata = {"key1": "val1", "key2": "val2", "key3": "val3"}
-        sec = storage.Secret(self.col, create=True, usermetadata=usermetadata)
+        userdata = {"key1": "val1", "key2": "val2", "key3": "val3"}
+        sec = self.col.secrets.create(userdata=userdata)
 
-        # Test Metadata
-        self.assertEqual(sec.usermetadata, usermetadata)
+        # Test Userdata
+        self.assertEqual(sec.userdata, userdata)
 
         # Cleanup
         sec.destroy()
@@ -471,9 +317,9 @@ F5/o6qmSWoy2d38wLfwH1rMMFNBD0sAdgI/yf+k87nRlbmDymqEJcqV5YdQ5Bbg6
 AEnFf7VvhdEQQ7h1nL5a3yDGD39HUXQRjv8OYm4l0ahOW8nFmM92trkbrpc2wA==
 -----END FAKE RSA PRIVATE KEY-----
 '''
-        sec = storage.Secret(self.col, create=True, data=data)
+        sec = self.col.secrets.create(data=data)
 
-        # Test Metadata
+        # Test Data
         self.assertEqual(sec.data, data)
 
         # Cleanup
