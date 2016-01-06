@@ -43,7 +43,6 @@ class StorageServerTestCase(tests_common.BaseTestCase):
 
         # Create Server
         ss = storage.StorageServer(self.pbackend)
-        self.assertIsInstance(ss, storage.StorageServer)
 
         # Test Collections
         self.assertIsInstance(ss.collections, datatypes.ChildIndex)
