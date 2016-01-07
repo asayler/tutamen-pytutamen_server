@@ -50,48 +50,37 @@ class AccessControlTestCase(tests_common.BaseTestCase):
         authorization = acs.authorizations.create(**kwargs)
         return authorization
 
-    def _create_verifier(self, acs, direct=False, **kwargs_user):
+    def _create_verifier(self, acs, **kwargs_user):
 
         kwargs = {}
         kwargs.update(kwargs_user)
-        if direct:
-            verifier = accesscontrol.Verifier(acs, create=True, **kwargs)
-        else:
-            verifier = acs.verifiers_create(**kwargs)
+
+        verifier = acs.verifiers.create(**kwargs)
         return verifier
 
-    def _create_authenticator(self, acs, direct=False, **kwargs_user):
+    def _create_authenticator(self, acs, **kwargs_user):
 
         module = 'TESTMOD'
         kwargs = {'module': module}
         kwargs.update(kwargs_user)
 
-        if direct:
-            authenticator = accesscontrol.Authenticator(acs, create=True, **kwargs)
-        else:
-            authenticator = acs.authenticators_create(**kwargs)
+        authenticator = acs.authenticators.create(**kwargs)
         return authenticator
 
-    def _create_account(self, acs, direct=False, **kwargs_user):
+    def _create_account(self, acs, **kwargs_user):
 
         kwargs = {}
         kwargs.update(kwargs_user)
 
-        if direct:
-            account = accesscontrol.Account(acs, create=True, **kwargs)
-        else:
-            account = acs.accounts_create(**kwargs)
+        account = acs.accounts.create(**kwargs)
         return account
 
-    def _create_client(self, acct, direct=False, **kwargs_user):
+    def _create_client(self, acct, **kwargs_user):
 
         kwargs = {}
         kwargs.update(kwargs_user)
 
-        if direct:
-            client = accesscontrol.Client(acct, create=True, **kwargs)
-        else:
-            client = acct.clients_create(**kwargs)
+        client = acct.clients.create(**kwargs)
         return client
 
 class ObjectsHelpers(object):
@@ -230,6 +219,45 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
+    def test_verifiers(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Verifiers
+        self.assertIsInstance(acs.verifiers, datatypes.ChildIndex)
+        self.assertEqual(acs.verifiers.type_child, accesscontrol.Verifier)
+        self.assertEqual(acs.verifiers.parent, acs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_authenticators(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Authenticators
+        self.assertIsInstance(acs.authenticators, datatypes.ChildIndex)
+        self.assertEqual(acs.authenticators.type_child, accesscontrol.Authenticator)
+        self.assertEqual(acs.authenticators.parent, acs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_accounts(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Accounts
+        self.assertIsInstance(acs.accounts, datatypes.ChildIndex)
+        self.assertEqual(acs.accounts.type_child, accesscontrol.Account)
+        self.assertEqual(acs.accounts.parent, acs)
+
+        # Cleanup
+        acs.destroy()
+
 class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def setUp(self):
@@ -265,7 +293,7 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_server(self):
 
-        # Create Collection
+        # Create Authorization
         auth = self._create_authorization(self.acs)
 
         # Test Server
@@ -353,7 +381,7 @@ class VerifierTestCase(AccessControlTestCase, ObjectsHelpers):
         super().setUp()
 
         # Setup Properties
-        self.acs = self._create_accesscontrolserver()
+        self.acs = self._create_accesscontrolserver(self.pbackend)
 
     def tearDown(self):
 
@@ -365,262 +393,275 @@ class VerifierTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_init_create(self):
 
-        create_obj = functools.partial(self._create_verifier, direct=True)
-        self.helper_test_obj_create(self.acs, accesscontrol.Verifier,
+        create_obj = functools.partial(self._create_verifier, self.acs)
+        self.helper_test_obj_create(accesscontrol.Verifier,
+                                    self.acs.verifiers,
                                     create_obj)
 
     def test_init_existing(self):
 
-        create_obj = functools.partial(self._create_verifier, direct=True)
-        get_obj = functools.partial(accesscontrol.Verifier, self.acs, create=False)
-        self.helper_test_obj_existing(self.acs, accesscontrol.Verifier,
+        create_obj = functools.partial(self._create_verifier, self.acs)
+        get_obj = self.acs.verifiers.get
+        self.helper_test_obj_existing(accesscontrol.Verifier,
+                                      self.acs.verifiers,
                                       create_obj, get_obj)
 
-    def test_authenticators_by_key(self):
+    def test_server(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+        # Create Authorization
+        auth = self._create_authorization(self.acs)
 
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_key()), 0)
-
-        # Add to authenticators
-        actr_objs = set()
-        actr_keys = set()
-        for i in range(10):
-            actr = self._create_authenticator(self.acs)
-            verf.authenticators_add(actr)
-            actr_objs.add(actr)
-            actr_keys.add(actr.key)
-
-        # Test Full
-        self.assertEqual(verf.authenticators_by_key(), actr_keys)
-
-        # Remove Authenticators
-        for actr in actr_objs:
-            actr.destroy()
-
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_key()), 0)
+        # Test Server
+        self.assertEqual(auth.server, self.acs)
 
         # Cleanup
-        verf.destroy()
+        auth.destroy()
 
-    def test_authenticators_by_uid(self):
+    # def test_authenticators_by_key(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_key()), 0)
 
-        # Add to authenticators
-        actr_objs = set()
-        actr_uids = set()
-        for i in range(10):
-            actr = self._create_authenticator(self.acs)
-            verf.authenticators_add(actr)
-            actr_objs.add(actr)
-            actr_uids.add(actr.uid)
+    #     # Add to authenticators
+    #     actr_objs = set()
+    #     actr_keys = set()
+    #     for i in range(10):
+    #         actr = self._create_authenticator(self.acs)
+    #         verf.authenticators_add(actr)
+    #         actr_objs.add(actr)
+    #         actr_keys.add(actr.key)
 
-        # Test Full
-        self.assertEqual(verf.authenticators_by_uid(), actr_uids)
+    #     # Test Full
+    #     self.assertEqual(verf.authenticators_by_key(), actr_keys)
 
-        # Remove Authenticators
-        for actr in actr_objs:
-            actr.destroy()
+    #     # Remove Authenticators
+    #     for actr in actr_objs:
+    #         actr.destroy()
 
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_key()), 0)
 
-        # Cleanup
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
 
-    def test_authenticators_by_obj(self):
+    # def test_authenticators_by_uid(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_uid()), 0)
 
-        # Add to authenticators
-        actr_objs = set()
-        for i in range(10):
-            actr = self._create_authenticator(self.acs)
-            verf.authenticators_add(actr)
-            actr_objs.add(actr)
+    #     # Add to authenticators
+    #     actr_objs = set()
+    #     actr_uids = set()
+    #     for i in range(10):
+    #         actr = self._create_authenticator(self.acs)
+    #         verf.authenticators_add(actr)
+    #         actr_objs.add(actr)
+    #         actr_uids.add(actr.uid)
 
-        # Test Full
-        self.assertEqual(verf.authenticators_by_obj(), actr_objs)
+    #     # Test Full
+    #     self.assertEqual(verf.authenticators_by_uid(), actr_uids)
 
-        # Remove Authenticators
-        for actr in actr_objs:
-            actr.destroy()
+    #     # Remove Authenticators
+    #     for actr in actr_objs:
+    #         actr.destroy()
 
-        # Test Empty
-        self.assertEqual(len(verf.authenticators_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_uid()), 0)
 
-        # Cleanup
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
 
-    def test_authenticators_add_is_member(self):
+    # def test_authenticators_by_obj(self):
 
-        # Create Verifier and Authenticator
-        verf = self._create_verifier(self.acs, direct=True)
-        actr = self._create_authenticator(self.acs)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Add
-        self.assertFalse(verf.authenticators_is_member(actr))
-        self.assertFalse(verf in actr.verifiers_by_obj())
-        verf.authenticators_add(actr)
-        self.assertTrue(verf.authenticators_is_member(actr))
-        self.assertTrue(verf in actr.verifiers_by_obj())
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_obj()), 0)
 
-        # Cleanup
-        actr.destroy()
-        verf.destroy()
+    #     # Add to authenticators
+    #     actr_objs = set()
+    #     for i in range(10):
+    #         actr = self._create_authenticator(self.acs)
+    #         verf.authenticators_add(actr)
+    #         actr_objs.add(actr)
 
-    def test_authenticators_remove_is_member(self):
+    #     # Test Full
+    #     self.assertEqual(verf.authenticators_by_obj(), actr_objs)
 
-        # Create Verifier and Authenticator
-        verf = self._create_verifier(self.acs, direct=True)
-        actr = self._create_authenticator(self.acs)
-        verf.authenticators_add(actr)
+    #     # Remove Authenticators
+    #     for actr in actr_objs:
+    #         actr.destroy()
 
-        # Test Remove
-        self.assertTrue(verf.authenticators_is_member(actr))
-        self.assertTrue(verf in actr.verifiers_by_obj())
-        verf.authenticators_remove(actr)
-        self.assertFalse(verf.authenticators_is_member(actr))
-        self.assertFalse(verf in actr.verifiers_by_obj())
+    #     # Test Empty
+    #     self.assertEqual(len(verf.authenticators_by_obj()), 0)
 
-        # Cleanup
-        actr.destroy()
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
 
-    def test_accounts_by_key(self):
+    # def test_authenticators_add_is_member(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+    #     # Create Verifier and Authenticator
+    #     verf = self._create_verifier(self.acs, direct=True)
+    #     actr = self._create_authenticator(self.acs)
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_key()), 0)
+    #     # Test Add
+    #     self.assertFalse(verf.authenticators_is_member(actr))
+    #     self.assertFalse(verf in actr.verifiers_by_obj())
+    #     verf.authenticators_add(actr)
+    #     self.assertTrue(verf.authenticators_is_member(actr))
+    #     self.assertTrue(verf in actr.verifiers_by_obj())
 
-        # Add to accounts
-        acct_objs = set()
-        acct_keys = set()
-        for i in range(10):
-            acct = self._create_account(self.acs)
-            verf.accounts_add(acct)
-            acct_objs.add(acct)
-            acct_keys.add(acct.key)
+    #     # Cleanup
+    #     actr.destroy()
+    #     verf.destroy()
 
-        # Test Full
-        self.assertEqual(verf.accounts_by_key(), acct_keys)
+    # def test_authenticators_remove_is_member(self):
 
-        # Remove Accounts
-        for acct in acct_objs:
-            acct.destroy()
+    #     # Create Verifier and Authenticator
+    #     verf = self._create_verifier(self.acs, direct=True)
+    #     actr = self._create_authenticator(self.acs)
+    #     verf.authenticators_add(actr)
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_key()), 0)
+    #     # Test Remove
+    #     self.assertTrue(verf.authenticators_is_member(actr))
+    #     self.assertTrue(verf in actr.verifiers_by_obj())
+    #     verf.authenticators_remove(actr)
+    #     self.assertFalse(verf.authenticators_is_member(actr))
+    #     self.assertFalse(verf in actr.verifiers_by_obj())
 
-        # Cleanup
-        verf.destroy()
+    #     # Cleanup
+    #     actr.destroy()
+    #     verf.destroy()
 
-    def test_accounts_by_uid(self):
+    # def test_accounts_by_key(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_key()), 0)
 
-        # Add to accounts
-        acct_objs = set()
-        acct_uids = set()
-        for i in range(10):
-            acct = self._create_account(self.acs)
-            verf.accounts_add(acct)
-            acct_objs.add(acct)
-            acct_uids.add(acct.uid)
+    #     # Add to accounts
+    #     acct_objs = set()
+    #     acct_keys = set()
+    #     for i in range(10):
+    #         acct = self._create_account(self.acs)
+    #         verf.accounts_add(acct)
+    #         acct_objs.add(acct)
+    #         acct_keys.add(acct.key)
 
-        # Test Full
-        self.assertEqual(verf.accounts_by_uid(), acct_uids)
+    #     # Test Full
+    #     self.assertEqual(verf.accounts_by_key(), acct_keys)
 
-        # Remove Accounts
-        for acct in acct_objs:
-            acct.destroy()
+    #     # Remove Accounts
+    #     for acct in acct_objs:
+    #         acct.destroy()
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_key()), 0)
 
-        # Cleanup
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
 
-    def test_accounts_by_obj(self):
+    # def test_accounts_by_uid(self):
 
-        # Create Verifier
-        verf = self._create_verifier(self.acs, direct=True)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_uid()), 0)
 
-        # Add to accounts
-        acct_objs = set()
-        for i in range(10):
-            acct = self._create_account(self.acs)
-            verf.accounts_add(acct)
-            acct_objs.add(acct)
+    #     # Add to accounts
+    #     acct_objs = set()
+    #     acct_uids = set()
+    #     for i in range(10):
+    #         acct = self._create_account(self.acs)
+    #         verf.accounts_add(acct)
+    #         acct_objs.add(acct)
+    #         acct_uids.add(acct.uid)
 
-        # Test Full
-        self.assertEqual(verf.accounts_by_obj(), acct_objs)
+    #     # Test Full
+    #     self.assertEqual(verf.accounts_by_uid(), acct_uids)
 
-        # Remove Accounts
-        for acct in acct_objs:
-            acct.destroy()
+    #     # Remove Accounts
+    #     for acct in acct_objs:
+    #         acct.destroy()
 
-        # Test Empty
-        self.assertEqual(len(verf.accounts_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_uid()), 0)
 
-        # Cleanup
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
 
-    def test_accounts_add_is_member(self):
+    # def test_accounts_by_obj(self):
 
-        # Create Verifier and Account
-        verf = self._create_verifier(self.acs, direct=True)
-        acct = self._create_account(self.acs)
+    #     # Create Verifier
+    #     verf = self._create_verifier(self.acs, direct=True)
 
-        # Test Add
-        self.assertFalse(verf.accounts_is_member(acct))
-        self.assertFalse(verf in acct.verifiers_by_obj())
-        verf.accounts_add(acct)
-        self.assertTrue(verf.accounts_is_member(acct))
-        self.assertTrue(verf in acct.verifiers_by_obj())
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_obj()), 0)
 
-        # Cleanup
-        acct.destroy()
-        verf.destroy()
+    #     # Add to accounts
+    #     acct_objs = set()
+    #     for i in range(10):
+    #         acct = self._create_account(self.acs)
+    #         verf.accounts_add(acct)
+    #         acct_objs.add(acct)
 
-    def test_accounts_remove_is_member(self):
+    #     # Test Full
+    #     self.assertEqual(verf.accounts_by_obj(), acct_objs)
 
-        # Create Verifier and Account
-        verf = self._create_verifier(self.acs, direct=True)
-        acct = self._create_account(self.acs)
-        verf.accounts_add(acct)
+    #     # Remove Accounts
+    #     for acct in acct_objs:
+    #         acct.destroy()
 
-        # Test Remove
-        self.assertTrue(verf.accounts_is_member(acct))
-        self.assertTrue(verf in acct.verifiers_by_obj())
-        verf.accounts_remove(acct)
-        self.assertFalse(verf.accounts_is_member(acct))
-        self.assertFalse(verf in acct.verifiers_by_obj())
+    #     # Test Empty
+    #     self.assertEqual(len(verf.accounts_by_obj()), 0)
 
-        # Cleanup
-        acct.destroy()
-        verf.destroy()
+    #     # Cleanup
+    #     verf.destroy()
+
+    # def test_accounts_add_is_member(self):
+
+    #     # Create Verifier and Account
+    #     verf = self._create_verifier(self.acs, direct=True)
+    #     acct = self._create_account(self.acs)
+
+    #     # Test Add
+    #     self.assertFalse(verf.accounts_is_member(acct))
+    #     self.assertFalse(verf in acct.verifiers_by_obj())
+    #     verf.accounts_add(acct)
+    #     self.assertTrue(verf.accounts_is_member(acct))
+    #     self.assertTrue(verf in acct.verifiers_by_obj())
+
+    #     # Cleanup
+    #     acct.destroy()
+    #     verf.destroy()
+
+    # def test_accounts_remove_is_member(self):
+
+    #     # Create Verifier and Account
+    #     verf = self._create_verifier(self.acs, direct=True)
+    #     acct = self._create_account(self.acs)
+    #     verf.accounts_add(acct)
+
+    #     # Test Remove
+    #     self.assertTrue(verf.accounts_is_member(acct))
+    #     self.assertTrue(verf in acct.verifiers_by_obj())
+    #     verf.accounts_remove(acct)
+    #     self.assertFalse(verf.accounts_is_member(acct))
+    #     self.assertFalse(verf in acct.verifiers_by_obj())
+
+    #     # Cleanup
+    #     acct.destroy()
+    #     verf.destroy()
 
 class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
 
@@ -630,7 +671,7 @@ class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
         super().setUp()
 
         # Setup Properties
-        self.acs = self._create_accesscontrolserver()
+        self.acs = self._create_accesscontrolserver(self.pbackend)
 
     def tearDown(self):
 
@@ -642,22 +683,35 @@ class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_init_create(self):
 
-        create_obj = functools.partial(self._create_authenticator, direct=True)
-        self.helper_test_obj_create(self.acs, accesscontrol.Authenticator,
+        create_obj = functools.partial(self._create_authenticator, self.acs)
+        self.helper_test_obj_create(accesscontrol.Authenticator,
+                                    self.acs.authenticators,
                                     create_obj)
 
     def test_init_existing(self):
 
-        create_obj = functools.partial(self._create_authenticator, direct=True)
-        get_obj = functools.partial(accesscontrol.Authenticator, self.acs, create=False)
-        self.helper_test_obj_existing(self.acs, accesscontrol.Authenticator,
+        create_obj = functools.partial(self._create_authenticator, self.acs)
+        get_obj = self.acs.authenticators.get
+        self.helper_test_obj_existing(accesscontrol.Authenticator,
+                                      self.acs.authenticators,
                                       create_obj, get_obj)
+
+    def test_server(self):
+
+        # Create Authenticator
+        auth = self._create_authenticator(self.acs)
+
+        # Test Server
+        self.assertEqual(auth.server, self.acs)
+
+        # Cleanup
+        auth.destroy()
 
     def test_module(self):
 
         # Create Authenticator
         module = 'TESTMODULE'
-        auth = self._create_authenticator(self.acs, direct=True, module=module)
+        auth = self._create_authenticator(self.acs, module=module)
 
         # Test Client UID
         self.assertEqual(auth.module, module)
@@ -665,93 +719,93 @@ class AuthenticatorTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         auth.destroy()
 
-    def test_verifiers_by_key(self):
+    # def test_verifiers_by_key(self):
 
-        # Create Authenticator
-        actr = self._create_authenticator(self.acs, direct=True)
+    #     # Create Authenticator
+    #     actr = self._create_authenticator(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_key()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_key()), 0)
 
-        # Add to verifiers
-        verifier_objs = set()
-        verifier_keys = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.authenticators_add(actr)
-            verifier_objs.add(verifier)
-            verifier_keys.add(verifier.key)
+    #     # Add to verifiers
+    #     verifier_objs = set()
+    #     verifier_keys = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.authenticators_add(actr)
+    #         verifier_objs.add(verifier)
+    #         verifier_keys.add(verifier.key)
 
-        # Test Full
-        self.assertEqual(actr.verifiers_by_key(), verifier_keys)
+    #     # Test Full
+    #     self.assertEqual(actr.verifiers_by_key(), verifier_keys)
 
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_key()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_key()), 0)
 
-        # Cleanup
-        actr.destroy()
+    #     # Cleanup
+    #     actr.destroy()
 
-    def test_verifiers_by_uid(self):
+    # def test_verifiers_by_uid(self):
 
-        # Create Authenticator
-        actr = self._create_authenticator(self.acs, direct=True)
+    #     # Create Authenticator
+    #     actr = self._create_authenticator(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_uid()), 0)
 
-        # Add Verifiers
-        verifier_objs = set()
-        verifier_uids = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.authenticators_add(actr)
-            verifier_objs.add(verifier)
-            verifier_uids.add(verifier.uid)
+    #     # Add Verifiers
+    #     verifier_objs = set()
+    #     verifier_uids = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.authenticators_add(actr)
+    #         verifier_objs.add(verifier)
+    #         verifier_uids.add(verifier.uid)
 
-        # Test Full
-        self.assertEqual(actr.verifiers_by_uid(), verifier_uids)
+    #     # Test Full
+    #     self.assertEqual(actr.verifiers_by_uid(), verifier_uids)
 
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_uid()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_uid()), 0)
 
-        # Cleanup
-        actr.destroy()
+    #     # Cleanup
+    #     actr.destroy()
 
-    def test_verifiers_by_obj(self):
+    # def test_verifiers_by_obj(self):
 
-        # Create Authenticator
-        actr = self._create_authenticator(self.acs, direct=True)
+    #     # Create Authenticator
+    #     actr = self._create_authenticator(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_obj()), 0)
 
-        # Add Verifiers
-        verifier_objs = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.authenticators_add(actr)
-            verifier_objs.add(verifier)
+    #     # Add Verifiers
+    #     verifier_objs = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.authenticators_add(actr)
+    #         verifier_objs.add(verifier)
 
-        # Test Full
-        self.assertEqual(actr.verifiers_by_obj(), verifier_objs)
+    #     # Test Full
+    #     self.assertEqual(actr.verifiers_by_obj(), verifier_objs)
 
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Test Empty
-        self.assertEqual(len(actr.verifiers_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(actr.verifiers_by_obj()), 0)
 
-        # Cleanup
-        actr.destroy()
+    #     # Cleanup
+    #     actr.destroy()
 
 class AccountTestCase(AccessControlTestCase, ObjectsHelpers):
 
@@ -761,7 +815,7 @@ class AccountTestCase(AccessControlTestCase, ObjectsHelpers):
         super().setUp()
 
         # Setup Properties
-        self.acs = self._create_accesscontrolserver()
+        self.acs = self._create_accesscontrolserver(self.pbackend)
 
     def tearDown(self):
 
@@ -773,161 +827,187 @@ class AccountTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_init_create(self):
 
-        create_obj = functools.partial(self._create_account, direct=True)
-        self.helper_test_obj_create(self.acs, accesscontrol.Account,
+        create_obj = functools.partial(self._create_account, self.acs)
+        self.helper_test_obj_create(accesscontrol.Account,
+                                    self.acs.accounts,
                                     create_obj)
 
     def test_init_existing(self):
 
-        create_obj = functools.partial(self._create_account, direct=True)
-        get_obj = functools.partial(accesscontrol.Account, self.acs, create=False)
-        self.helper_test_obj_existing(self.acs, accesscontrol.Account,
+        create_obj = functools.partial(self._create_account, self.acs)
+        get_obj = self.acs.accounts.get
+        self.helper_test_obj_existing(accesscontrol.Account,
+                                      self.acs.accounts,
                                       create_obj, get_obj)
 
-    def test_verifiers_by_key(self):
+    def test_server(self):
 
         # Create Account
-        acct = self._create_account(self.acs, direct=True)
+        acct = self._create_account(self.acs)
 
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_key()), 0)
-
-        # Add to verifiers
-        verifier_objs = set()
-        verifier_keys = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(acct)
-            verifier_objs.add(verifier)
-            verifier_keys.add(verifier.key)
-
-        # Test Full
-        self.assertEqual(acct.verifiers_by_key(), verifier_keys)
-
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
-
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_key()), 0)
+        # Test Server
+        self.assertEqual(acct.server, self.acs)
 
         # Cleanup
         acct.destroy()
 
-    def test_verifiers_by_uid(self):
+    def test_clients(self):
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+        # Create Server
+        acct = self._create_account(self.acs)
 
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_uid()), 0)
-
-        # Add Verifiers
-        verifier_objs = set()
-        verifier_uids = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(acct)
-            verifier_objs.add(verifier)
-            verifier_uids.add(verifier.uid)
-
-        # Test Full
-        self.assertEqual(acct.verifiers_by_uid(), verifier_uids)
-
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
-
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_uid()), 0)
+        # Test Clients
+        self.assertIsInstance(acct.clients, datatypes.ChildIndex)
+        self.assertEqual(acct.clients.type_child, accesscontrol.Client)
+        self.assertEqual(acct.clients.parent, acct)
 
         # Cleanup
         acct.destroy()
 
-    def test_verifiers_by_obj(self):
+    # def test_verifiers_by_key(self):
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
 
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_key()), 0)
 
-        # Add Verifiers
-        verifier_objs = set()
-        for i in range(10):
-            verifier = self._create_verifier(self.acs)
-            verifier.accounts_add(acct)
-            verifier_objs.add(verifier)
+    #     # Add to verifiers
+    #     verifier_objs = set()
+    #     verifier_keys = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.accounts_add(acct)
+    #         verifier_objs.add(verifier)
+    #         verifier_keys.add(verifier.key)
 
-        # Test Full
-        self.assertEqual(acct.verifiers_by_obj(), verifier_objs)
+    #     # Test Full
+    #     self.assertEqual(acct.verifiers_by_key(), verifier_keys)
 
-        # Remove Verifiers
-        for verifier in verifier_objs:
-            verifier.destroy()
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Test Empty
-        self.assertEqual(len(acct.verifiers_by_obj()), 0)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_key()), 0)
 
-        # Cleanup
-        acct.destroy()
+    #     # Cleanup
+    #     acct.destroy()
 
-    ## Client Tests ##
+    # def test_verifiers_by_uid(self):
 
-    def test_clients_create(self):
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_uid()), 0)
 
-        # Test Create
-        create_obj = functools.partial(self._create_client, direct=False)
-        self.helper_test_obj_create(acct, accesscontrol.Client,
-                                    create_obj)
+    #     # Add Verifiers
+    #     verifier_objs = set()
+    #     verifier_uids = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.accounts_add(acct)
+    #         verifier_objs.add(verifier)
+    #         verifier_uids.add(verifier.uid)
 
-        # Cleanup
-        acct.destroy()
+    #     # Test Full
+    #     self.assertEqual(acct.verifiers_by_uid(), verifier_uids)
 
-    def test_clients_get(self):
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_uid()), 0)
 
-        # Test Get
-        create_obj = functools.partial(self._create_client, direct=False)
-        get_obj = functools.partial(acct.clients_get)
-        self.helper_test_obj_existing(acct, accesscontrol.Client,
-                                      create_obj, get_obj)
+    #     # Cleanup
+    #     acct.destroy()
 
-        # Cleanup
-        acct.destroy()
+    # def test_verifiers_by_obj(self):
 
-    def test_clients_list(self):
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_obj()), 0)
 
-        # Test List
-        create_obj = functools.partial(self._create_client, direct=False)
-        list_objs = functools.partial(acct.clients_list)
-        self.helper_test_objects_list(acct, accesscontrol.Client,
-                                      create_obj, list_objs)
+    #     # Add Verifiers
+    #     verifier_objs = set()
+    #     for i in range(10):
+    #         verifier = self._create_verifier(self.acs)
+    #         verifier.accounts_add(acct)
+    #         verifier_objs.add(verifier)
 
-        # Cleanup
-        acct.destroy()
+    #     # Test Full
+    #     self.assertEqual(acct.verifiers_by_obj(), verifier_objs)
 
-    def test_clients_exists(self):
+    #     # Remove Verifiers
+    #     for verifier in verifier_objs:
+    #         verifier.destroy()
 
-        # Create Account
-        acct = self._create_account(self.acs, direct=True)
+    #     # Test Empty
+    #     self.assertEqual(len(acct.verifiers_by_obj()), 0)
 
-        # Test Exists
-        create_obj = functools.partial(self._create_client, direct=False)
-        exists_obj = functools.partial(acct.clients_exists)
-        self.helper_test_objects_exists(acct, accesscontrol.Client,
-                                        create_obj, exists_obj)
+    #     # Cleanup
+    #     acct.destroy()
 
-        # Cleanup
-        acct.destroy()
+    # ## Client Tests ##
+
+    # def test_clients_create(self):
+
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
+
+    #     # Test Create
+    #     create_obj = functools.partial(self._create_client, direct=False)
+    #     self.helper_test_obj_create(acct, accesscontrol.Client,
+    #                                 create_obj)
+
+    #     # Cleanup
+    #     acct.destroy()
+
+    # def test_clients_get(self):
+
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
+
+    #     # Test Get
+    #     create_obj = functools.partial(self._create_client, direct=False)
+    #     get_obj = functools.partial(acct.clients_get)
+    #     self.helper_test_obj_existing(acct, accesscontrol.Client,
+    #                                   create_obj, get_obj)
+
+    #     # Cleanup
+    #     acct.destroy()
+
+    # def test_clients_list(self):
+
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
+
+    #     # Test List
+    #     create_obj = functools.partial(self._create_client, direct=False)
+    #     list_objs = functools.partial(acct.clients_list)
+    #     self.helper_test_objects_list(acct, accesscontrol.Client,
+    #                                   create_obj, list_objs)
+
+    #     # Cleanup
+    #     acct.destroy()
+
+    # def test_clients_exists(self):
+
+    #     # Create Account
+    #     acct = self._create_account(self.acs, direct=True)
+
+    #     # Test Exists
+    #     create_obj = functools.partial(self._create_client, direct=False)
+    #     exists_obj = functools.partial(acct.clients_exists)
+    #     self.helper_test_objects_exists(acct, accesscontrol.Client,
+    #                                     create_obj, exists_obj)
+
+    #     # Cleanup
+    #     acct.destroy()
 
 class ClientTestCase(AccessControlTestCase, ObjectsHelpers):
 
@@ -937,7 +1017,7 @@ class ClientTestCase(AccessControlTestCase, ObjectsHelpers):
         super().setUp()
 
         # Setup Properties
-        self.acs = self._create_accesscontrolserver()
+        self.acs = self._create_accesscontrolserver(self.pbackend)
         self.acct = self._create_account(self.acs)
 
     def tearDown(self):
@@ -951,21 +1031,34 @@ class ClientTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_init_create(self):
 
-        create_obj = functools.partial(self._create_client, direct=True)
-        self.helper_test_obj_create(self.acct, accesscontrol.Client,
+        create_obj = functools.partial(self._create_client, self.acct)
+        self.helper_test_obj_create(accesscontrol.Client,
+                                    self.acct.clients,
                                     create_obj)
 
     def test_init_existing(self):
 
-        create_obj = functools.partial(self._create_client, direct=True)
-        get_obj = functools.partial(accesscontrol.Client, self.acct, create=False)
-        self.helper_test_obj_existing(self.acct, accesscontrol.Client,
+        create_obj = functools.partial(self._create_client, self.acct)
+        get_obj = self.acct.clients.get
+        self.helper_test_obj_existing(accesscontrol.Client,
+                                      self.acct.clients,
                                       create_obj, get_obj)
+
+    def test_server(self):
+
+        # Create Client
+        client = self._create_client(self.acct)
+
+        # Test Server
+        self.assertEqual(client.server, self.acs)
+
+        # Cleanup
+        client.destroy()
 
     def test_account(self):
 
         # Create Client
-        client = self._create_client(self.acct, direct=True)
+        client = self._create_client(self.acct)
 
         # Test Account
         self.assertEqual(client.account, self.acct)

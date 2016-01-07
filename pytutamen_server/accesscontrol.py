@@ -52,16 +52,16 @@ class AccessControlServer(datatypes.ServerObject):
 
         # Setup Collections Index
         self._authorizations = datatypes.ChildIndex(self, Authorization, _KEY_AUTHORIZATIONS)
-        # self._verifiers = datatypes.ChildIndex(self, Verifier, _KEY_VERIFIERS)
-        # self._authenticators = datatypes.Index(self, Authenticator, _KEY_AUTHENTICATORS)
-        # self._accounts = datatypes.Index(self, Account, _KEY_ACCOUNTS)
+        self._verifiers = datatypes.ChildIndex(self, Verifier, _KEY_VERIFIERS)
+        self._authenticators = datatypes.ChildIndex(self, Authenticator, _KEY_AUTHENTICATORS)
+        self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
 
     def destroy(self):
 
         # Cleanup Indexes
-        # self._accounts.destroy()
-        # self._authenticators.destroy()
-        # self._verifiers.destroy()
+        self._accounts.destroy()
+        self._authenticators.destroy()
+        self._verifiers.destroy()
         self._authorizations.destroy()
 
         # Call Parent
@@ -85,7 +85,8 @@ class AccessControlServer(datatypes.ServerObject):
 
 class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def __init__(self, pbackend, pindex=None, prefix=_PREFIX_AUTHORIZATION, create=False,
+    def __init__(self, pbackend, pindex=None, create=False,
+                 prefix=_PREFIX_AUTHORIZATION,
                  clientuid=None, expiration=None,
                  objperm=None, objtype=None, objuid=None, **kwargs):
         """Initialize Authorization"""
@@ -100,7 +101,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             datatypes.check_isinstance(objuid, uuid.UUID)
 
         # Call Parent
-        super().__init__(pbackend, pindex=pindex, prefix=prefix, create=create, **kwargs)
+        super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Data
         self._clientuid = self._build_pobj(self.pcollections.String,
@@ -171,41 +172,30 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Return Status"""
         return self._status.get_val()
 
-class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
+class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def __init__(self, srv, create=False,
+    def __init__(self, pbackend, pindex=None, create=False,
                  prefix=_PREFIX_VERIFIER, **kwargs):
         """Initialize Verifier"""
 
         # Check Input
-        datatypes.check_isinstance(srv, AccessControlServer)
+        datatypes.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
 
         # Call Parent
-        super().__init__(srv, create=create, prefix=prefix, **kwargs)
+        super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._authenticators = self._build_subobj(self.srv.collections.MutableSet,
-                                                  _POSTFIX_AUTHENTICATORS,
-                                                  create=set())
-        self._accounts = self._build_subobj(self.srv.collections.MutableSet,
-                                            _POSTFIX_ACCOUNTS,
-                                            create=set())
-
-        # Register with Server
-        if create:
-            self.srv._verifiers.add(self)
-        else:
-            if not self.srv.verifiers_exists(key=self.key):
-                msg = "Verifier not associated with srv"
-                raise TypeError(msg)
+        self._authenticators = self._build_pobj(self.pcollections.MutableSet,
+                                                _POSTFIX_AUTHENTICATORS,
+                                                create=set())
+        self._accounts = self._build_pobj(self.pcollections.MutableSet,
+                                          _POSTFIX_ACCOUNTS,
+                                          create=set())
 
     def destroy(self):
         """Delete Authenticator"""
-
-        # Unregister with Server
-        self.srv._verifiers.remove(self)
 
         # Unregister with Authenticators
         for actr in self.authenticators_by_obj():
@@ -221,6 +211,11 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Call Parent
         super().destroy()
+
+    @property
+    def server(self):
+        """Return Storage Server"""
+        return self.parent
 
     # Authenticator Methods #
 
@@ -308,42 +303,31 @@ class Verifier(datatypes.UUIDObject, datatypes.UserMetadataObject):
         acct._verifiers.discard(self.key)
         self._accounts.discard(acct.key)
 
-class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
+class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def __init__(self, srv, create=False,
+    def __init__(self, pbackend, pindex=None, create=False,
                  prefix=_PREFIX_AUTHENTICATOR,
                  module=None, **kwargs):
         """Initialize Authenticator"""
 
         # Check Input
-        datatypes.check_isinstance(srv, AccessControlServer)
+        datatypes.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             datatypes.check_isinstance(module, str)
 
         # Call Parent
-        super().__init__(srv, create=create, prefix=prefix, **kwargs)
+        super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._module = self._build_subobj(self.srv.collections.String,
-                                          _POSTFIX_MODULE,
-                                          create=module)
-        self._verifiers = self._build_subobj(self.srv.collections.MutableSet,
-                                             _POSTFIX_VERIFIERS,
-                                             create=set())
-
-        # Register with Server
-        if create:
-            self.srv._authenticators.add(self)
-        else:
-            if not self.srv.authenticators_exists(key=self.key):
-                msg = "Authorization not associated with srv"
-                raise TypeError(msg)
+        self._module = self._build_pobj(self.pcollections.String,
+                                        _POSTFIX_MODULE,
+                                        create=module)
+        self._verifiers = self._build_pobj(self.pcollections.MutableSet,
+                                           _POSTFIX_VERIFIERS,
+                                           create=set())
 
     def destroy(self):
         """Delete Authenticator"""
-
-        # Unregister with Server
-        self.srv._authenticators.remove(self)
 
         # Unregister with Verifiers
         for verifier in self.verifiers_by_obj():
@@ -355,6 +339,11 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Call Parent
         super().destroy()
+
+    @property
+    def server(self):
+        """Return Storage Server"""
+        return self.parent
 
     @property
     def module(self):
@@ -373,55 +362,49 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Return Verifier Memberships as Objects"""
         return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
 
-class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
+class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def __init__(self, srv, create=False,
-                 prefix=_PREFIX_ACCOUNT,
-                 **kwargs):
+    def __init__(self, pbackend, pindex=None, create=False,
+                 prefix=_PREFIX_ACCOUNT, **kwargs):
         """Initialize Account"""
 
         # Check Input
-        datatypes.check_isinstance(srv, AccessControlServer)
+        datatypes.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
 
         # Call Parent
-        super().__init__(srv, create=create, prefix=prefix, **kwargs)
+        super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._verifiers = self._build_subobj(self.srv.collections.MutableSet,
-                                             _POSTFIX_VERIFIERS,
-                                             create=set())
-        self._clients = self._build_subobj(self.srv.collections.MutableSet,
-                                           _POSTFIX_CLIENTS,
+        self._verifiers = self._build_pobj(self.pcollections.MutableSet,
+                                           _POSTFIX_VERIFIERS,
                                            create=set())
-
-        # Register with Server
-        if create:
-            self.srv._accounts.add(self)
-        else:
-            if not self.srv.accounts_exists(key=self.key):
-                msg = "Account not associated with srv"
-                raise TypeError(msg)
+        self._clients = datatypes.ChildIndex(self, Client, _POSTFIX_CLIENTS)
 
     def destroy(self):
         """Delete Account"""
-
-        # Unregister with Server
-        self.srv._accounts.remove(self)
-
-        # ToDo: Delete Clients
 
         # Unregister with Verifiers
         for verifier in self.verifiers_by_obj():
             verifier.accounts_remove(self)
 
         # Cleanup Vars
-        self._clients.rem()
+        self._clients.destroy()
         self._verifiers.rem()
 
         # Call Parent
         super().destroy()
+
+    @property
+    def server(self):
+        """Return Storage Server"""
+        return self.parent
+
+    @property
+    def clients(self):
+        """Return Client Index"""
+        return self._clients
 
     def verifiers_by_key(self):
         """Return Verifier Memberships as Keys"""
@@ -435,77 +418,32 @@ class Account(datatypes.UUIDObject, datatypes.UserMetadataObject):
         """Return Verifier Memberships as Objects"""
         return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
 
-    # Client Methods #
+class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def clients_create(self, **kwargs):
-
-        return Client(self, create=True, **kwargs)
-
-    def clients_get(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-
-        # Create
-        return Client(self, create=False, key=key, uid=uid)
-
-    def clients_list(self):
-        return self._clients.get_val()
-
-    def clients_exists(self, uid=None, key=None):
-
-        # Check Args
-        if not uid and not key:
-            raise TypeError("Requires either uid or key")
-        if uid:
-            datatypes.check_isinstance(uid, uuid.UUID)
-        if key:
-            datatypes.check_isinstance(key, str)
-
-        # Convert key
-        if not key:
-            key = str(uid)
-
-        # Check membership
-        return key in self._clients
-
-class Client(datatypes.UUIDObject, datatypes.UserMetadataObject):
-
-    def __init__(self, account, create=False,
-                 prefix=_PREFIX_CLIENT,
-                 **kwargs):
-        """Initialize Account"""
+    def __init__(self, pbackend, pindex=None, create=False,
+                 prefix=_PREFIX_CLIENT, **kwargs):
+        """Initialize Client"""
 
         # Check Input
-        datatypes.check_isinstance(account, Account)
+        datatypes.check_isinstance(pindex.parent, Account)
         if create:
             pass
 
         # Call Parent
-        super().__init__(account.srv, create=create, prefix=prefix, **kwargs)
-
-        # Save Account
-        self._account = account
-
-        # Register with Account
-        if create:
-            self.account._clients.add(self.key)
-        else:
-            if not self.account.clients_exists(key=self.key):
-                msg = "Client not associated with Account"
-                raise TypeError(msg)
+        super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
     def destroy(self):
         """Delete Account"""
-
-        # Unregister with Account
-        self.account._clients.discard(self.key)
 
         # Call Parent
         super().destroy()
 
     @property
+    def server(self):
+        """Return Storage Server"""
+        return self.account.server
+
+    @property
     def account(self):
         """Return Account"""
-        return self._account
+        return self.parent
