@@ -83,16 +83,15 @@ class AccessControlServer(datatypes.ServerObject):
     def accounts(self):
         return self._accounts
 
-class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
+class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
-    def __init__(self, srv, create=False,
-                 prefix=_PREFIX_AUTHORIZATION,
+    def __init__(self, pbackend, pindex=None, prefix=_PREFIX_AUTHORIZATION, create=False,
                  clientuid=None, expiration=None,
                  objperm=None, objtype=None, objuid=None, **kwargs):
         """Initialize Authorization"""
 
         # Check Input
-        datatypes.check_isinstance(srv, AccessControlServer)
+        datatypes.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             datatypes.check_isinstance(clientuid, uuid.UUID)
             datatypes.check_isinstance(expiration, float)
@@ -101,41 +100,30 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
             datatypes.check_isinstance(objuid, uuid.UUID)
 
         # Call Parent
-        super().__init__(srv, create=create, prefix=prefix, **kwargs)
+        super().__init__(pbackend, pindex=pindex, prefix=prefix, create=create, **kwargs)
 
-        # Setup Status and Token
-        self._clientuid = self._build_subobj(self.srv.collections.String,
-                                             _POSTFIX_CLIENTUID,
-                                             create=datatypes.nos(clientuid))
-        self._expiration = self._build_subobj(self.srv.collections.String,
-                                              _POSTFIX_EXPIRATION,
-                                              create=datatypes.nos(expiration))
-        self._objperm = self._build_subobj(self.srv.collections.String,
-                                           _POSTFIX_OBJPERM,
-                                           create=objperm)
-        self._objtype = self._build_subobj(self.srv.collections.String,
-                                           _POSTFIX_OBJTYPE,
-                                           create=objtype)
-        self._objuid = self._build_subobj(self.srv.collections.String,
-                                          _POSTFIX_OBJUID,
-                                          create=datatypes.nos(objuid))
-        self._status = self._build_subobj(self.srv.collections.MutableString,
-                                          _POSTFIX_STATUS,
-                                          create=_NEW_STATUS)
-
-        # Register with Server
-        if create:
-            self.srv._authorizations.add(self)
-        else:
-            if not self.srv.authorizations_exists(key=self.key):
-                msg = "Authorization not associated with srv"
-                raise TypeError(msg)
+        # Setup Data
+        self._clientuid = self._build_pobj(self.pcollections.String,
+                                           _POSTFIX_CLIENTUID,
+                                           create=datatypes.nos(clientuid))
+        self._expiration = self._build_pobj(self.pcollections.String,
+                                            _POSTFIX_EXPIRATION,
+                                            create=datatypes.nos(expiration))
+        self._objperm = self._build_pobj(self.pcollections.String,
+                                         _POSTFIX_OBJPERM,
+                                         create=objperm)
+        self._objtype = self._build_pobj(self.pcollections.String,
+                                         _POSTFIX_OBJTYPE,
+                                         create=objtype)
+        self._objuid = self._build_pobj(self.pcollections.String,
+                                        _POSTFIX_OBJUID,
+                                        create=datatypes.nos(objuid))
+        self._status = self._build_pobj(self.pcollections.MutableString,
+                                        _POSTFIX_STATUS,
+                                        create=_NEW_STATUS)
 
     def destroy(self):
         """Delete Authorization"""
-
-        # Unregister with Server
-        self.srv._authorizations.remove(self)
 
         # Cleanup Status and Token
         self._clientuid.rem()
@@ -147,6 +135,11 @@ class Authorization(datatypes.UUIDObject, datatypes.UserMetadataObject):
 
         # Call Parent
         super().destroy()
+
+    @property
+    def server(self):
+        """Return Storage Server"""
+        return self.parent
 
     @property
     def clientuid(self):
