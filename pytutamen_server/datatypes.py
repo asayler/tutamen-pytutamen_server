@@ -73,7 +73,7 @@ def nos(val):
 
 class PersistentObject(object):
 
-    def __init__(self, pbackend, key=None, prefix="", create=False):
+    def __init__(self, pbackend, key=None, prefix=None, create=False):
 
         #                      create
         # OPEN_EXISTING        False
@@ -82,7 +82,8 @@ class PersistentObject(object):
         # Check args
         check_isinstance(pbackend, backends.Backend)
         check_isinstance(key, str)
-        check_isinstance(prefix, str)
+        if prefix is not None:
+            check_isinstance(prefix, str)
 
         # Call Parent
         super().__init__()
