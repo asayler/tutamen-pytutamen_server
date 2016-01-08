@@ -59,8 +59,9 @@ class BaseTestCase(unittest.TestCase):
 
         # Confirm Empty DB
         if (self.pdriver.redis.dbsize() != 0):
-            print("")
-            warnings.warn("Redis database not empty prior to tearDown")
+            msg = "\nRedis DB not empty: {:d} keys".format(self.pdriver.redis.dbsize())
+            msg += "\n{}".format(self.pdriver.redis.keys("*"))
+            warnings.warn(msg)
             self.pdriver.redis.flushdb()
 
         # Call Parent
