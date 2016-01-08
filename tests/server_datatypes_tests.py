@@ -702,6 +702,401 @@ class ChildIndexTestCase(tests_common.BaseTestCase):
             child.destroy()
         idx.destroy()
 
+class MasterTestObj(datatypes.UUIDObject):
+
+    def __init__(self, pbackend, **kwargs):
+        """Initialize Master Test Object"""
+
+        # Call Parent
+        super().__init__(pbackend, **kwargs)
+
+        # Setup Master Index
+        def slave_gen(key):
+            return SlaveTestObj(pbackend, key=key).masters
+        self.slaves = datatypes.MasterObjIndex(self, "slaves", slave_gen, SlaveTestObj)
+
+    def destroy(self):
+
+        # Cleanup Index
+        self.slaves.destroy()
+
+        # Call Parent
+        super().destroy()
+
+class SlaveTestObj(datatypes.UUIDObject):
+
+    def __init__(self, pbackend, **kwargs):
+        """Initialize Slave Test Object"""
+
+        # Call Parent
+        super().__init__(pbackend, **kwargs)
+
+        # Setup Master Index
+        def master_gen(key):
+            return MasterTestObj(pbackend, key=key).slaves
+        self.masters = datatypes.SlaveObjIndex(self, "masters", master_gen, MasterTestObj)
+
+    def destroy(self):
+
+        # Cleanup Index
+        self.masters.destroy()
+
+        # Call Parent
+        super().destroy()
+
+class ObjectIndexTestCase(tests_common.BaseTestCase):
+
+    def test_init_and_destroy(self):
+
+        obj = datatypes.PersistentObject(self.pbackend, key="test_obj", create=True)
+
+        # Test Bad Parent Type
+        self.assertRaises(TypeError, datatypes.MasterObjIndex,
+                          None, "TestMasterIndex", bool, SlaveTestObj)
+        self.assertRaises(TypeError, datatypes.SlaveObjIndex,
+                          None, "TestSlaveIndex", bool, MasterTestObj)
+
+        # Test Bad Label Type
+        self.assertRaises(TypeError, datatypes.MasterObjIndex,
+                          obj, None, bool, SlaveTestObj)
+        self.assertRaises(TypeError, datatypes.SlaveObjIndex,
+                          obj, None, bool, MasterTestObj)
+
+        # Test Bad Generator Type
+        self.assertRaises(TypeError, datatypes.MasterObjIndex,
+                          obj, "TestMasterIndex", None, SlaveTestObj)
+        self.assertRaises(TypeError, datatypes.SlaveObjIndex,
+                          obj, "TestSlaveIndex", None, MasterTestObj)
+
+        # Test Bad Member Type
+        self.assertRaises(TypeError, datatypes.MasterObjIndex,
+                          obj, "TestMasterIndex", bool, None)
+        self.assertRaises(TypeError, datatypes.SlaveObjIndex,
+                          obj, "TestSlaveIndex", bool, None)
+
+        obj.destroy()
+
+        # Test Create Master Index
+        master = MasterTestObj(self.pbackend, create=True)
+        self.assertIsInstance(master.slaves, datatypes.MasterObjIndex)
+        master.destroy()
+
+        # Test Create Slave Index
+        slave = SlaveTestObj(self.pbackend, create=True)
+        self.assertIsInstance(master.slaves, datatypes.MasterObjIndex)
+        slave.destroy()
+
+    def test_obj(self):
+
+        # Create Indexed Objects
+        master = MasterTestObj(self.pbackend, create=True)
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Test Object
+        self.assertEqual(master.slaves.obj, master)
+        self.assertEqual(slave.masters.obj, slave)
+
+        # Cleanup
+        slave.destroy()
+        master.destroy()
+
+    def test_type_member(self):
+
+        # Create Indexed Objects
+        master = MasterTestObj(self.pbackend, create=True)
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Test type_member
+        self.assertEqual(master.slaves.type_member, SlaveTestObj)
+        self.assertEqual(slave.masters.type_member, MasterTestObj)
+
+        # Cleanup
+        slave.destroy()
+        master.destroy()
+
+    def test_add_rem_len_ismember_master(self):
+
+        # Create Master
+        master = MasterTestObj(self.pbackend, create=True)
+
+        # Create Slaves
+        slaves = set()
+        for i in range(10):
+            slave = SlaveTestObj(self.pbackend, create=True)
+            slaves.add(slave)
+
+        # Add Bad Obj
+        self.assertRaises(TypeError, master.slaves.add, None)
+
+        # Add Slaves by Obj
+        self.assertEqual(len(master.slaves), 0)
+        for slave in slaves:
+            master.slaves.add(slave)
+            self.assertTrue(master.slaves.ismember(slave))
+
+        # Remove Slaves by Obj
+        self.assertEqual(len(master.slaves), 10)
+        for slave in slaves:
+            master.slaves.remove(slave)
+            self.assertFalse(master.slaves.ismember(slave))
+
+        # Add Slaves by Key
+        self.assertEqual(len(master.slaves), 0)
+        for slave in slaves:
+            master.slaves.add(slave.key)
+            self.assertTrue(master.slaves.ismember(slave.key))
+
+        # Remove Slaves by Key
+        self.assertEqual(len(master.slaves), 10)
+        for slave in slaves:
+            master.slaves.remove(slave.key)
+            self.assertFalse(master.slaves.ismember(slave.key))
+
+        # Add Slaves by UID
+        self.assertEqual(len(master.slaves), 0)
+        for slave in slaves:
+            master.slaves.add(slave.uid)
+            self.assertTrue(master.slaves.ismember(slave.uid))
+
+        # Remove Slaves by UID
+        self.assertEqual(len(master.slaves), 10)
+        for slave in slaves:
+            master.slaves.remove(slave.uid)
+            self.assertFalse(master.slaves.ismember(slave.uid))
+
+        # Cleanup
+        for slave in slaves:
+            slave.destroy()
+        master.destroy()
+
+    def test_len_ismember_slave(self):
+
+        # Create Master
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Create Slaves
+        masters = set()
+        for i in range(10):
+            master = MasterTestObj(self.pbackend, create=True)
+            masters.add(master)
+
+        # Add Masters by Obj
+        self.assertEqual(len(slave.masters), 0)
+        for master in masters:
+            master.slaves.add(slave)
+            self.assertTrue(slave.masters.ismember(master))
+
+        # Remove Masters by Obj
+        self.assertEqual(len(slave.masters), 10)
+        for master in masters:
+            master.slaves.remove(slave)
+            self.assertFalse(slave.masters.ismember(master))
+
+        # Add Masters by Key
+        self.assertEqual(len(slave.masters), 0)
+        for master in masters:
+            master.slaves.add(slave.key)
+            self.assertTrue(slave.masters.ismember(master.key))
+
+        # Remove Masters by Key
+        self.assertEqual(len(slave.masters), 10)
+        for master in masters:
+            master.slaves.remove(slave.key)
+            self.assertFalse(slave.masters.ismember(master.key))
+
+        # Add Masters by UID
+        self.assertEqual(len(slave.masters), 0)
+        for master in masters:
+            master.slaves.add(slave.uid)
+            self.assertTrue(slave.masters.ismember(master.uid))
+
+        # Remove Masters by UID
+        self.assertEqual(len(slave.masters), 10)
+        for master in masters:
+            master.slaves.remove(slave.uid)
+            self.assertFalse(slave.masters.ismember(master.uid))
+
+        # Cleanup
+        for master in masters:
+            master.destroy()
+        slave.destroy()
+
+    def test_by_key_master(self):
+
+        # Create Master
+        master = MasterTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_key(), set())
+
+        # Create and Add Slaves
+        keys = set()
+        slaves = set()
+        for i in range(10):
+            slave = SlaveTestObj(self.pbackend, create=True)
+            slaves.add(slave)
+            master.slaves.add(slave)
+            keys.add(slave.key)
+
+        # Test Full
+        self.assertEqual(master.slaves.by_key(), keys)
+
+        # Cleanup Slaves
+        for slave in slaves:
+            slave.destroy()
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_key(), set())
+
+        # Cleanup Master
+        master.destroy()
+
+    def test_by_key_slave(self):
+
+        # Create Master
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_key(), set())
+
+        # Create and Add Slaves
+        keys = set()
+        masters = set()
+        for i in range(10):
+            master = MasterTestObj(self.pbackend, create=True)
+            masters.add(master)
+            master.slaves.add(slave)
+            keys.add(master.key)
+
+        # Test Full
+        self.assertEqual(slave.masters.by_key(), keys)
+
+        # Cleanup Masters
+        for master in masters:
+            master.destroy()
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_key(), set())
+
+        # Cleanup Slave
+        slave.destroy()
+
+    def test_by_uid_master(self):
+
+        # Create Master
+        master = MasterTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_uid(), set())
+
+        # Create and Add Slaves
+        uids = set()
+        slaves = set()
+        for i in range(10):
+            slave = SlaveTestObj(self.pbackend, create=True)
+            slaves.add(slave)
+            master.slaves.add(slave)
+            uids.add(slave.uid)
+
+        # Test Full
+        self.assertEqual(master.slaves.by_uid(), uids)
+
+        # Cleanup Slaves
+        for slave in slaves:
+            slave.destroy()
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_uid(), set())
+
+        # Cleanup Master
+        master.destroy()
+
+    def test_by_uid_slave(self):
+
+        # Create Master
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_uid(), set())
+
+        # Create and Add Slaves
+        uids = set()
+        masters = set()
+        for i in range(10):
+            master = MasterTestObj(self.pbackend, create=True)
+            masters.add(master)
+            master.slaves.add(slave)
+            uids.add(master.uid)
+
+        # Test Full
+        self.assertEqual(slave.masters.by_uid(), uids)
+
+        # Cleanup Masters
+        for master in masters:
+            master.destroy()
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_uid(), set())
+
+        # Cleanup Slave
+        slave.destroy()
+
+    def test_by_obj_master(self):
+
+        # Create Master
+        master = MasterTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_obj(), set())
+
+        # Create and Add Slaves
+        slaves = set()
+        for i in range(10):
+            slave = SlaveTestObj(self.pbackend, create=True)
+            slaves.add(slave)
+            master.slaves.add(slave)
+
+        # Test Full
+        self.assertEqual(master.slaves.by_obj(), slaves)
+
+        # Cleanup Slaves
+        for slave in slaves:
+            slave.destroy()
+
+        # Test Empty
+        self.assertEqual(master.slaves.by_obj(), set())
+
+        # Cleanup Master
+        master.destroy()
+
+    def test_by_obj_slave(self):
+
+        # Create Master
+        slave = SlaveTestObj(self.pbackend, create=True)
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_obj(), set())
+
+        # Create and Add Slaves
+        masters = set()
+        for i in range(10):
+            master = MasterTestObj(self.pbackend, create=True)
+            masters.add(master)
+            master.slaves.add(slave)
+
+        # Test Full
+        self.assertEqual(slave.masters.by_obj(), masters)
+
+        # Cleanup Masters
+        for master in masters:
+            master.destroy()
+
+        # Test Empty
+        self.assertEqual(slave.masters.by_obj(), set())
+
+        # Cleanup Slave
+        slave.destroy()
+
 class IndexTestCase(tests_common.BaseTestCase):
 
     def test_init_create(self):

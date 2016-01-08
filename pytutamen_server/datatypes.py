@@ -19,6 +19,7 @@ from pcollections import collections
 _SEPERATOR = "_"
 
 _INDEX_POSTFIX = "index"
+_MEMBERSHIP_POSTFIX = "memberships"
 
 _USERDATA_POSTFIX = "userdata"
 
@@ -363,6 +364,150 @@ class ChildIndex(object):
     def by_obj(self):
         return set([self.parent.val_to_obj(key, self.type_child, pindex=self)
                     for key in self._children])
+
+class MasterObjIndex(object):
+
+    def __init__(self, obj, label, slave_generator, type_member, **extra_kwargs):
+        """Initialize Member Index"""
+
+        # Call Parent
+        super().__init__()
+
+        # Check Args
+        check_isinstance(obj, PersistentObject)
+        check_isinstance(label, str)
+        if not hasattr(slave_generator, '__call__'):
+            raise TypeError("master_generator must be callable")
+        check_issubclass(type_member, PersistentObject)
+
+        # Save Args
+        self._obj = obj
+        self._label = label
+        self._slave_generator = slave_generator
+        self._type_member = type_member
+        self._extra_kwargs = extra_kwargs
+
+        # Setup Index Set
+        self._members = self.obj._build_pobj(self.obj.pcollections.MutableSet,
+                                             label, create=set())
+
+    def destroy(self):
+        """Cleanup Index"""
+
+        for key in self.by_key():
+            slv = self._slave_generator(key)
+            check_isinstance(slv, SlaveObjIndex)
+            slv._members.discard(self.obj.key)
+
+        # Cleanup Set
+        self._members.rem()
+
+    @property
+    def obj(self):
+        return self._obj
+
+    @property
+    def type_member(self):
+        return self._type_member
+
+    def add(self, val):
+        key = self.obj.val_to_key(val)
+        slv = self._slave_generator(key)
+        check_isinstance(slv, SlaveObjIndex)
+        check_isinstance(slv.obj, self.type_member)
+        check_isinstance(self.obj, slv.type_member)
+        self._members.add(key)
+        slv._members.add(self.obj.key)
+
+    def remove(self, val):
+        key = self.obj.val_to_key(val)
+        slv = self._slave_generator(key)
+        check_isinstance(slv, SlaveObjIndex)
+        check_isinstance(slv.obj, self.type_member)
+        check_isinstance(self.obj, slv.type_member)
+        slv._members.discard(self.obj.key)
+        self._members.discard(key)
+
+    def __len__(self):
+        return len(self._members)
+
+    def ismember(self, val):
+        key = self.obj.val_to_key(val)
+        return key in self._members
+
+    def by_key(self):
+        return self._members.get_val()
+
+    def by_uid(self):
+        return set([self.obj.val_to_uid(key)
+                    for key in self._members])
+
+    def by_obj(self):
+        return set([self.obj.val_to_obj(key, self.type_member, **self._extra_kwargs)
+                    for key in self._members])
+
+class SlaveObjIndex(object):
+
+    def __init__(self, obj, label, master_generator, type_member, **extra_kwargs):
+        """Initialize Slave Index"""
+
+        # Call Parent
+        super().__init__()
+
+        # Check Args
+        check_isinstance(obj, PersistentObject)
+        check_isinstance(label, str)
+        if not hasattr(master_generator, '__call__'):
+            raise TypeError("master_generator must be callable")
+        check_issubclass(type_member, PersistentObject)
+
+        # Save Args
+        self._obj = obj
+        self._label = label
+        self._master_generator = master_generator
+        self._type_member = type_member
+        self._extra_kwargs = extra_kwargs
+
+        # Setup Index Set
+        self._members = self.obj._build_pobj(self.obj.pcollections.MutableSet,
+                                             label, create=set())
+
+    def destroy(self):
+        """Cleanup Index"""
+
+        for key in self.by_key():
+            mas = self._master_generator(key)
+            check_isinstance(mas, MasterObjIndex)
+            mas._members.discard(self.obj.key)
+
+        # Cleanup Set
+        self._members.rem()
+
+    @property
+    def obj(self):
+        return self._obj
+
+    @property
+    def type_member(self):
+        return self._type_member
+
+    def __len__(self):
+        return len(self._members)
+
+    def ismember(self, val):
+        key = self.obj.val_to_key(val)
+        return key in self._members
+
+    def by_key(self):
+        return self._members.get_val()
+
+    def by_uid(self):
+        return set([self.obj.val_to_uid(key)
+                    for key in self._members])
+
+    def by_obj(self):
+        return set([self.obj.val_to_obj(key, self.type_member, **self._extra_kwargs)
+                    for key in self._members])
 
 class Index(PersistentObject):
 
