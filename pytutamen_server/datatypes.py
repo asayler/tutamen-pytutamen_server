@@ -18,9 +18,6 @@ from pcollections import collections
 
 _SEPERATOR = "_"
 
-_INDEX_POSTFIX = "index"
-_MEMBERSHIP_POSTFIX = "memberships"
-
 _USERDATA_POSTFIX = "userdata"
 
 
@@ -508,58 +505,3 @@ class SlaveObjIndex(object):
     def by_obj(self):
         return set([self.obj.val_to_obj(key, self.type_member, **self._extra_kwargs)
                     for key in self._members])
-
-class Index(PersistentObject):
-
-    def __init__(self, pbackend, create=False, **kwargs):
-        """Initialize Index Object"""
-
-        # Call Parent
-        super().__init__(pbackend, create=create, **kwargs)
-
-        # Setup Index
-        self._index = self._build_pobj(self.pcollections.MutableSet,
-                                       _INDEX_POSTFIX, create=set())
-
-    def destroy(self):
-        """Cleanup Index Object"""
-
-        # Cleanup pbackend object
-        self._index.rem()
-
-        # Call Parent
-        super().destroy()
-
-    @property
-    def members(self):
-        """Return Index Memebership"""
-
-        return set(self._index)
-
-    def is_member(self, key):
-        """Check if object key is in index"""
-        return str(key) in self._index
-
-    def add(self, obj):
-        """Add Indexed Object to Index"""
-
-        # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
-
-        # Add Object Key and Register Index
-        self._index.add(obj.key)
-
-    def remove(self, obj):
-        """Remove Indexed Object to Index if Present"""
-
-        # Check Args
-        if not isinstance(obj, PersistentObject):
-            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
-            msg += "not '{}'".format(type(obj))
-            raise TypeError(msg)
-
-        # Remove Object Key and Unregister Index
-        self._index.discard(obj.key)
