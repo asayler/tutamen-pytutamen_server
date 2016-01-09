@@ -408,14 +408,14 @@ class VerifierTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_server(self):
 
-        # Create Authorization
-        auth = self._create_authorization(self.acs)
+        # Create Verifier
+        verf = self._create_verifier(self.acs)
 
         # Test Server
-        self.assertEqual(auth.server, self.acs)
+        self.assertEqual(verf.server, self.acs)
 
         # Cleanup
-        auth.destroy()
+        verf.destroy()
 
     # def test_authenticators_by_key(self):
 
