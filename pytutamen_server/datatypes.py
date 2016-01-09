@@ -395,7 +395,7 @@ class MasterObjIndex(object):
         """Cleanup Index"""
 
         for key in self.by_key():
-            slv = self._slave_generator(key)
+            slv = self._slave_generator(key, **self._extra_kwargs)
             check_isinstance(slv, SlaveObjIndex)
             slv._members.discard(self.obj.key)
 
@@ -412,7 +412,7 @@ class MasterObjIndex(object):
 
     def add(self, val):
         key = self.obj.val_to_key(val)
-        slv = self._slave_generator(key)
+        slv = self._slave_generator(key, **self._extra_kwargs)
         check_isinstance(slv, SlaveObjIndex)
         check_isinstance(slv.obj, self.type_member)
         check_isinstance(self.obj, slv.type_member)
@@ -421,7 +421,7 @@ class MasterObjIndex(object):
 
     def remove(self, val):
         key = self.obj.val_to_key(val)
-        slv = self._slave_generator(key)
+        slv = self._slave_generator(key, **self._extra_kwargs)
         check_isinstance(slv, SlaveObjIndex)
         check_isinstance(slv.obj, self.type_member)
         check_isinstance(self.obj, slv.type_member)
@@ -476,7 +476,7 @@ class SlaveObjIndex(object):
         """Cleanup Index"""
 
         for key in self.by_key():
-            mas = self._master_generator(key)
+            mas = self._master_generator(key, **self._extra_kwargs)
             check_isinstance(mas, MasterObjIndex)
             mas._members.discard(self.obj.key)
 
