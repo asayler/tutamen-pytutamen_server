@@ -187,27 +187,25 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._authenticators = self._build_pobj(self.pcollections.MutableSet,
-                                                _POSTFIX_AUTHENTICATORS,
-                                                create=set())
-        self._accounts = self._build_pobj(self.pcollections.MutableSet,
-                                          _POSTFIX_ACCOUNTS,
-                                          create=set())
+        def authenticator_masters(key, **kwargs):
+            return Authenticator(self.pbackend, key=key, **kwargs).verifiers
+        self._authenticators = datatypes.MasterObjIndex(self, _POSTFIX_AUTHENTICATORS,
+                                                        authenticator_masters,
+                                                        Authenticator,
+                                                        pindex=self.server.authenticators)
+        def account_masters(key, **kwargs):
+            return Account(self.pbackend, key=key, **kwargs).verifiers
+        self._accounts = datatypes.MasterObjIndex(self, _POSTFIX_ACCOUNTS,
+                                                  account_masters,
+                                                  Account,
+                                                  pindex=self.server.accounts)
 
     def destroy(self):
-        """Delete Authenticator"""
+        """Delete Verifier"""
 
-        # Unregister with Authenticators
-        for actr in self.authenticators_by_obj():
-            self.authenticators_remove(actr)
-
-        # Unregister with Accounts
-        for acct in self.accounts_by_obj():
-            self.accounts_remove(acct)
-
-        # Cleanup Status and Token
-        self._accounts.rem()
-        self._authenticators.rem()
+        # Cleanup Indexes
+        self._accounts.destroy()
+        self._authenticators.destroy()
 
         # Call Parent
         super().destroy()
@@ -217,91 +215,15 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
         """Return Storage Server"""
         return self.parent
 
-    # Authenticator Methods #
+    @property
+    def authenticators(self):
+        """Return Authenticators Object Index"""
+        return self._authenticators
 
-    def authenticators_by_key(self):
-        """Return Authenticators as key strings"""
-        return self._authenticators.get_val()
-
-    def authenticators_by_uid(self):
-        """Return Authenticators as UUID objects"""
-        return set([self.srv.val_to_uid(key) for key in self._authenticators])
-
-    def authenticators_by_obj(self):
-        """Return Authenticators as objects"""
-        return set([self.srv.val_to_obj(key, Authenticator) for key in self._authenticators])
-
-    def authenticators_is_member(self, val):
-        """Return if Authenticator is member"""
-
-        # Process Val
-        key = self.srv.val_to_key(val)
-
-        # Compute Membership
-        return key in self._authenticators
-
-    def authenticators_add(self, val):
-        """Add Authenticator"""
-
-        # Process Val
-        actr = self.srv.val_to_obj(val, Authenticator)
-
-        # Add Authenticator
-        self._authenticators.add(actr.key)
-        actr._verifiers.add(self.key)
-
-    def authenticators_remove(self, val):
-        """Remove Authenticator"""
-
-        # Process Val
-        actr = self.srv.val_to_obj(val, Authenticator)
-
-        # Remove Authenticator
-        actr._verifiers.discard(self.key)
-        self._authenticators.discard(actr.key)
-
-    # Account Methods #
-
-    def accounts_by_key(self):
-        """Return Accounts as key strings"""
-        return self._accounts.get_val()
-
-    def accounts_by_uid(self):
-        """Return Accounts as UUID objects"""
-        return set([self.srv.val_to_uid(key) for key in self._accounts])
-
-    def accounts_by_obj(self):
-        """Return Accounts as objects"""
-        return set([self.srv.val_to_obj(key, Account) for key in self._accounts])
-
-    def accounts_is_member(self, val):
-        """Return if Account is member"""
-
-        # Process Val
-        key = self.srv.val_to_key(val)
-
-        # Compute Membership
-        return key in self._accounts
-
-    def accounts_add(self, val):
-        """Add Account"""
-
-        # Process Val
-        acct = self.srv.val_to_obj(val, Account)
-
-        # Add Account
-        self._accounts.add(acct.key)
-        acct._verifiers.add(self.key)
-
-    def accounts_remove(self, val):
-        """Remove Account"""
-
-        # Process Val
-        acct = self.srv.val_to_obj(val, Account)
-
-        # Remove Account
-        acct._verifiers.discard(self.key)
-        self._accounts.discard(acct.key)
+    @property
+    def accounts(self):
+        """Return Accounts Object Index"""
+        return self._accounts
 
 class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
@@ -319,23 +241,22 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
+        def verifier_slaves(key, **kwargs):
+            return Verifier(self.pbackend, key=key, **kwargs).authenticators
+        self._verifiers = datatypes.SlaveObjIndex(self, _POSTFIX_VERIFIERS,
+                                                  verifier_slaves,
+                                                  Verifier,
+                                                  pindex=self.server.verifiers)
         self._module = self._build_pobj(self.pcollections.String,
                                         _POSTFIX_MODULE,
                                         create=module)
-        self._verifiers = self._build_pobj(self.pcollections.MutableSet,
-                                           _POSTFIX_VERIFIERS,
-                                           create=set())
 
     def destroy(self):
         """Delete Authenticator"""
 
-        # Unregister with Verifiers
-        for verifier in self.verifiers_by_obj():
-            verifier.authenticators_remove(self)
-
         # Cleanup Vars
-        self._verifiers.rem()
         self._module.rem()
+        self._verifiers.destroy()
 
         # Call Parent
         super().destroy()
@@ -346,21 +267,14 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         return self.parent
 
     @property
+    def verifiers(self):
+        """Return Verifiers Object Index"""
+        return self._verifiers
+
+    @property
     def module(self):
         """Return Module"""
         return self._module.get_val()
-
-    def verifiers_by_key(self):
-        """Return Verifier Memberships as Keys"""
-        return self._verifiers.get_val()
-
-    def verifiers_by_uid(self):
-        """Return Verifier Memberships as UUIDs"""
-        return set([self.srv.val_to_uid(key) for key in self._verifiers])
-
-    def verifiers_by_obj(self):
-        """Return Verifier Memberships as Objects"""
-        return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
 
 class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
@@ -377,21 +291,20 @@ class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObj
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Vars
-        self._verifiers = self._build_pobj(self.pcollections.MutableSet,
-                                           _POSTFIX_VERIFIERS,
-                                           create=set())
         self._clients = datatypes.ChildIndex(self, Client, _POSTFIX_CLIENTS)
+        def verifier_slaves(key, **kwargs):
+            return Verifier(self.pbackend, key=key, **kwargs).accounts
+        self._verifiers = datatypes.SlaveObjIndex(self, _POSTFIX_VERIFIERS,
+                                                  verifier_slaves,
+                                                  Verifier,
+                                                  pindex=self.server.verifiers)
 
     def destroy(self):
         """Delete Account"""
 
-        # Unregister with Verifiers
-        for verifier in self.verifiers_by_obj():
-            verifier.accounts_remove(self)
-
-        # Cleanup Vars
+        # Cleanup Indexes
+        self._verifiers.destroy()
         self._clients.destroy()
-        self._verifiers.rem()
 
         # Call Parent
         super().destroy()
@@ -406,17 +319,10 @@ class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObj
         """Return Client Index"""
         return self._clients
 
-    def verifiers_by_key(self):
-        """Return Verifier Memberships as Keys"""
-        return self._verifiers.get_val()
-
-    def verifiers_by_uid(self):
-        """Return Verifier Memberships as UUIDs"""
-        return set([self.srv.val_to_uid(key) for key in self._verifiers])
-
-    def verifiers_by_obj(self):
-        """Return Verifier Memberships as Objects"""
-        return set([self.srv.val_to_obj(key, Verifier) for key in self._verifiers])
+    @property
+    def verifiers(self):
+        """Return Verifiers Object Index"""
+        return self._verifiers
 
 class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
