@@ -14,7 +14,6 @@ PYLINT_CONF = pylint.rc
 
 SRV_DIR = "./pytutamen_server"
 TEST_DIR = "./tests"
-PCOL_DIR = "./submodules/pcollections"
 
 PYTHONPATH = $(shell readlink -f ./)
 EXPORT_PATH = export PYTHONPATH="$(PYTHONPATH)"
@@ -30,7 +29,6 @@ git:
 
 reqs:
 	$(PIP) install -r $(REQUIRMENTS) -U
-	$(MAKE) -C $(PCOL_DIR) reqs3
 
 conf:
 	$(ECHO) "Todo"
