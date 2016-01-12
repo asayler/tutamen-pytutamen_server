@@ -241,6 +241,10 @@ class UserDataObject(PersistentObject):
     def __init__(self, pbackend, create=False, userdata={}, **kwargs):
         """Initialize Object"""
 
+        # Check Args
+        if create:
+            check_isinstance(userdata, dict)
+
         # Call Parent
         super().__init__(pbackend, create=create, **kwargs)
 
