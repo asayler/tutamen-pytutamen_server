@@ -89,7 +89,26 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_client(self, acct, **kwargs_user):
 
+        csr_pem = \
+'''-----BEGIN CERTIFICATE REQUEST-----
+MIICzDCCAbQCAQAwgYYxCzAJBgNVBAYTAlVTMREwDwYDVQQIDAhDb2xvcmFkbzEQ
+MA4GA1UEBwwHQm91bGRlcjERMA8GA1UECgwIVGVzdCBPcmcxEjAQBgNVBAsMCVRl
+c3QgVW5pdDENMAsGA1UEAwwEVGVzdDEcMBoGCSqGSIb3DQEJARYNdGVzdEB0ZXN0
+LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANPPAaEUAl4LNfRu
+fQ703c7omWUS5dk17OxvJTeNGOIiWpqUdKfTDbAqGaxE93RXnoENUJ/3FtsIf2b1
+CiZmrWuCDg510KCfvHKgH+okzvuYRTWATmG0LeCHfdWJWAoPkgTjVI2BBeIZw+ry
+dpxS2Qtv/FojbwK8IRYUET31GyndkfV84gviw0z7RgtyCITyzhEWtP3I9ykU5Jtt
+0HYe+Lk7fg37WyapS0mIGJSwwVMC7zwt++GSP/NiwtGrDodfhIRQX4bzYi7Mv2Zs
+jo2xQ4+BjAhleymQJ82R+htV9GszBAo8HgD2e6EhpO4c9/ujDzWtmabBoLs1g9MB
+0BXNKnMCAwEAAaAAMA0GCSqGSIb3DQEBCwUAA4IBAQCz2MjucM8T3ojWagftOBn4
++Mgsyl2HCmjU4k66ySwRQEf2ilUtA65x2xcsbH4VqdOYDWqm6umsrBe52KAz/Lul
+FE5lngVlgNes9Od75vpg3FZjLktSJCafhddx7/0iM2HYiu8kt5Bg7CHh7J7O+g39
+2WRLYZnLiUtFYFL7sQ6AKNg37P2Uzm9wkXoJYH4NU1HmEk6onMQB3D+95EbE3Oyh
+WW0nx4pTG4AUOJdjOA8kQejN9afcHJqRTuUEu5qlC4no9OsO3YeyyO5gFNXhpoSu
+8SjXBMpPV9DD/89eGjWtiJLruqdXI/AjEqQYeLuykSr5WMv8kNTC852VIQrp5+iy
+-----END CERTIFICATE REQUEST-----'''
         kwargs = {}
+        kwargs = {'csr_pem': csr_pem}
         kwargs.update(kwargs_user)
 
         client = acct.clients.create(**kwargs)
@@ -809,6 +828,20 @@ class ClientTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         client.destroy()
 
+    def test_crt(self):
+
+        # Create Client
+        client = self._create_client(self.acct)
+
+        # Test Accounts
+        self.assertIsInstance(client.crt, str)
+        self.assertGreater(len(client.crt), 0)
+        crt = x509.load_pem_x509_certificate(client.crt.encode(), default_backend())
+        self.assertGreater(crt.serial, 0)
+        self.assertEqual(crt.serial, int(client.uid))
+
+        # Cleanup
+        client.destroy()
 
 ### Main ###
 

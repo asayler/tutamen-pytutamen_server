@@ -29,6 +29,7 @@ _PREFIX_CLIENT = "client"
 
 _POSTFIX_CA_CRT = "ca_crt"
 _POSTFIX_CA_KEY = "ca_key"
+_POSTFIX_CLIENT_CRT = "crt"
 
 _POSTFIX_CLIENTUID = "clientuid"
 _POSTFIX_EXPIRATION = "expiration"
@@ -75,7 +76,6 @@ class AccessControlServer(datatypes.ServerObject):
             ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
                                                         organization, ou, email,
                                                         ca_key_pem=ca_key_pem)
-
         self._ca_crt = self._build_pobj(self.pcollections.String,
                                         _POSTFIX_CA_CRT,
                                         create=ca_crt_pem)
@@ -367,19 +367,32 @@ class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObj
 class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
     def __init__(self, pbackend, pindex=None, create=False,
-                 prefix=_PREFIX_CLIENT, **kwargs):
+                 prefix=_PREFIX_CLIENT, csr_pem=None, **kwargs):
         """Initialize Client"""
 
         # Check Input
         datatypes.check_isinstance(pindex.parent, Account)
         if create:
-            pass
+            datatypes.check_isinstance(csr_pem, str, bytes)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
+        # Setup Client Cert
+        if create:
+            crt_pem = crypto.csr_to_crt(csr_pem, self.server.ca_crt, self.server.ca_key,
+                                        cn=self.key, serial=self.uid)
+        else:
+            crt_pem = None
+        self._crt = self._build_pobj(self.pcollections.String,
+                                     _POSTFIX_CLIENT_CRT,
+                                     create=crt_pem)
+
     def destroy(self):
         """Delete Account"""
+
+        # Cleanup Objects
+        self._crt.rem()
 
         # Call Parent
         super().destroy()
@@ -393,3 +406,8 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
     def account(self):
         """Return Account"""
         return self.parent
+
+    @property
+    def crt(self):
+        """Return Certificate"""
+        return self._crt.get_val()
