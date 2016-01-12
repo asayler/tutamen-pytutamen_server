@@ -285,8 +285,8 @@ class SecretTestCase(tests_common.BaseTestCase):
     def test_data(self):
 
         # Create Secret
-        data = '''
------BEGIN FAKE RSA PRIVATE KEY-----
+        data = \
+'''-----BEGIN FAKE RSA PRIVATE KEY-----
 MIIJKgIBAAKCAgEA3yHl/dDQYLIvgAi+3wKuhD65eiDyP0Y/uxJtQ7k7f2B/CNcL
 /tYLvCz0a5mpezqS+Cel+v0EQin/z0/ddEQM+vGSaB21+PBMWonz2hDyxJZy272Q
 cpwRorebS84L1JjLY3MmJPZtXxQgnTLpKSeJg52sI83of1D6d5R5ZC9aa/p5c6KA
@@ -336,8 +336,7 @@ W2s2FGWj1ScYLqiAkvYWwjC231fXHC0JK2RdhGJ9ujbAmZzULLFQQRp9mObU7ZCs
 JYLGUHhgT5HWBGNIzypApaK4NLlBv58M50TYsNWIwxfkno8KZKBMG0pLVbtFJna+
 F5/o6qmSWoy2d38wLfwH1rMMFNBD0sAdgI/yf+k87nRlbmDymqEJcqV5YdQ5Bbg6
 AEnFf7VvhdEQQ7h1nL5a3yDGD39HUXQRjv8OYm4l0ahOW8nFmM92trkbrpc2wA==
------END FAKE RSA PRIVATE KEY-----
-'''
+-----END FAKE RSA PRIVATE KEY-----'''
         sec = self.col.secrets.create(data=data)
 
         # Test Data
