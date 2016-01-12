@@ -9,6 +9,7 @@
 import uuid
 
 from . import datatypes
+from . import crypto
 
 
 ### Constants ###
@@ -25,6 +26,9 @@ _PREFIX_VERIFIER = "verifier"
 _PREFIX_AUTHENTICATOR = "authenticator"
 _PREFIX_ACCOUNT = "account"
 _PREFIX_CLIENT = "client"
+
+_POSTFIX_CA_CRT = "ca_crt"
+_POSTFIX_CA_KEY = "ca_key"
 
 _POSTFIX_CLIENTUID = "clientuid"
 _POSTFIX_EXPIRATION = "expiration"
@@ -45,10 +49,13 @@ _NEW_STATUS = "pending"
 
 class AccessControlServer(datatypes.ServerObject):
 
-    def __init__(self, pbackend, key=_KEY_ACSRV):
+    def __init__(self, pbackend, key=_KEY_ACSRV, create=False,
+                 ca_crt_pem=None, ca_key_pem=None, sig_key=None,
+                 cn=None, country=None, state=None, locality=None,
+                 organization=None, ou=None, email=None):
 
         # Call Parent
-        super().__init__(pbackend, key=key)
+        super().__init__(pbackend, key=key, create=create)
 
         # Setup Collections Index
         self._authorizations = datatypes.ChildIndex(self, Authorization, _KEY_AUTHORIZATIONS)
@@ -56,7 +63,31 @@ class AccessControlServer(datatypes.ServerObject):
         self._authenticators = datatypes.ChildIndex(self, Authenticator, _KEY_AUTHENTICATORS)
         self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
 
+        # Setup Crypto Keys
+        if create and not ca_crt_pem:
+            datatypes.check_isinstance(cn, str)
+            datatypes.check_isinstance(country, str)
+            datatypes.check_isinstance(state, str)
+            datatypes.check_isinstance(locality, str)
+            datatypes.check_isinstance(organization, str)
+            datatypes.check_isinstance(ou, str)
+            datatypes.check_isinstance(email, str)
+            ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
+                                                        organization, ou, email,
+                                                        ca_key_pem=ca_key_pem)
+
+        self._ca_crt = self._build_pobj(self.pcollections.String,
+                                        _POSTFIX_CA_CRT,
+                                        create=ca_crt_pem)
+        self._ca_key = self._build_pobj(self.pcollections.String,
+                                        _POSTFIX_CA_KEY,
+                                        create=ca_key_pem)
+
     def destroy(self):
+
+        # Cleanup Objects
+        self._ca_key.rem()
+        self._ca_crt.rem()
 
         # Cleanup Indexes
         self._accounts.destroy()
@@ -82,6 +113,15 @@ class AccessControlServer(datatypes.ServerObject):
     @property
     def accounts(self):
         return self._accounts
+
+    @property
+    def ca_crt(self):
+        return self._ca_crt.get_val()
+
+    @property
+    def ca_key(self):
+        return self._ca_key.get_val()
+
 
 class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 

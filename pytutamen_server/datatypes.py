@@ -249,7 +249,11 @@ class UserDataObject(PersistentObject):
 
 class ServerObject(PersistentObject):
 
-    def __init__(self, pbackend, prefix="srv", **kwargs):
+    def __init__(self, pbackend, create=False, prefix="srv", **kwargs):
+
+        #                      create
+        # OPEN_EXISTING        False
+        # CREATE_OR_OPEN       True
 
         # Call Parent
         super().__init__(pbackend, prefix=prefix, **kwargs)

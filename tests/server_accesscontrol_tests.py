@@ -16,6 +16,10 @@ import time
 import uuid
 import unittest
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 # Tests Common
 import tests_common
 
@@ -30,10 +34,18 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_accesscontrolserver(self, pbackend, **kwargs_user):
 
-        kwargs = {}
+        cn = "Test Tutamen AC CA"
+        country = "US"
+        state = "Colorado"
+        locality = "Boulder"
+        organization = "Test Tutamen AC Server"
+        ou = "Test CA"
+        email = "test@test.null"
+        kwargs = {'cn': cn, 'country': country, 'state': state, 'locality': locality,
+                  'organization': organization, 'ou': ou, 'email': email}
         kwargs.update(kwargs_user)
 
-        acs = accesscontrol.AccessControlServer(pbackend, **kwargs)
+        acs = accesscontrol.AccessControlServer(pbackend, create=True, **kwargs)
         return acs
 
     def _create_authorization(self, acs, **kwargs_user):
@@ -348,6 +360,34 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         self.assertIsInstance(acs.accounts, datatypes.ChildIndex)
         self.assertEqual(acs.accounts.type_child, accesscontrol.Account)
         self.assertEqual(acs.accounts.parent, acs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_ca_crt(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Accounts
+        self.assertIsInstance(acs.ca_crt, str)
+        self.assertGreater(len(acs.ca_crt), 0)
+        ca_crt = x509.load_pem_x509_certificate(acs.ca_crt.encode(), default_backend())
+        self.assertGreater(ca_crt.serial, 0)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_ca_key(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Accounts
+        self.assertIsInstance(acs.ca_key, str)
+        self.assertGreater(len(acs.ca_key), 0)
+        ca_key = serialization.load_pem_private_key(acs.ca_key.encode(), None, default_backend())
+        self.assertGreater(ca_key.key_size, 0)
 
         # Cleanup
         acs.destroy()
