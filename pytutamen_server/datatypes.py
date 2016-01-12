@@ -10,6 +10,7 @@ import abc
 import uuid
 
 
+from pcollections import abc_base
 from pcollections import backends
 from pcollections import collections
 
@@ -35,6 +36,20 @@ class ObjectDNE(Exception):
 
         # Call Parent
         msg = "Object '{}' does not exist".format(obj.key)
+        super().__init__(msg)
+
+class PObjectDNE(Exception):
+
+    def __init__(self, pobj):
+
+        # Check Args
+        if not isinstance(pobj, abc_base.Persistent):
+            msg = "'pobj' must be an instance of '{}', ".format(abc_base.Persistent)
+            msg += "not '{}'".format(type(pobj))
+            raise TypeError(msg)
+
+        # Call Parent
+        msg = "PObject '{}' does not exist".format(pobj.key)
         super().__init__(msg)
 
 ### Functions ###
@@ -141,7 +156,7 @@ class PersistentObject(object):
         pkey = self._build_pkey(postfix=postfix)
         pobj = obj_type(pkey, create=create, existing=None)
         if not pobj.exists():
-            raise ObjectDNE(pobj)
+            raise PObjectDNE(pobj)
         return pobj
 
     def val_to_key(self, val):
