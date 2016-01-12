@@ -50,17 +50,23 @@ def build_pkey(base_key, prefix=None, postfix=None):
 
     return key
 
-def check_isinstance(obj, cls):
+def check_isinstance(obj, *classes):
 
-    if not isinstance(obj, cls):
-        msg = "'{}' is not an instance of '{}'".format(type(obj), cls)
-        raise TypeError(msg)
+    for cls in classes:
+        if isinstance(obj, cls):
+            return
 
-def check_issubclass(sub, sup):
+    msg = "'{}' is not an instance of '{}'".format(type(obj), classes)
+    raise TypeError(msg)
 
-    if not issubclass(sub, sup):
-        msg = "'{}' is not a subclass of '{}'".format(sub, sup)
-        raise TypeError(msg)
+def check_issubclass(sub, *supers):
+
+    for sup in supers:
+        if issubclass(sub, sup):
+            return
+
+    msg = "'{}' is not a subclass of '{}'".format(sub, supers)
+    raise TypeError(msg)
 
 def nos(val):
     """ None or Str"""
