@@ -38,6 +38,20 @@ class ObjectDNE(Exception):
         msg = "Object '{}' does not exist".format(obj.key)
         super().__init__(msg)
 
+class ObjectExists(Exception):
+
+    def __init__(self, obj):
+
+        # Check Args
+        if not isinstance(obj, ChildObject):
+            msg = "'obj' must be an instance of '{}', ".format(PersistentObject)
+            msg += "not '{}'".format(type(obj))
+            raise TypeError(msg)
+
+        # Call Parent
+        msg = "Object '{}' already exists in parent '{}'".format(obj, obj.parent)
+        super().__init__(msg)
+
 class PObjectDNE(Exception):
 
     def __init__(self, pobj):
@@ -303,10 +317,15 @@ class ChildObject(PersistentObject):
         self._pindex = pindex
 
         # Register with Index
+        # TODO: These operations need to be atomic
         if create:
+            if self._pindex.exists(self.key):
+                # TODO: Cleanup?
+                raise ObjectExists(self)
             self._pindex._children.add(self.key)
         else:
             if not self._pindex.exists(self.key):
+                # TODO: Cleanup?
                 raise ObjectDNE(self)
 
     def destroy(self):

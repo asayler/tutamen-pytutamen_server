@@ -123,6 +123,12 @@ class ObjectsHelpers(object):
         self.assertIsInstance(obj, obj_type)
         self.assertTrue(obj.exists())
         self.assertTrue(obj_index.exists(obj))
+
+        # Test OE
+        self.assertRaises(datatypes.ObjectExists, create_obj, key=obj.key)
+        self.assertRaises(datatypes.ObjectExists, create_obj, uid=obj.uid)
+
+        # Cleanup
         obj.destroy()
 
         # Test Create (Key)
