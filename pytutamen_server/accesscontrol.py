@@ -6,6 +6,7 @@
 
 ### Imports ###
 
+import datetime
 import uuid
 
 from . import datatypes
@@ -135,10 +136,19 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         datatypes.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             datatypes.check_isinstance(clientuid, uuid.UUID)
-            datatypes.check_isinstance(expiration, float)
+            clientuid = str(clientuid)
+            datatypes.check_isinstance(expiration, datetime.datetime)
+            expiration = str(expiration.timestamp())
             datatypes.check_isinstance(objperm, str)
             datatypes.check_isinstance(objtype, str)
             datatypes.check_isinstance(objuid, uuid.UUID)
+            objuid = str(objuid)
+        else:
+            clientuid = None
+            expiration = None
+            objperm = None
+            objtype = None
+            objuid = None
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
@@ -146,10 +156,10 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         # Setup Data
         self._clientuid = self._build_pobj(self.pcollections.String,
                                            _POSTFIX_CLIENTUID,
-                                           create=datatypes.nos(clientuid))
+                                           create=clientuid)
         self._expiration = self._build_pobj(self.pcollections.String,
                                             _POSTFIX_EXPIRATION,
-                                            create=datatypes.nos(expiration))
+                                            create=expiration)
         self._objperm = self._build_pobj(self.pcollections.String,
                                          _POSTFIX_OBJPERM,
                                          create=objperm)
@@ -158,7 +168,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                                          create=objtype)
         self._objuid = self._build_pobj(self.pcollections.String,
                                         _POSTFIX_OBJUID,
-                                        create=datatypes.nos(objuid))
+                                        create=objuid)
         self._status = self._build_pobj(self.pcollections.MutableString,
                                         _POSTFIX_STATUS,
                                         create=_NEW_STATUS)
@@ -190,6 +200,11 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     @property
     def expiration(self):
         """Return Expiration"""
+        return datetime.datetime.fromtimestamp(self.expiration_timestamp)
+
+    @property
+    def expiration_timestamp(self):
+        """Return Expiration Timestamp"""
         return float(self._expiration.get_val())
 
     @property

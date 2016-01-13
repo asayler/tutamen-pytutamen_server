@@ -12,7 +12,7 @@
 
 ## stdlib ##
 import functools
-import time
+import datetime
 import uuid
 import unittest
 
@@ -51,7 +51,7 @@ class AccessControlTestCase(tests_common.BaseTestCase):
     def _create_authorization(self, acs, **kwargs_user):
 
         clientuid = uuid.uuid4()
-        expiration = time.time()
+        expiration = datetime.datetime.now()
         objperm = 'TESTPERM'
         objtype = 'TESTOBJ'
         objuid = uuid.uuid4()
@@ -470,11 +470,23 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
     def test_expiration(self):
 
         # Create Authorization
-        expiration = time.time()
+        expiration = datetime.datetime.utcnow()
         auth = self._create_authorization(self.acs, expiration=expiration)
 
-        # Test Expriation
-        self.assertEqual(auth.expiration, expiration)
+        # Test Expiration
+        self.assertAlmostEqual(auth.expiration.timestamp(), expiration.timestamp(), delta=0.1)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_expiration_timestamp(self):
+
+        # Create Authorization
+        expiration = datetime.datetime.now()
+        auth = self._create_authorization(self.acs, expiration=expiration)
+
+        # Test Expiration Timestamp
+        self.assertAlmostEqual(auth.expiration_timestamp, expiration.timestamp(), delta=0.1)
 
         # Cleanup
         auth.destroy()
