@@ -9,6 +9,7 @@
 
 import datetime
 import uuid
+import logging
 
 DUR_ONE_DAY = datetime.timedelta(1, 0, 0)
 DUR_ONE_MONTH = datetime.timedelta(28, 0, 0)
@@ -27,6 +28,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.NullHandler())
 
 ### Functions ###
 
@@ -97,6 +102,11 @@ def gen_ca_pair(cn, country, state, locality, organization, ou, email,
 def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
                cn=None, duration=None, serial=None):
 
+    logger.debug("csr_pem:\n{}".format(csr_pem))
+    logger.debug("cn: {}".format(cn))
+    logger.debug("duration: {}".format(duration))
+    logger.debug("serial: {}".format(serial))
+
     if isinstance(csr_pem, str):
         csr_pem = csr_pem.encode()
     if isinstance(ca_key_pem, str):
@@ -118,17 +128,19 @@ def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
     if not serial:
         serial = uuid.uuid4()
 
-    sub_attr = []
-    sub_attr += csr.subject.get_attributes_for_oid(x509.NameOID.COUNTRY_NAME)
-    sub_attr += csr.subject.get_attributes_for_oid(x509.NameOID.LOCALITY_NAME)
-    sub_attr += csr.subject.get_attributes_for_oid(x509.NameOID.STATE_OR_PROVINCE_NAME)
-    sub_attr += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)
-    sub_attr += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)
-    sub_attr.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, cn))
+    sub_attrs = []
+    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.COUNTRY_NAME)
+    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.LOCALITY_NAME)
+    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.STATE_OR_PROVINCE_NAME)
+    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)
+    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)
+    sub_attrs.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, cn))
+
+    logger.debug("sub_attr: {}".format(sub_attrs))
 
     builder = x509.CertificateBuilder()
     builder = builder.issuer_name(ca_crt.subject)
-    builder = builder.subject_name(x509.Name(sub_attr))
+    builder = builder.subject_name(x509.Name(sub_attrs))
     builder = builder.not_valid_before(datetime.datetime.today() - DUR_ONE_DAY)
     builder = builder.not_valid_after(datetime.datetime.today() + duration)
     builder = builder.serial_number(int(serial))
@@ -136,10 +148,15 @@ def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
 
     extensions = []
     extensions.append(x509.BasicConstraints(ca=False, path_length=None))
+
+    logger.debug("extensions: {}".format(extensions))
+
     for ext in extensions:
         builder = builder.add_extension(ext, critical=True)
 
     crt = builder.sign(private_key=ca_key, algorithm=hashes.SHA256(), backend=be)
-    crt_pem = crt.public_bytes(serialization.Encoding.PEM)
+    crt_pem = crt.public_bytes(serialization.Encoding.PEM).decode()
 
-    return crt_pem.decode()
+    logger.debug("crt_pem:\n{}".format(crt_pem))
+
+    return crt_pem
