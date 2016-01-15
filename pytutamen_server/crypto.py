@@ -50,6 +50,32 @@ logger.addHandler(logging.NullHandler())
 
 ### Functions ###
 
+def gen_key_pair(length=4096, pub_exp=65537, typ=TYPE_RSA, password=None):
+
+    if length not in _RSA_SUPPORTED_LENGTH:
+        raise TypeError("Length must be one of '{}'".format(_RSA_SUPPORTED_LENGTH))
+    if pub_exp not in _RSA_SUPPORTED_EXP:
+        raise TypeError("pub_exp must be one of '{}'".format(_RSA_SUPPORTED_EXP))
+    if typ != TYPE_RSA:
+        raise TypeError("Only type '{}' supported".format(TYPE_RSA))
+
+    priv_key = rsa.generate_private_key(pub_exp, length, default_backend())
+    pub_key = priv_key.public_key()
+
+    if not password:
+        encryption = serialization.NoEncryption()
+    else:
+        encryption = serialization.BestAvailableEncryption(password)
+    priv_pem = priv_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                      format=serialization.PrivateFormat.PKCS8,
+                                      encryption_algorithm=encryption)
+    priv_pem = priv_pem.decode()
+    pub_pem = pub_key.public_bytes(encoding=serialization.Encoding.PEM,
+                                   format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    pub_pem = pub_pem.decode()
+
+    return pub_pem, priv_pem
+
 def gen_ca_pair(cn, country, state, locality, organization, ou, email,
                 duration=None, serial=None, ca_key_pem=None, password=None,
                 length=4096, pub_exp=65537, typ=TYPE_RSA, sig=SIG_SHA256):
