@@ -438,9 +438,8 @@ class ChildObjectTestCase(tests_common.BaseTestCase):
         self.assertEqual(obj.key, key)
 
         # Test Existing (create=True)
-        obj = datatypes.ChildObject(self.pbackend, pindex=self.pindex, key=key, create=True)
-        self.assertIsInstance(obj, datatypes.ChildObject)
-        self.assertEqual(obj.key, key)
+        self.assertRaises(datatypes.ObjectExists, datatypes.ChildObject, self.pbackend,
+                          pindex=self.pindex, key=key, create=True)
 
         # Cleanup
         obj.destroy()
