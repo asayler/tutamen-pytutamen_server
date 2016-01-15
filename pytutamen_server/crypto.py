@@ -11,6 +11,15 @@ import datetime
 import uuid
 import logging
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+
+### Constants ###
+
 DUR_ONE_DAY = datetime.timedelta(1, 0, 0)
 DUR_ONE_MONTH = datetime.timedelta(28, 0, 0)
 DUR_ONE_YEAR = datetime.timedelta(366, 0, 0)
@@ -18,20 +27,19 @@ DUR_TEN_YEAR = datetime.timedelta(3660, 0, 0)
 
 TYPE_RSA = 'RSA'
 
-SIG_SHA256 = 'SHA56'
+SIG_SHA256 = 'SHA256'
 
-_SUPPORTED_LENGTH = [2048, 4096]
-_SUPPORTED_EXP = [3, 65537]
+_RSA_SUPPORTED_LENGTH = [2048, 4096]
+_RSA_SUPPORTED_EXP = [3, 65537]
 
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+
+
+### Logging ###
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.NullHandler())
+
 
 ### Functions ###
 
@@ -43,10 +51,10 @@ def gen_ca_pair(cn, country, state, locality, organization, ou, email,
         duration = DUR_TEN_YEAR
     if not serial:
         serial = uuid.uuid4()
-    if length not in _SUPPORTED_LENGTH:
-        raise TypeError("Length must be one of '{}'".format(_SUPPOERTED_LENGTH))
-    if pub_exp not in _SUPPORTED_EXP:
-        raise TypeError("pub_exp must be one of '{}'".format(_SUPPOERTED_EXP))
+    if length not in _RSA_SUPPORTED_LENGTH:
+        raise TypeError("Length must be one of '{}'".format(_RSA_SUPPORTED_LENGTH))
+    if pub_exp not in _RSA_SUPPORTED_EXP:
+        raise TypeError("pub_exp must be one of '{}'".format(_RSA_SUPPORTED_EXP))
     if typ != TYPE_RSA:
         raise TypeError("Only type '{}' supported".format(TYPE_RSA))
     if sig != SIG_SHA256:
