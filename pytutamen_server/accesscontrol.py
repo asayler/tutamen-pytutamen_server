@@ -65,8 +65,8 @@ class AccessControlServer(datatypes.ServerObject):
         self._authenticators = datatypes.ChildIndex(self, Authenticator, _KEY_AUTHENTICATORS)
         self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
 
-        # Setup Crypto Keys
-        if create and not ca_crt_pem:
+        # Setup CA Keys
+        if create and not (ca_crt_pem and ca_key_pem):
             datatypes.check_isinstance(cn, str)
             datatypes.check_isinstance(country, str)
             datatypes.check_isinstance(state, str)
