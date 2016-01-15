@@ -417,6 +417,35 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
         # Cleanup
         acs.destroy()
 
+    def test_sigkey_pub(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test sig_pub
+        self.assertIsInstance(acs.sigkey_pub, str)
+        self.assertGreater(len(acs.sigkey_pub), 0)
+        sigkey_pub = serialization.load_pem_public_key(acs.sigkey_pub.encode(), default_backend())
+        self.assertGreater(sigkey_pub.key_size, 0)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_sigkey_priv(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test sig_pub
+        self.assertIsInstance(acs.sigkey_priv, str)
+        self.assertGreater(len(acs.sigkey_priv), 0)
+        sigkey_priv = serialization.load_pem_private_key(acs.sigkey_priv.encode(),
+                                                          None, default_backend())
+        self.assertGreater(sigkey_priv.key_size, 0)
+
+        # Cleanup
+        acs.destroy()
+
 class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def setUp(self):

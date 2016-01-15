@@ -30,6 +30,8 @@ _PREFIX_CLIENT = "client"
 
 _POSTFIX_CA_CRT = "ca_crt"
 _POSTFIX_CA_KEY = "ca_key"
+_POSTFIX_SIGKEY_PUB = "sigkey_pub"
+_POSTFIX_SIGKEY_PRIV = "sigkey_priv"
 _POSTFIX_CLIENT_CRT = "crt"
 
 _POSTFIX_CLIENTUID = "clientuid"
@@ -52,7 +54,8 @@ _NEW_STATUS = "pending"
 class AccessControlServer(datatypes.ServerObject):
 
     def __init__(self, pbackend, key=_KEY_ACSRV, create=False,
-                 ca_crt_pem=None, ca_key_pem=None, sig_key=None,
+                 ca_crt_pem=None, ca_key_pem=None,
+                 sigkey_pub_pem=None, sigkey_priv_pem=None,
                  cn=None, country=None, state=None, locality=None,
                  organization=None, ou=None, email=None):
 
@@ -84,9 +87,21 @@ class AccessControlServer(datatypes.ServerObject):
                                         _POSTFIX_CA_KEY,
                                         create=ca_key_pem)
 
+        # Setup Sig Keys
+        if create and not (sigkey_pub_pem and sigkey_priv_pem):
+            sigkey_pub_pem, sigkey_priv_pem = crypto.gen_key_pair(length=4096)
+        self._sigkey_pub = self._build_pobj(self.pcollections.String,
+                                             _POSTFIX_SIGKEY_PUB,
+                                             create=sigkey_pub_pem)
+        self._sigkey_priv = self._build_pobj(self.pcollections.String,
+                                              _POSTFIX_SIGKEY_PRIV,
+                                              create=sigkey_priv_pem)
+
     def destroy(self):
 
         # Cleanup Objects
+        self._sigkey_priv.rem()
+        self._sigkey_pub.rem()
         self._ca_key.rem()
         self._ca_crt.rem()
 
@@ -122,6 +137,14 @@ class AccessControlServer(datatypes.ServerObject):
     @property
     def ca_key(self):
         return self._ca_key.get_val()
+
+    @property
+    def sigkey_pub(self):
+        return self._sigkey_pub.get_val()
+
+    @property
+    def sigkey_priv(self):
+        return self._sigkey_priv.get_val()
 
 
 class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
