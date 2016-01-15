@@ -11,6 +11,8 @@ import datetime
 import uuid
 import logging
 
+import jwt
+
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -32,6 +34,11 @@ SIG_SHA256 = 'SHA256'
 _RSA_SUPPORTED_LENGTH = [2048, 4096]
 _RSA_SUPPORTED_EXP = [3, 65537]
 
+JWT_RSA_SHA256 = 'RS256'
+JWT_RSA_SHA384 = 'RS384'
+JWT_RSA_SHA512 = 'RS512'
+
+_JWT_SUPPORTED_ALGO = [JWT_RSA_SHA256, JWT_RSA_SHA384, JWT_RSA_SHA512]
 
 
 ### Logging ###
@@ -168,3 +175,20 @@ def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
     logger.debug("crt_pem:\n{}".format(crt_pem))
 
     return crt_pem
+
+def sign_jwt(val, priv_key, algorithm=JWT_RSA_SHA256):
+
+    if not algorithm in _JWT_SUPPORTED_ALGO:
+        raise TypeError("algorithm must be one of '{}'".format(_JWT_SUPPORTED_ALGO))
+
+    out = jwt.encode(val, priv_key, algorithm=algorithm)
+    return out.decode()
+
+def verify_jwt(val, pub_key, algorithm=JWT_RSA_SHA256):
+
+    if not algorithm in _JWT_SUPPORTED_ALGO:
+        raise TypeError("algorithm must be one of '{}'".format(_JWT_SUPPORTED_ALGO))
+
+    if isinstance(val, str):
+        val = val.encode()
+    return jwt.decode(val, pub_key, algorithm=algorithm)
