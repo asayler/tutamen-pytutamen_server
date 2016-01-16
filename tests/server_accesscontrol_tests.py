@@ -24,6 +24,7 @@ from cryptography.hazmat.primitives import serialization
 import tests_common
 
 ## tutamen_server ##
+from pytutamen_server import crypto
 from pytutamen_server import utility
 from pytutamen_server import datatypes
 from pytutamen_server import accesscontrol
@@ -32,6 +33,21 @@ from pytutamen_server import accesscontrol
 ### Object Classes ###
 
 class AccessControlTestCase(tests_common.BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+
+        # Call Parent
+        super().setUpClass()
+
+        cls.ca_key_pem = crypto.gen_key()
+        cls.sigkey_priv_pem = crypto.gen_key()
+
+    @classmethod
+    def tearDownClass(cls):
+
+        # Call Parent
+        super().tearDownClass()
 
     def _create_accesscontrolserver(self, pbackend, **kwargs_user):
 
@@ -43,7 +59,8 @@ class AccessControlTestCase(tests_common.BaseTestCase):
         ou = "Test CA"
         email = "test@test.null"
         kwargs = {'cn': cn, 'country': country, 'state': state, 'locality': locality,
-                  'organization': organization, 'ou': ou, 'email': email}
+                  'organization': organization, 'ou': ou, 'email': email,
+                  'ca_key_pem': self.ca_key_pem, 'sigkey_priv_pem': self.sigkey_priv_pem}
         kwargs.update(kwargs_user)
 
         acs = accesscontrol.AccessControlServer(pbackend, create=True, **kwargs)
@@ -331,8 +348,14 @@ class AccessControlServerTestCase(AccessControlTestCase, ObjectsHelpers):
 
     def test_init_and_destroy(self):
 
-        # Create Server
-        acs = self._create_accesscontrolserver(self.pbackend)
+        # Create Server (New Keys)
+        kwargs = {'ca_key_pem': None, 'sigkey_priv_pem': None}
+        acs = self._create_accesscontrolserver(self.pbackend, **kwargs)
+        self.assertIsInstance(acs, accesscontrol.AccessControlServer)
+
+        # Create Server (Cached Keys)
+        kwargs = {'ca_key_pem': self.ca_key_pem, 'sigkey_priv_pem': self.sigkey_priv_pem}
+        acs = self._create_accesscontrolserver(self.pbackend, **kwargs)
         self.assertIsInstance(acs, accesscontrol.AccessControlServer)
 
         # Cleanup

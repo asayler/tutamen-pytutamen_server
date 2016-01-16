@@ -92,17 +92,24 @@ class AccessControlServer(datatypes.ServerObject):
         self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
 
         # Setup CA Keys
-        if create and not (ca_crt_pem and ca_key_pem):
-            utility.check_isinstance(cn, str)
-            utility.check_isinstance(country, str)
-            utility.check_isinstance(state, str)
-            utility.check_isinstance(locality, str)
-            utility.check_isinstance(organization, str)
-            utility.check_isinstance(ou, str)
-            utility.check_isinstance(email, str)
-            ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
-                                                        organization, ou, email,
-                                                        ca_key_pem=ca_key_pem)
+        if create:
+            if ca_crt_pem:
+                if ca_key_pem:
+                    utility.check_isinstance(ca_crt_pem, str, bytes)
+                    utility.check_isinstance(ca_key_pem, str, bytes)
+                else:
+                    raise TypeError("Providing ca_crt_pem requires providing ca_key_pem")
+            else:
+                utility.check_isinstance(cn, str)
+                utility.check_isinstance(country, str)
+                utility.check_isinstance(state, str)
+                utility.check_isinstance(locality, str)
+                utility.check_isinstance(organization, str)
+                utility.check_isinstance(ou, str)
+                utility.check_isinstance(email, str)
+                ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
+                                                            organization, ou, email,
+                                                            ca_key_pem=ca_key_pem)
         self._ca_crt = self._build_pobj(self.pcollections.String,
                                         _POSTFIX_CA_CRT,
                                         create=ca_crt_pem)
@@ -111,8 +118,16 @@ class AccessControlServer(datatypes.ServerObject):
                                         create=ca_key_pem)
 
         # Setup Sig Keys
-        if create and not (sigkey_pub_pem and sigkey_priv_pem):
-            sigkey_pub_pem, sigkey_priv_pem = crypto.gen_key_pair(length=4096)
+        if create:
+            if sigkey_pub_pem:
+                if sigkey_priv_pem:
+                    utility.check_isinstance(sigkey_pub_pem, str, bytes)
+                    utility.check_isinstance(sigkey_priv_pem, str, bytes)
+                else:
+                    raise TypeError("Providing sigkey_pub_pem requires providing sigkey_priv_pem")
+            else:
+                sigkey_pub_pem, sigkey_priv_pem = crypto.gen_key_pair(length=4096,
+                                                                      priv_key_pem=sigkey_priv_pem)
         self._sigkey_pub = self._build_pobj(self.pcollections.String,
                                              _POSTFIX_SIGKEY_PUB,
                                              create=sigkey_pub_pem)
