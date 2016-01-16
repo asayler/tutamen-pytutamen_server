@@ -3,7 +3,7 @@
 
 
 # Andy Sayler
-# 2015
+# 2015, 2016
 # Tutamen Server Tests
 # Datatypes Tests
 
@@ -14,15 +14,15 @@
 import uuid
 import unittest
 
-## Tests Common ##
-import tests_common
-
 ## pcollections ##
 from pcollections import collections
 from pcollections import abc_base
 
 ## tutamen_server ##
 from pytutamen_server import datatypes
+
+## Tests Common ##
+import tests_common
 
 
 ### Function Classes ###
@@ -52,30 +52,6 @@ class FunctionsTestCase(tests_common.BaseTestCase):
         key = datatypes.build_pkey(base_key, prefix=prefix, postfix=postfix)
         self.assertEqual(key, (prefix + sep + base_key + sep + postfix))
 
-    def test_check_isinstance(self):
-
-        # Test Fail
-        self.assertRaises(TypeError, datatypes.check_isinstance, 1, str)
-
-        # Test Pass
-        datatypes.check_isinstance("test", str)
-
-    def test_check_issubclass(self):
-
-        class substr(str):
-            pass
-
-        # Test Fail
-        self.assertRaises(TypeError, datatypes.check_issubclass, object, str)
-
-        # Test Pass
-        datatypes.check_issubclass(substr, str)
-
-    def test_nos(self):
-
-        self.assertEqual(datatypes.nos(None), None)
-        self.assertEqual(datatypes.nos("test"), "test")
-        self.assertEqual(datatypes.nos(1), str(1))
 
 ### Object Classes ###
 

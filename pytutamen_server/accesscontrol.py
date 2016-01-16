@@ -9,8 +9,9 @@
 import datetime
 import uuid
 
-from . import datatypes
 from . import crypto
+from . import utility
+from . import datatypes
 
 
 ### Constants ###
@@ -70,13 +71,13 @@ class AccessControlServer(datatypes.ServerObject):
 
         # Setup CA Keys
         if create and not (ca_crt_pem and ca_key_pem):
-            datatypes.check_isinstance(cn, str)
-            datatypes.check_isinstance(country, str)
-            datatypes.check_isinstance(state, str)
-            datatypes.check_isinstance(locality, str)
-            datatypes.check_isinstance(organization, str)
-            datatypes.check_isinstance(ou, str)
-            datatypes.check_isinstance(email, str)
+            utility.check_isinstance(cn, str)
+            utility.check_isinstance(country, str)
+            utility.check_isinstance(state, str)
+            utility.check_isinstance(locality, str)
+            utility.check_isinstance(organization, str)
+            utility.check_isinstance(ou, str)
+            utility.check_isinstance(email, str)
             ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
                                                         organization, ou, email,
                                                         ca_key_pem=ca_key_pem)
@@ -156,15 +157,15 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Initialize Authorization"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, AccessControlServer)
+        utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
-            datatypes.check_isinstance(clientuid, uuid.UUID)
+            utility.check_isinstance(clientuid, uuid.UUID)
             clientuid = str(clientuid)
-            datatypes.check_isinstance(expiration, datetime.datetime)
+            utility.check_isinstance(expiration, datetime.datetime)
             expiration = str(expiration.timestamp())
-            datatypes.check_isinstance(objperm, str)
-            datatypes.check_isinstance(objtype, str)
-            datatypes.check_isinstance(objuid, uuid.UUID)
+            utility.check_isinstance(objperm, str)
+            utility.check_isinstance(objtype, str)
+            utility.check_isinstance(objuid, uuid.UUID)
             objuid = str(objuid)
         else:
             clientuid = None
@@ -257,7 +258,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
         """Initialize Verifier"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, AccessControlServer)
+        utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
 
@@ -311,9 +312,9 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Initialize Authenticator"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, AccessControlServer)
+        utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
-            datatypes.check_isinstance(module, str)
+            utility.check_isinstance(module, str)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
@@ -361,7 +362,7 @@ class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObj
         """Initialize Account"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, AccessControlServer)
+        utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
 
@@ -409,9 +410,9 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
         """Initialize Client"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, Account)
+        utility.check_isinstance(pindex.parent, Account)
         if create:
-            datatypes.check_isinstance(csr_pem, str, bytes)
+            utility.check_isinstance(csr_pem, str, bytes)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)

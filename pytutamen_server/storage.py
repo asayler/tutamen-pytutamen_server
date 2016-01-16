@@ -8,6 +8,7 @@
 
 import uuid
 
+from . import utility
 from . import datatypes
 
 
@@ -54,7 +55,7 @@ class Collection(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Child
         """Initialize Collection"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, StorageServer)
+        utility.check_isinstance(pindex.parent, StorageServer)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, prefix=prefix, **kwargs)
@@ -87,9 +88,9 @@ class Secret(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
         """Initialize Secret"""
 
         # Check Input
-        datatypes.check_isinstance(pindex.parent, Collection)
+        utility.check_isinstance(pindex.parent, Collection)
         if create:
-            datatypes.check_isinstance(data, str)
+            utility.check_isinstance(data, str)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)

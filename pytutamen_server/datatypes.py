@@ -9,10 +9,11 @@
 import abc
 import uuid
 
-
 from pcollections import abc_base
 from pcollections import backends
 from pcollections import collections
+
+from . import utility
 
 
 ### Constants ###
@@ -79,28 +80,6 @@ def build_pkey(base_key, prefix=None, postfix=None):
 
     return key
 
-def check_isinstance(obj, *classes):
-
-    for cls in classes:
-        if isinstance(obj, cls):
-            return
-
-    msg = "'{}' is not an instance of '{}'".format(type(obj), classes)
-    raise TypeError(msg)
-
-def check_issubclass(sub, *supers):
-
-    for sup in supers:
-        if issubclass(sub, sup):
-            return
-
-    msg = "'{}' is not a subclass of '{}'".format(sub, supers)
-    raise TypeError(msg)
-
-def nos(val):
-    """ None or Str"""
-    return str(val) if val is not None else None
-
 
 ### Objects ###
 
@@ -113,10 +92,10 @@ class PersistentObject(object):
         # CREATE_OR_OPEN       True
 
         # Check args
-        check_isinstance(pbackend, backends.Backend)
-        check_isinstance(key, str)
+        utility.check_isinstance(pbackend, backends.Backend)
+        utility.check_isinstance(key, str)
         if prefix is not None:
-            check_isinstance(prefix, str)
+            utility.check_isinstance(prefix, str)
 
         # Call Parent
         super().__init__()
@@ -223,9 +202,9 @@ class UUIDObject(PersistentObject):
 
         # Check Args
         if key:
-            check_isinstance(key, str)
+            utility.check_isinstance(key, str)
         if uid:
-            check_isinstance(uid, uuid.UUID)
+            utility.check_isinstance(uid, uuid.UUID)
 
         # Setup key and uid
         if not key:
@@ -257,7 +236,7 @@ class UserDataObject(PersistentObject):
 
         # Check Args
         if create:
-            check_isinstance(userdata, dict)
+            utility.check_isinstance(userdata, dict)
 
         # Call Parent
         super().__init__(pbackend, create=create, **kwargs)
@@ -306,7 +285,7 @@ class ChildObject(PersistentObject):
         # CREATE_OR_OPEN       True
 
         # Check Input
-        check_isinstance(pindex, ChildIndex)
+        utility.check_isinstance(pindex, ChildIndex)
         if pindex.parent.pbackend != pbackend:
             raise TypeError("parent and child must have common pbackend")
 
@@ -357,9 +336,9 @@ class ChildIndex(object):
         super().__init__()
 
         # Check Args
-        check_isinstance(parent, PersistentObject)
-        check_issubclass(type_child, ChildObject)
-        check_isinstance(label, str)
+        utility.check_isinstance(parent, PersistentObject)
+        utility.check_issubclass(type_child, ChildObject)
+        utility.check_isinstance(label, str)
 
         # Save Args
         self._parent = parent
@@ -419,11 +398,11 @@ class MasterObjIndex(object):
         super().__init__()
 
         # Check Args
-        check_isinstance(obj, PersistentObject)
-        check_isinstance(label, str)
+        utility.check_isinstance(obj, PersistentObject)
+        utility.check_isinstance(label, str)
         if not hasattr(slave_generator, '__call__'):
             raise TypeError("master_generator must be callable")
-        check_issubclass(type_member, PersistentObject)
+        utility.check_issubclass(type_member, PersistentObject)
 
         # Save Args
         self._obj = obj
@@ -441,7 +420,7 @@ class MasterObjIndex(object):
 
         for key in self.by_key():
             slv = self._slave_generator(key, **self._extra_kwargs)
-            check_isinstance(slv, SlaveObjIndex)
+            utility.check_isinstance(slv, SlaveObjIndex)
             slv._members.discard(self.obj.key)
 
         # Cleanup Set
@@ -458,18 +437,18 @@ class MasterObjIndex(object):
     def add(self, val):
         key = self.obj.val_to_key(val)
         slv = self._slave_generator(key, **self._extra_kwargs)
-        check_isinstance(slv, SlaveObjIndex)
-        check_isinstance(slv.obj, self.type_member)
-        check_isinstance(self.obj, slv.type_member)
+        utility.check_isinstance(slv, SlaveObjIndex)
+        utility.check_isinstance(slv.obj, self.type_member)
+        utility.check_isinstance(self.obj, slv.type_member)
         self._members.add(key)
         slv._members.add(self.obj.key)
 
     def remove(self, val):
         key = self.obj.val_to_key(val)
         slv = self._slave_generator(key, **self._extra_kwargs)
-        check_isinstance(slv, SlaveObjIndex)
-        check_isinstance(slv.obj, self.type_member)
-        check_isinstance(self.obj, slv.type_member)
+        utility.check_isinstance(slv, SlaveObjIndex)
+        utility.check_isinstance(slv.obj, self.type_member)
+        utility.check_isinstance(self.obj, slv.type_member)
         slv._members.discard(self.obj.key)
         self._members.discard(key)
 
@@ -500,11 +479,11 @@ class SlaveObjIndex(object):
         super().__init__()
 
         # Check Args
-        check_isinstance(obj, PersistentObject)
-        check_isinstance(label, str)
+        utility.check_isinstance(obj, PersistentObject)
+        utility.check_isinstance(label, str)
         if not hasattr(master_generator, '__call__'):
             raise TypeError("master_generator must be callable")
-        check_issubclass(type_member, PersistentObject)
+        utility.check_issubclass(type_member, PersistentObject)
 
         # Save Args
         self._obj = obj
@@ -522,7 +501,7 @@ class SlaveObjIndex(object):
 
         for key in self.by_key():
             mas = self._master_generator(key, **self._extra_kwargs)
-            check_isinstance(mas, MasterObjIndex)
+            utility.check_isinstance(mas, MasterObjIndex)
             mas._members.discard(self.obj.key)
 
         # Cleanup Set
