@@ -48,6 +48,8 @@ _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_CLIENTS = "clients"
 
 AUTHZ_STATUS_NEW = "pending"
+AUTHZ_STATUS_APPROVED = "approved"
+AUTHZ_STATUS_DENIED = "denied"
 
 
 ### Exceptions ###
