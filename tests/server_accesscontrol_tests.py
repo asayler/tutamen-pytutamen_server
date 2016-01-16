@@ -568,7 +568,7 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
         auth = self._create_authorization(self.acs)
 
         # Test Status
-        self.assertEqual(auth.status, accesscontrol._NEW_STATUS)
+        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_NEW)
 
         # Cleanup
         auth.destroy()

@@ -11,10 +11,12 @@
 ### Imports ###
 
 ## stdlib ##
+import datetime
 import uuid
 import unittest
 
 ## tutamen_server ##
+from pytutamen_server import crypto
 from pytutamen_server import utility
 
 ## Tests Common ##
@@ -49,6 +51,34 @@ class UtilityTestCase(tests_common.BaseTestCase):
         self.assertEqual(utility.nos(None), None)
         self.assertEqual(utility.nos("test"), "test")
         self.assertEqual(utility.nos(1), str(1))
+
+    def test_sign_verify_auth_token(self):
+
+        pub, priv = crypto.gen_key_pair()
+
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp())
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+
+        token = utility.sign_auth_token(priv, clientuid, expiration,
+                                        objperm, objtype, objuid)
+
+        self.assertIsInstance(token, str)
+        self.assertGreater(len(token), 0)
+
+        val = utility.verify_auth_token(pub, token)
+
+        self.assertIsInstance(val, dict)
+        self.assertGreater(len(val), 0)
+
+        self.assertEqual(val[utility.AUTHZ_KEY_CLIENTUID], clientuid)
+        self.assertEqual(val[utility.AUTHZ_KEY_EXPIRATION], expiration)
+        self.assertEqual(val[utility.AUTHZ_KEY_OBJPERM], objperm)
+        self.assertEqual(val[utility.AUTHZ_KEY_OBJTYPE], objtype)
+        self.assertEqual(val[utility.AUTHZ_KEY_OBJUID], objuid)
 
 
 ### Main ###

@@ -47,7 +47,27 @@ _POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_CLIENTS = "clients"
 
-_NEW_STATUS = "pending"
+AUTHZ_STATUS_NEW = "pending"
+
+
+### Exceptions ###
+
+class AuthorizationException(Exception):
+
+    pass
+
+class AuthorizationNotApproved(AuthorizationException):
+
+    def __init__(self, authz):
+
+        # Check Args
+        utility.check_isinstance(authz, Authorization)
+
+        # Message
+        msg = "Authorization {} not approved".format(authz.key)
+
+        # Call Parent
+        super().__init__(msg)
 
 
 ### Objects ###
@@ -195,7 +215,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                                         create=objuid)
         self._status = self._build_pobj(self.pcollections.MutableString,
                                         _POSTFIX_STATUS,
-                                        create=_NEW_STATUS)
+                                        create=AUTHZ_STATUS_NEW)
 
     def destroy(self):
         """Delete Authorization"""
@@ -250,6 +270,26 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     def status(self):
         """Return Status"""
         return self._status.get_val()
+
+    def verify(self):
+        """Verify Authorization Request"""
+
+        # Todo: actually verify authorization against permissions
+        self._status = AUTHZ_STATUS_APPROVED
+        return True
+
+    def export_token(self):
+        """Get signed assertion token"""
+
+        if self.verify != AUTHZ_STATUS_APPROVED:
+            raise AuthorizationNotApproved(self)
+
+        return utility.sign_auth_token(self.server.sigkey_priv,
+                                       self.clientuid,
+                                       self.expiration,
+                                       self.objperm,
+                                       self.objtype,
+                                       self.objuid)
 
 class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
