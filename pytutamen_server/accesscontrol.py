@@ -233,7 +233,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
     @property
     def server(self):
-        """Return Storage Server"""
+        """Return Access Control Server"""
         return self.parent
 
     @property
@@ -331,7 +331,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
 
     @property
     def server(self):
-        """Return Storage Server"""
+        """Return Access Control Server"""
         return self.parent
 
     @property
@@ -382,7 +382,7 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
     @property
     def server(self):
-        """Return Storage Server"""
+        """Return Access Control Server"""
         return self.parent
 
     @property
@@ -430,7 +430,7 @@ class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObj
 
     @property
     def server(self):
-        """Return Storage Server"""
+        """Return Access Control Server"""
         return self.parent
 
     @property
@@ -478,7 +478,7 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
 
     @property
     def server(self):
-        """Return Storage Server"""
+        """Return Access Control Server"""
         return self.account.server
 
     @property
