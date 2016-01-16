@@ -24,6 +24,7 @@ from cryptography.hazmat.primitives import serialization
 import tests_common
 
 ## tutamen_server ##
+from pytutamen_server import utility
 from pytutamen_server import datatypes
 from pytutamen_server import accesscontrol
 
@@ -569,6 +570,43 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
 
         # Test Status
         self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_NEW)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_verify(self):
+
+        # Create Authorization
+        auth = self._create_authorization(self.acs)
+
+        # Test Verify
+        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_NEW)
+        self.assertTrue(auth.verify())
+        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_APPROVED)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_export_token(self):
+
+        # Create Authorization
+        auth = self._create_authorization(self.acs)
+
+        # Test Unapproved
+        self.assertRaises(accesscontrol.AuthorizationNotApproved, auth.export_token)
+
+        # Approve
+        self.assertTrue(auth.verify())
+
+        # Test Approved
+        token = auth.export_token()
+        self.assertIsInstance(token, str)
+        self.assertGreater(len(token), 0)
+
+        # Test Verify
+        val = utility.verify_auth_token(self.acs.sigkey_pub, token)
+        self.assertIsInstance(val, dict)
+        self.assertGreater(len(val), 0)
 
         # Cleanup
         auth.destroy()

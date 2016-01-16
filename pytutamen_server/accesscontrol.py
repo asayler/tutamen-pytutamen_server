@@ -277,21 +277,31 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Verify Authorization Request"""
 
         # Todo: actually verify authorization against permissions
-        self._status = AUTHZ_STATUS_APPROVED
+        self._status.set_val(AUTHZ_STATUS_APPROVED)
         return True
 
     def export_token(self):
         """Get signed assertion token"""
 
-        if self.verify != AUTHZ_STATUS_APPROVED:
+        if self.status != AUTHZ_STATUS_APPROVED:
             raise AuthorizationNotApproved(self)
 
-        return utility.sign_auth_token(self.server.sigkey_priv,
-                                       self.clientuid,
-                                       self.expiration,
-                                       self.objperm,
-                                       self.objtype,
-                                       self.objuid)
+        token = utility.sign_auth_token(self.server.sigkey_priv,
+                                        self.clientuid,
+                                        self.expiration,
+                                        self.objperm,
+                                        self.objtype,
+                                        self.objuid)
+
+        # Assertion Check
+        val = utility.verify_auth_token(self.server.sigkey_pub, token)
+        assert(val[utility.AUTHZ_KEY_CLIENTUID] == self.clientuid)
+        assert(val[utility.AUTHZ_KEY_EXPIRATION] == self.expiration)
+        assert(val[utility.AUTHZ_KEY_OBJPERM] == self.objperm)
+        assert(val[utility.AUTHZ_KEY_OBJTYPE] == self.objtype)
+        assert(val[utility.AUTHZ_KEY_OBJUID] == self.objuid)
+
+        return token
 
 class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
