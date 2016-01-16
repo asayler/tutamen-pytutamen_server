@@ -509,7 +509,7 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
         auth = self._create_authorization(self.acs, expiration=expiration)
 
         # Test Expiration
-        self.assertAlmostEqual(auth.expiration.timestamp(), expiration.timestamp(), delta=0.1)
+        self.assertAlmostEqual(auth.expiration.timestamp(), expiration.timestamp(), delta=1)
 
         # Cleanup
         auth.destroy()
@@ -521,7 +521,7 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
         auth = self._create_authorization(self.acs, expiration=expiration)
 
         # Test Expiration Timestamp
-        self.assertAlmostEqual(auth.expiration_timestamp, expiration.timestamp(), delta=0.1)
+        self.assertAlmostEqual(auth.expiration_timestamp, expiration.timestamp(), delta=1)
 
         # Cleanup
         auth.destroy()

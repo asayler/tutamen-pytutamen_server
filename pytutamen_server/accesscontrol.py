@@ -182,7 +182,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             utility.check_isinstance(clientuid, uuid.UUID)
             clientuid = str(clientuid)
             utility.check_isinstance(expiration, datetime.datetime)
-            expiration = str(expiration.timestamp())
+            expiration = str(int(expiration.timestamp()))
             utility.check_isinstance(objperm, str)
             utility.check_isinstance(objtype, str)
             utility.check_isinstance(objuid, uuid.UUID)
@@ -249,7 +249,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     @property
     def expiration_timestamp(self):
         """Return Expiration Timestamp"""
-        return float(self._expiration.get_val())
+        return int(self._expiration.get_val())
 
     @property
     def objperm(self):
