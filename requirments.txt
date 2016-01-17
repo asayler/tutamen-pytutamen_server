@@ -1,3 +1,4 @@
-pyopenssl>=0.15.0,<=0.15.99
-cryptography>=1.0,<=1.99
+pyopenssl>=0.15.0,<=0.16
+cryptography>=1.0,<2
+pyjwt>=1.4,<2
 git+https://github.com/asayler/pcollections#egg=pcollections>=0.2.0b1
