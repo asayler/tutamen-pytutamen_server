@@ -8,6 +8,7 @@
 
 import datetime
 import uuid
+import logging
 
 from . import crypto
 
@@ -19,6 +20,13 @@ AUTHZ_KEY_EXPIRATION = 'expiration'
 AUTHZ_KEY_OBJPERM = 'objperm'
 AUTHZ_KEY_OBJTYPE = 'objtype'
 AUTHZ_KEY_OBJUID = 'objuid'
+
+
+### Logging ###
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.NullHandler())
 
 
 ### Helper Functions ###
