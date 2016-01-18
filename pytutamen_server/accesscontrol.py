@@ -305,15 +305,15 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         if self.status != AUTHZ_STATUS_APPROVED:
             raise AuthorizationNotApproved(self)
 
-        token = utility.sign_auth_token(self.server.sigkey_priv,
-                                        self.clientuid,
-                                        self.expiration,
-                                        self.objperm,
-                                        self.objtype,
-                                        self.objuid)
+        token = utility.encode_auth_token(self.server.sigkey_priv,
+                                          self.clientuid,
+                                          self.expiration,
+                                          self.objperm,
+                                          self.objtype,
+                                          self.objuid)
 
         # Assertion Check
-        val = utility.verify_auth_token(self.server.sigkey_pub, token)
+        val = utility.decode_auth_token(self.server.sigkey_pub, token)
         assert(val[utility.AUTHZ_KEY_CLIENTUID] == self.clientuid)
         assert(val[utility.AUTHZ_KEY_EXPIRATION] == self.expiration)
         assert(val[utility.AUTHZ_KEY_OBJPERM] == self.objperm)

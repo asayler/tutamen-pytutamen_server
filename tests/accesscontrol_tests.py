@@ -626,8 +626,8 @@ class AuthorizationTestCase(AccessControlTestCase, ObjectsHelpers):
         self.assertIsInstance(token, str)
         self.assertGreater(len(token), 0)
 
-        # Test Verify
-        val = utility.verify_auth_token(self.acs.sigkey_pub, token)
+        # Test Decode
+        val = utility.decode_auth_token(self.acs.sigkey_pub, token)
         self.assertIsInstance(val, dict)
         self.assertGreater(len(val), 0)
 
