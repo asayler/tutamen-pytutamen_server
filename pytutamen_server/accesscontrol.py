@@ -202,8 +202,11 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             expiration = str(int(expiration.timestamp()))
             utility.check_isinstance(objperm, str)
             utility.check_isinstance(objtype, str)
-            utility.check_isinstance(objuid, uuid.UUID)
-            objuid = str(objuid)
+            if objuid:
+                utility.check_isinstance(objuid, uuid.UUID)
+                objuid = str(objuid)
+            else:
+                objuid = ""
         else:
             clientuid = None
             expiration = None
@@ -281,7 +284,8 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     @property
     def objuid(self):
         """Return Object UID"""
-        return uuid.UUID(self._objuid.get_val())
+        objuid = self._objuid.get_val()
+        return uuid.UUID(objuid) if objuid else None
 
     @property
     def status(self):
