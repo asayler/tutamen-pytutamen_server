@@ -29,10 +29,10 @@ _POSTFIX_DATA = "data"
 
 class StorageServer(datatypes.ServerObject):
 
-    def __init__(self, pbackend, key=_KEY_STORAGESRV):
+    def __init__(self, pbackend, key=_KEY_STORAGESRV, create=False):
 
         # Call Parent
-        super().__init__(pbackend, key=key)
+        super().__init__(pbackend, key=key, create=create)
 
         # Setup Collections Index
         self._collections = datatypes.ChildIndex(self, Collection, _INDEX_KEY_SECRETS)
