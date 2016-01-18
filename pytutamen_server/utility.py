@@ -48,7 +48,7 @@ def nos(val):
 
 ### Authorization Functions ###
 
-def sign_auth_token(priv_key, clientuid, expiration, objperm, objtype, objuid=None):
+def encode_auth_token(priv_key, clientuid, expiration, objperm, objtype, objuid=None):
     """Sign and encode assertion token"""
 
     val = { AUTHZ_KEY_CLIENTUID: str(clientuid),
@@ -59,8 +59,8 @@ def sign_auth_token(priv_key, clientuid, expiration, objperm, objtype, objuid=No
 
     return crypto.sign_jwt(val, priv_key)
 
-def verify_auth_token(pub_key, token):
-    """Verify and decode assertion token"""
+def decode_auth_token(pub_key, token):
+    """Verify signiture and decode assertion token"""
 
     out = crypto.verify_jwt(token, pub_key)
 

@@ -52,7 +52,26 @@ class UtilityTestCase(tests_common.BaseTestCase):
         self.assertEqual(utility.nos("test"), "test")
         self.assertEqual(utility.nos(1), str(1))
 
-    def test_sign_verify_auth_token(self):
+    def test_encode_decode_auth_token(self):
+
+        def encode_decode(priv, pub, clientuid, expiration, objperm, objtype, objuid):
+
+            token = utility.encode_auth_token(priv, clientuid, expiration,
+                                              objperm, objtype, objuid)
+
+            self.assertIsInstance(token, str)
+            self.assertGreater(len(token), 0)
+
+            val = utility.decode_auth_token(pub, token)
+
+            self.assertIsInstance(val, dict)
+            self.assertGreater(len(val), 0)
+
+            self.assertEqual(val[utility.AUTHZ_KEY_CLIENTUID], clientuid)
+            self.assertEqual(val[utility.AUTHZ_KEY_EXPIRATION], expiration)
+            self.assertEqual(val[utility.AUTHZ_KEY_OBJPERM], objperm)
+            self.assertEqual(val[utility.AUTHZ_KEY_OBJTYPE], objtype)
+            self.assertEqual(val[utility.AUTHZ_KEY_OBJUID], objuid if objuid else None)
 
         pub, priv = crypto.gen_key_pair()
 
@@ -63,22 +82,14 @@ class UtilityTestCase(tests_common.BaseTestCase):
         objtype = "test_obj"
         objuid = uuid.uuid4()
 
-        token = utility.sign_auth_token(priv, clientuid, expiration,
-                                        objperm, objtype, objuid)
+        # Test w/ objuid
+        encode_decode(priv, pub, clientuid, expiration, objperm, objtype, objuid)
 
-        self.assertIsInstance(token, str)
-        self.assertGreater(len(token), 0)
+        # Test w/o objuid
+        encode_decode(priv, pub, clientuid, expiration, objperm, objtype, None)
 
-        val = utility.verify_auth_token(pub, token)
-
-        self.assertIsInstance(val, dict)
-        self.assertGreater(len(val), 0)
-
-        self.assertEqual(val[utility.AUTHZ_KEY_CLIENTUID], clientuid)
-        self.assertEqual(val[utility.AUTHZ_KEY_EXPIRATION], expiration)
-        self.assertEqual(val[utility.AUTHZ_KEY_OBJPERM], objperm)
-        self.assertEqual(val[utility.AUTHZ_KEY_OBJTYPE], objtype)
-        self.assertEqual(val[utility.AUTHZ_KEY_OBJUID], objuid)
+        # Test w/ blank objuid
+        encode_decode(priv, pub, clientuid, expiration, objperm, objtype, "")
 
 
 ### Main ###
