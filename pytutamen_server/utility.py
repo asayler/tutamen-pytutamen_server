@@ -9,6 +9,9 @@
 import datetime
 import uuid
 import logging
+import threading
+
+import requests
 
 from . import crypto
 
@@ -79,3 +82,48 @@ def decode_auth_token(pub_key, token):
             AUTHZ_KEY_OBJUID: uuid.UUID(out[AUTHZ_KEY_OBJUID]) if out[AUTHZ_KEY_OBJUID] else None }
 
     return val
+
+
+### Classes ###
+
+class SigkeyManager(object):
+
+
+    def __init__(self):
+
+        # Call Parent
+        super().__init__()
+
+        self.cache_sem = threading.BoundedSemaphore()
+        self.cache = {}
+
+    def url_sigkey(self, url_srv):
+
+        API_BASE = 'api'
+        API_VERSION = 'v1'
+        EP_PUBLIC = 'public'
+        EP_SIGKEY = 'sigkey'
+
+        return "{}/{}/{}/{}/{}/".format(url_srv, API_BASE, API_VERSION, EP_PUBLIC, EP_SIGKEY)
+
+    def get_sigkey(self, url_srv, cache=True):
+
+        KEY_SIGKEY = 'sigkey'
+
+        url_srv = url_srv.rstrip('/')
+        if cache:
+            with self.cache_sem:
+                if url_srv in self.cache:
+                    return self.cache[url_srv]
+
+        url = url_sigkey(url_srv)
+        res = requests.get(url, verify=True)
+        res.raise_for_status()
+        res_json = res.json()
+        sigkey = res_json[KEY_SIGKEY]
+
+        if cache:
+            with self.cache_sem:
+                self.cache[url_srv] = sigkey
+
+        return sigkey
