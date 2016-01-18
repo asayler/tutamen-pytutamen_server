@@ -83,6 +83,67 @@ def decode_auth_token(pub_key, token):
 
     return val
 
+def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manager=None):
+
+    if not sigkey_manager:
+        manager = SigKeyManager()
+
+    val = None
+    for server in auth_servers:
+        sigkey = manager.get_sigkey(server)
+
+        try:
+            val = decode_auth_token(sigkey, token)
+            msg = "Decoded token with server '{}'".format(server)
+            logging.debug(msg)
+            break
+        except Exception as err:
+            msg = "Failed to decode token with server '{}': {}".format(server, str(err))
+            logging.debug(msg)
+
+    if not val:
+        msg = "Failed to verify token: No matching servers in '{}'".format(auth_servers)
+        logging.warning(msg)
+        return None
+
+    # Check ClientID
+    # ToDo: May not be necessary - but if desired, it
+    #       will require having the client co-sign each
+    #       token and send a copy of its client cert -
+    #       which will also need to be verifed aginst the
+    #       server CA. I.e. It's involved.
+
+    # Check Expiration
+    token_expiration = val[AUTHZ_KEY_EXPIRATION]
+    if token_expiration < datetime.datetime.now():
+        msg = "Failed to verify token: Expired at '{}'".format(token_expiration)
+        logging.warning(msg)
+        return None
+
+    # Check objperm
+    token_objperm = val[AUTHZ_KEY_OBJPERM]
+    if token_objperm != objperm:
+        msg = "Failed to verify token: Objperm '{}' != '{}'".format(token_objperm, objperm)
+        logging.warning(msg)
+        return None
+
+    # Check objtype
+    token_objtype = val[AUTHZ_KEY_OBJTYPE]
+    if token_objtype != objtype:
+        msg = "Failed to verify token: Objtype '{}' != '{}'".format(token_objtype, objtype)
+        logging.warning(msg)
+        return None
+
+    # Check objuid
+    token_objuid = val[AUTHZ_KEY_OBJUID]
+    if token_objuid != objuid:
+        msg = "Failed to verify token: Objuid '{}' != '{}'".format(token_objuid, objuid)
+        logging.warning(msg)
+        return None
+
+    # Verified!
+    return server
+
 
 ### Classes ###
 
