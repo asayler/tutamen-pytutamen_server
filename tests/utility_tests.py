@@ -94,8 +94,6 @@ class UtilityTestCase(tests_common.BaseTestCase):
 
     def test_verify_auth_token(self):
 
-        print()
-
         # Setup Key Pair
         pub1, priv1 = crypto.gen_key_pair()
         pub2, priv2 = crypto.gen_key_pair()

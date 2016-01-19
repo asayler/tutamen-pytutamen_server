@@ -84,13 +84,13 @@ def decode_auth_token(pub_key, token):
 
     return val
 
-def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manager=None):
+def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=None):
 
     if not manager:
         manager = SigKeyManager()
 
     val = None
-    for server in auth_servers:
+    for server in servers:
         sigkey = manager.get_sigkey(server)
 
         try:
@@ -103,7 +103,7 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
             logger.debug(msg)
 
     if not val:
-        msg = "Failed to verify token: No matching servers in '{}'".format(auth_servers)
+        msg = "Failed to verify token: No matching servers in '{}'".format(servers)
         logger.warning(msg)
         return None
 
@@ -168,7 +168,7 @@ class SigkeyManager(object):
         return "{}/{}/{}/{}/{}/".format(url_srv, API_BASE, API_VERSION, EP_PUBLIC, EP_SIGKEY)
 
     def get_sigkey(self, url_srv, cache=True):
-        
+
         KEY_SIGKEY = 'sigkey'
 
         url_srv = url_srv.rstrip('/')
