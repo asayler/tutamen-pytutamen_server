@@ -25,6 +25,7 @@ AUTHZ_KEY_OBJPERM = 'objperm'
 AUTHZ_KEY_OBJTYPE = 'objtype'
 AUTHZ_KEY_OBJUID = 'objuid'
 
+_REQ_TIMEOUT = 3.03
 
 ### Logging ###
 
@@ -35,6 +36,9 @@ logger.addHandler(logging.NullHandler())
 
 ### Exceptions ###
 class TokenVerificationFailed(Exception):
+    pass
+
+class SigkeyGetError(Exception):
     pass
 
 
@@ -215,8 +219,18 @@ class SigkeyManager(object):
                     return sigkey
 
         url = self.url_sigkey(url_srv)
-        res = requests.get(url, verify=True)
-        res.raise_for_status()
+        try:
+            res = requests.get(url, verify=True, timeout=_REQ_TIMEOUT)
+        except requests.exceptions.Timeout as err:
+            msg = "Timeout getting sigkey from '{}': {}".format(url_srv, err)
+            logger.warning(msg)
+            raise SigkeyGetError(msg)
+        try:
+            res.raise_for_status()
+        except HTTPError as err:
+            msg = "{} error getting sigkey from '{}': {}".format(res.status_code, url_srv, err)
+            logger.warning(msg)
+            raise SigkeyGetError(msg)            
         res_json = res.json()
         logger.debug("res_json: {}".format(res_json))
         sigkey = res_json[KEY_SIGKEY]
