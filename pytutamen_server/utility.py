@@ -96,15 +96,15 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
         try:
             val = decode_auth_token(sigkey, token)
             msg = "Decoded token with server '{}'".format(server)
-            logging.debug(msg)
+            logger.debug(msg)
             break
         except jwt.exceptions.DecodeError as err:
             msg = "Failed to decode token with server '{}': {}".format(server, str(err))
-            logging.debug(msg)
+            logger.debug(msg)
 
     if not val:
         msg = "Failed to verify token: No matching servers in '{}'".format(auth_servers)
-        logging.warning(msg)
+        logger.warning(msg)
         return None
 
     # Check ClientID
@@ -118,28 +118,28 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
     token_expiration = val[AUTHZ_KEY_EXPIRATION]
     if token_expiration < datetime.datetime.now():
         msg = "Failed to verify token: Expired at '{}'".format(token_expiration)
-        logging.warning(msg)
+        logger.warning(msg)
         return None
 
     # Check objperm
     token_objperm = val[AUTHZ_KEY_OBJPERM]
     if token_objperm != objperm:
         msg = "Failed to verify token: Objperm '{}' != '{}'".format(token_objperm, objperm)
-        logging.warning(msg)
+        logger.warning(msg)
         return None
 
     # Check objtype
     token_objtype = val[AUTHZ_KEY_OBJTYPE]
     if token_objtype != objtype:
         msg = "Failed to verify token: Objtype '{}' != '{}'".format(token_objtype, objtype)
-        logging.warning(msg)
+        logger.warning(msg)
         return None
 
     # Check objuid
     token_objuid = val[AUTHZ_KEY_OBJUID]
     if token_objuid != objuid:
         msg = "Failed to verify token: Objuid '{}' != '{}'".format(token_objuid, objuid)
-        logging.warning(msg)
+        logger.warning(msg)
         return None
 
     # Verified!
@@ -149,7 +149,6 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
 ### Classes ###
 
 class SigkeyManager(object):
-
 
     def __init__(self):
 
@@ -169,20 +168,26 @@ class SigkeyManager(object):
         return "{}/{}/{}/{}/{}/".format(url_srv, API_BASE, API_VERSION, EP_PUBLIC, EP_SIGKEY)
 
     def get_sigkey(self, url_srv, cache=True):
-
+        
         KEY_SIGKEY = 'sigkey'
 
         url_srv = url_srv.rstrip('/')
         if cache:
             with self.cache_sem:
                 if url_srv in self.cache:
-                    return self.cache[url_srv]
+                    sigkey = self.cache[url_srv]
+                    msg = "Found '{}' key in cache:\n'{}'".format(url_srv, sigkey)
+                    logger.debug(msg)
+                    return sigkey
 
-        url = url_sigkey(url_srv)
+        url = self.url_sigkey(url_srv)
         res = requests.get(url, verify=True)
         res.raise_for_status()
         res_json = res.json()
+        logger.debug("res_json: {}".format(res_json))
         sigkey = res_json[KEY_SIGKEY]
+        msg = "Downloaded '{}' key:\n'{}'".format(url_srv, sigkey)
+        logger.info(msg)
 
         if cache:
             with self.cache_sem:
