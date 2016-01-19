@@ -203,6 +203,108 @@ class UtilityTestCase(tests_common.BaseTestCase):
                                         manager=manager)
         self.assertIsNone(out)
 
+    def test_verify_auth_token_list(self):
+
+        # Setup Key Pair
+        pub1, priv1 = crypto.gen_key_pair()
+        pub2, priv2 = crypto.gen_key_pair()
+        pub3, priv3 = crypto.gen_key_pair()
+
+        # Setup Servers
+        servers = ['https://test.server.one', 'https://test.server.two']
+        manager = utility.SigkeyManager()
+
+        # Test Verify - Pass (Single)
+        manager.cache[servers[0]] = pub1
+        manager.cache[servers[1]] = pub2
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp()) + 60
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+        token1 = utility.encode_auth_token(priv1, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        token2 = utility.encode_auth_token(priv2, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        tokens = [token1, token2]
+        cnt = utility.verify_auth_token_list(tokens, servers, 1,
+                                             objperm, objtype, objuid,
+                                             manager=manager)
+        self.assertEqual(cnt, 1)
+
+        # Test Verify - Pass (Multiple)
+        manager.cache[servers[0]] = pub1
+        manager.cache[servers[1]] = pub2
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp()) + 60
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+        token1 = utility.encode_auth_token(priv1, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        token2 = utility.encode_auth_token(priv2, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        tokens = [token1, token2]
+        cnt = utility.verify_auth_token_list(tokens, servers, 2,
+                                             objperm, objtype, objuid,
+                                             manager=manager)
+        self.assertEqual(cnt, 2)
+
+        # Test Verify - Pass (Bad tokens)
+        manager.cache[servers[0]] = pub1
+        manager.cache[servers[1]] = pub2
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp()) + 60
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+        token1 = utility.encode_auth_token(priv2, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        token2 = utility.encode_auth_token(priv3, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        tokens = [token1, token2]
+        cnt = utility.verify_auth_token_list(tokens, servers, 1,
+                                             objperm, objtype, objuid,
+                                             manager=manager)
+        self.assertEqual(cnt, 1)
+
+        # Test Verify - Fail (Not enough tokens)
+        manager.cache[servers[0]] = pub1
+        manager.cache[servers[1]] = pub2
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp()) + 60
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+        token1 = utility.encode_auth_token(priv1, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        token2 = utility.encode_auth_token(priv2, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        tokens = [token1, token2]
+        self.assertRaises(utility.TokenVerificationFailed, utility.verify_auth_token_list,
+                          tokens, servers, 3, objperm, objtype, objuid, manager=manager)
+
+        # Test Verify - Fail (Bad tokens)
+        manager.cache[servers[0]] = pub1
+        manager.cache[servers[1]] = pub2
+        clientuid = uuid.uuid4()
+        expiration = int(datetime.datetime.now().timestamp()) + 60
+        expiration = datetime.datetime.fromtimestamp(expiration)
+        objperm = "test_perm"
+        objtype = "test_obj"
+        objuid = uuid.uuid4()
+        token1 = utility.encode_auth_token(priv2, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        token2 = utility.encode_auth_token(priv3, clientuid, expiration,
+                                           objperm, objtype, objuid)
+        tokens = [token1, token2]
+        self.assertRaises(utility.TokenVerificationFailed, utility.verify_auth_token_list,
+                          tokens, servers, 2, objperm, objtype, objuid, manager=manager)
+
 
 ### Main ###
 

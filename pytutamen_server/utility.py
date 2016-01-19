@@ -33,6 +33,11 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.NullHandler())
 
 
+### Exceptions ###
+class TokenVerificationFailed(Exception):
+    pass
+
+
 ### Helper Functions ###
 
 def check_isinstance(obj, *classes):
@@ -144,6 +149,35 @@ def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=Non
 
     # Verified!
     return server
+
+def verify_auth_token_list(tokens, servers, required,
+                           objperm, objtype, objuid=None, manager=None):
+
+    if len(tokens) < required:
+        msg = "Not enough tokens: {} of {}".format(len(tokens), required)
+        logger.warning(msg)
+        raise TokenVerificationFailed(msg)
+
+    remaining = list(servers)
+    cnt = 0
+    for token in tokens:
+        server = verify_auth_token(token, remaining, objperm, objtype, objuid, manager=manager)
+        if server:
+            msg = "Verified token '{}' via server '{}'".format(token, server)
+            logger.debug(msg)
+            remaining.remove(server)
+            cnt += 1
+            if cnt >= required:
+                break
+
+    if cnt < required:
+        msg = "Failed to verify enough tokens: {} of {}".format(cnt, required)
+        logger.warning(msg)
+        raise TokenVerificationFailed(msg)
+    else:
+        msg = "Verified {} tokens".format(cnt)
+        logger.debug(msg)
+        return cnt
 
 
 ### Classes ###
