@@ -11,6 +11,7 @@ import uuid
 import logging
 import threading
 
+import jwt
 import requests
 
 from . import crypto
@@ -85,7 +86,7 @@ def decode_auth_token(pub_key, token):
 
 def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manager=None):
 
-    if not sigkey_manager:
+    if not manager:
         manager = SigKeyManager()
 
     val = None
@@ -97,7 +98,7 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
             msg = "Decoded token with server '{}'".format(server)
             logging.debug(msg)
             break
-        except Exception as err:
+        except jwt.exceptions.DecodeError as err:
             msg = "Failed to decode token with server '{}': {}".format(server, str(err))
             logging.debug(msg)
 
