@@ -577,3 +577,71 @@ class SlaveObjIndex(object):
     def by_obj(self):
         return set([self.obj.val_to_obj(key, self.type_member, **self._extra_kwargs)
                     for key in self._members])
+
+class PlainObjIndex(object):
+
+    def __init__(self, obj, label, type_member, init=None, **extra_kwargs):
+        """Initialize Member Index"""
+
+        # Call Parent
+        super().__init__()
+
+        # Check Args
+        utility.check_isinstance(obj, PersistentObject)
+        utility.check_isinstance(label, str)
+        utility.check_issubclass(type_member, PersistentObject)
+        if init:
+            utility.check_isinstance(init, set, list)
+            init = set(init)
+        else:
+            init = set()
+
+        # Save Args
+        self._obj = obj
+        self._label = label
+        self._type_member = type_member
+        self._extra_kwargs = extra_kwargs
+
+        # Setup Index Set
+        self._members = self.obj._build_pobj(self.obj.pcollections.MutableSet,
+                                             label, create=init)
+
+    def destroy(self):
+        """Cleanup Index"""
+
+        # Cleanup Set
+        self._members.rem()
+
+    @property
+    def obj(self):
+        return self._obj
+
+    @property
+    def type_member(self):
+        return self._type_member
+
+    def add(self, val):
+        key = self.obj.val_to_key(val)
+        self._members.add(key)
+
+    def remove(self, val):
+        key = self.obj.val_to_key(val)
+        self._members.discard(key)
+
+    def __len__(self):
+        return len(self._members)
+
+    def ismember(self, val):
+        key = self.obj.val_to_key(val)
+        return key in self._members
+
+    def by_key(self):
+        return self._members.get_val()
+
+    def by_uid(self):
+        return set([self.obj.val_to_uid(key)
+                    for key in self._members])
+
+    def by_obj(self):
+        return set([self.obj.val_to_obj(key, self.type_member, **self._extra_kwargs)
+                    for key in self._members])

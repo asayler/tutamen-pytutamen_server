@@ -1127,6 +1127,168 @@ class ObjectIndexTestCase(tests_common.BaseTestCase):
         # Cleanup Slave
         slave.destroy()
 
+class PlainObjIndexTestCase(tests_common.BaseTestCase):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.obj = datatypes.PersistentObject(self.pbackend, key="test_obj", create=True)
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.obj.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_and_destroy(self):
+
+        # Test Bad Parent Type
+        self.assertRaises(TypeError, datatypes.PlainObjIndex,
+                          None, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Test Bad Label Type
+        self.assertRaises(TypeError, datatypes.PlainObjIndex,
+                          self.obj, None, datatypes.PersistentObject)
+
+        # Test Bad Member Type
+        self.assertRaises(TypeError, datatypes.PlainObjIndex,
+                          self.obj, "TestPlainIndex", None)
+
+        # Test Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+        self.assertIsInstance(idx, datatypes.PlainObjIndex)
+        idx.destroy()
+
+        # Test Create Index w/ init
+        init = set(["a", "b", "c"])
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex",
+                                      datatypes.PersistentObject, init=init)
+        self.assertIsInstance(idx, datatypes.PlainObjIndex)
+        self.assertEqual(idx.by_key(), init)
+        idx.destroy()
+
+    def test_obj(self):
+
+        # Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Test Object
+        self.assertEqual(idx.obj, self.obj)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_type_member(self):
+
+        # Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Test type_member
+        self.assertEqual(idx.type_member, datatypes.PersistentObject)
+
+        # Cleanup
+        idx.destroy()
+
+    def test_add_rem_len_ismember(self):
+
+        # Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Create Members
+        members = set()
+        for i in range(10):
+            key = "test_member_{}".format(i)
+            member = datatypes.PersistentObject(self.pbackend, key=key, create=True)
+            members.add(member)
+
+        # Add Bad Obj
+        self.assertRaises(TypeError, idx.add, None)
+
+        # Add Members by Obj
+        self.assertEqual(len(idx), 0)
+        for member in members:
+            idx.add(member)
+            self.assertTrue(idx.ismember(member))
+
+        # Remove Members by Obj
+        self.assertEqual(len(idx), 10)
+        for member in members:
+            idx.remove(member)
+            self.assertFalse(idx.ismember(member))
+
+        # Add Members by Key
+        self.assertEqual(len(idx), 0)
+        for member in members:
+            idx.add(member.key)
+            self.assertTrue(idx.ismember(member.key))
+
+        # Remove Members by Key
+        self.assertEqual(len(idx), 10)
+        for member in members:
+            idx.remove(member.key)
+            self.assertFalse(idx.ismember(member.key))
+
+        # Cleanup
+        for member in members:
+            member.destroy()
+        idx.destroy()
+
+    def test_by_key(self):
+
+        # Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Test Empty
+        self.assertEqual(idx.by_key(), set())
+
+        # Create and Add Members
+        keys = set()
+        members = set()
+        for i in range(10):
+            key = "test_member_{}".format(i)
+            member = datatypes.PersistentObject(self.pbackend, key=key, create=True)
+            keys.add(key)
+            members.add(member)
+            idx.add(member)
+
+        # Test Full
+        self.assertEqual(idx.by_key(), keys)
+
+        # Cleanup
+        for member in members:
+            member.destroy()
+        idx.destroy()
+
+
+    def test_by_obj(self):
+
+        # Create Index
+        idx = datatypes.PlainObjIndex(self.obj, "TestPlainIndex", datatypes.PersistentObject)
+
+        # Test Empty
+        self.assertEqual(idx.by_obj(), set())
+
+        # Create and Add Members
+        members = set()
+        for i in range(10):
+            key = "test_member_{}".format(i)
+            member = datatypes.PersistentObject(self.pbackend, key=key, create=True)
+            members.add(member)
+            idx.add(member)
+
+        # Test Full
+        self.assertEqual(idx.by_obj(), members)
+
+        # Cleanup
+        for member in members:
+            member.destroy()
+        idx.destroy()
+
 
 ### Main ###
 
