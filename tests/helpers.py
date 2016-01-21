@@ -20,7 +20,8 @@ from pytutamen_server import datatypes
 
 class ObjectsHelpers(object):
 
-    def helper_test_obj_create(self, obj_type, obj_index, create_obj):
+    def helper_test_obj_create(self, obj_type, obj_index, create_obj,
+                               uuidobj=True, permobj=False):
 
         # Test Create (Random)
         obj = create_obj()
@@ -30,7 +31,10 @@ class ObjectsHelpers(object):
 
         # Test OE
         self.assertRaises(datatypes.ObjectExists, create_obj, key=obj.key)
-        self.assertRaises(datatypes.ObjectExists, create_obj, uid=obj.uid)
+        if uuidobj:
+            self.assertRaises(datatypes.ObjectExists, create_obj, uid=obj.uid)
+        if permobj:
+            self.assertRaises(datatypes.ObjectExists, create_obj, objuid=obj.objuid)
 
         # Cleanup
         obj.destroy()
@@ -44,39 +48,65 @@ class ObjectsHelpers(object):
         self.assertEqual(obj.key, key)
         obj.destroy()
 
-        # Test Create (UID)
-        uid = uuid.uuid4()
-        obj = create_obj(uid=uid)
-        self.assertIsInstance(obj, obj_type)
-        self.assertTrue(obj.exists())
-        self.assertTrue(obj_index.exists(obj))
-        self.assertEqual(obj.uid, uid)
-        obj.destroy()
+        if uuidobj:
+            # Test Create (uid)
+            uid = uuid.uuid4()
+            obj = create_obj(uid=uid)
+            self.assertIsInstance(obj, obj_type)
+            self.assertTrue(obj.exists())
+            self.assertTrue(obj_index.exists(obj))
+            self.assertEqual(obj.uid, uid)
+            obj.destroy()
 
-    def helper_test_obj_existing(self, obj_type, obj_index, create_obj, get_obj):
+        if permobj:
+            # Test Create (objuid)
+            objuid = uuid.uuid4()
+            obj = create_obj(objuid=objuid)
+            self.assertIsInstance(obj, obj_type)
+            self.assertTrue(obj.exists())
+            self.assertTrue(obj_index.exists(obj))
+            self.assertEqual(obj.objuid, objuid)
+            obj.destroy()
+
+    def helper_test_obj_existing(self, obj_type, obj_index, create_obj, get_obj,
+                                 uuidobj=True, permobj=False):
 
         # Test DNE
-        uid = uuid.uuid4()
-        self.assertRaises(datatypes.ObjectDNE, get_obj, uid=uid)
+        if uuidobj:
+            uid = uuid.uuid4()
+            self.assertRaises(datatypes.ObjectDNE, get_obj, uid=uid)
+        if permobj:
+            objuid = uuid.uuid4()
+            self.assertRaises(datatypes.ObjectDNE, get_obj, objuid=objuid)
 
         # Create Object
         obj = create_obj()
-        key = obj.key
-        uid = obj.uid
 
         # Test get (key)
+        key = obj.key
         obj = get_obj(key=key)
         self.assertIsInstance(obj, obj_type)
         self.assertTrue(obj.exists())
         self.assertTrue(obj_index.exists(obj))
         self.assertEqual(obj.key, key)
 
-        # Test get (uuid)
-        obj = get_obj(uid=uid)
-        self.assertIsInstance(obj, obj_type)
-        self.assertTrue(obj.exists())
-        self.assertTrue(obj_index.exists(obj))
-        self.assertEqual(obj.uid, uid)
+        if uuidobj:
+            # Test get (uid)
+            uid = obj.uid
+            obj = get_obj(uid=uid)
+            self.assertIsInstance(obj, obj_type)
+            self.assertTrue(obj.exists())
+            self.assertTrue(obj_index.exists(obj))
+            self.assertEqual(obj.uid, uid)
+
+        if permobj:
+            # Test get (objuid)
+            objuid = obj.objuid
+            obj = get_obj(objuid=objuid)
+            self.assertIsInstance(obj, obj_type)
+            self.assertTrue(obj.exists())
+            self.assertTrue(obj_index.exists(obj))
+            self.assertEqual(obj.objuid, objuid)
 
         # Cleanup
         obj.destroy()
