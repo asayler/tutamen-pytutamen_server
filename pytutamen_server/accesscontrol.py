@@ -335,13 +335,18 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
     def __init__(self, pbackend, pindex=None, create=False,
-                 prefix=_PREFIX_VERIFIER, **kwargs):
+                 prefix=_PREFIX_VERIFIER,
+                 accounts=None, authenticators=None, **kwargs):
         """Initialize Verifier"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
+        if accounts is None:
+            accounts = []
+        if authenticators is None:
+            authenticators = []
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
@@ -359,6 +364,12 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
                                                   account_masters,
                                                   Account,
                                                   pindex=self.server.accounts)
+
+        # Add initial values:
+        for account in accounts:
+            self.accounts.add(account)
+        for authenticator in authenticators:
+            self.autenticators.add(authenticator)
 
     def destroy(self):
         """Delete Verifier"""
