@@ -229,6 +229,51 @@ class UUIDObject(PersistentObject):
     def uid(self):
         return self._uid
 
+class PermissionsObject(PersistentObject):
+
+    def __init__(self, pbackend, key=None, objtype=None, objuid=None, **kwargs):
+        """Initialize Object Permissions"""
+
+        # Setup key/objtype/objperm
+        if key:
+            utility.check_isinstance(key, str)
+            parts = key.split(_SEPERATOR)
+            if len(parts) == 1:
+                objtype = parts[0]
+            elif len(parts) == 2:
+                objtype = parts[0]
+                objuid = uuid.UUID(parts[1])
+            else:
+                raise ValueError("Could Not Parse Key: {}".format(key))
+        else:
+            if not objtype:
+                raise TypeError("Requires Key or Object Type")
+            else:
+                utility.check_isinstance(objtype, str)
+                key = objtype
+                assert(key.count(_SEPERATOR) == 0)
+                if objuid:
+                    utility.check_isinstance(objuid, uuid.UUID)
+                    key += _SEPERATOR + str(objuid)
+                    assert(key.count(_SEPERATOR) == 1)
+
+        # Call Parent
+        super().__init__(pbackend, key=key, **kwargs)
+
+        # Save Vals
+        self._objtype = objtype
+        self._objuid = objuid
+
+    @property
+    def objtype(self):
+        """Return Object Type"""
+        return self._objtype
+
+    @property
+    def objuid(self):
+        """Return Object UID"""
+        return self._objuid
+
 class UserDataObject(PersistentObject):
 
     def __init__(self, pbackend, create=False, userdata={}, **kwargs):

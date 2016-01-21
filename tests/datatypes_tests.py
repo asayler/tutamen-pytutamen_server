@@ -301,6 +301,61 @@ class UUIDObjectTestCase(tests_common.BaseTestCase):
         # Test UUID
         self.assertEqual(str(obj.uid), obj.key)
 
+class PermissionsObjectTestCase(tests_common.BaseTestCase):
+
+    def test_init(self):
+
+        # Test Bad Key String
+        key = "Bad_Key_Str"
+        self.assertRaises(ValueError, datatypes.PermissionsObject,
+                          self.pbackend, key=key)
+
+        # Test Bad objtype
+        objtype = 5
+        self.assertRaises(TypeError, datatypes.PermissionsObject,
+                          self.pbackend, objtype=objtype)
+
+        # Test Bad objuid
+        objuid = "NotUUID"
+        self.assertRaises(TypeError, datatypes.PermissionsObject,
+                          self.pbackend, objuid=objuid)
+
+        # Test Missing key + objuid
+        self.assertRaises(TypeError, datatypes.PermissionsObject,
+                          self.pbackend)
+
+        # Test Create Object From Key w/o objuid
+        objtype = "testobj"
+        key = objtype
+        obj = datatypes.PermissionsObject(self.pbackend, key=key)
+        self.assertIsInstance(obj, datatypes.PermissionsObject)
+        self.assertEqual(key, obj.key)
+        self.assertEqual(objtype, obj.objtype)
+
+        # Test Create Object From Key w/ objuid
+        objtype = "testobj"
+        objuid = uuid.uuid4()
+        key = objtype + datatypes._SEPERATOR + str(objuid)
+        obj = datatypes.PermissionsObject(self.pbackend, key=key)
+        self.assertIsInstance(obj, datatypes.PermissionsObject)
+        self.assertEqual(key, obj.key)
+        self.assertEqual(objtype, obj.objtype)
+        self.assertEqual(objuid, obj.objuid)
+
+        # Test Create Object From objtype w/o objuid
+        objtype = "testobj"
+        obj = datatypes.PermissionsObject(self.pbackend, objtype=objtype)
+        self.assertIsInstance(obj, datatypes.PermissionsObject)
+        self.assertEqual(objtype, obj.objtype)
+
+        # Test Create Object From objtype w/ objuid
+        objtype = "testobj"
+        objuid = uuid.uuid4()
+        obj = datatypes.PermissionsObject(self.pbackend, objtype=objtype, objuid=objuid)
+        self.assertIsInstance(obj, datatypes.PermissionsObject)
+        self.assertEqual(objtype, obj.objtype)
+        self.assertEqual(objuid, obj.objuid)
+
 class UserDataObjectTestCase(tests_common.BaseTestCase):
 
     def test_init_create(self):
