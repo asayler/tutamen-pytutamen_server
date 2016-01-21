@@ -133,6 +133,16 @@ WW0nx4pTG4AUOJdjOA8kQejN9afcHJqRTuUEu5qlC4no9OsO3YeyyO5gFNXhpoSu
         client = acct.clients.create(**kwargs)
         return client
 
+    def _create_collection_perms(self, acs, **kwargs_user):
+
+        kwargs = {}
+        kwargs['objuid'] = uuid.uuid4()
+        kwargs.update(kwargs_user)
+
+        perms = acs.collection_perms.create(**kwargs)
+        return perms
+
+
 class AccessControlServerTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
     def test_init_and_destroy(self):
@@ -198,6 +208,19 @@ class AccessControlServerTestCase(AccessControlTestCase, helpers.ObjectsHelpers)
         self.assertIsInstance(acs.accounts, datatypes.ChildIndex)
         self.assertEqual(acs.accounts.type_child, accesscontrol.Account)
         self.assertEqual(acs.accounts.parent, acs)
+
+        # Cleanup
+        acs.destroy()
+
+    def test_collection_perms(self):
+
+        # Create Server
+        acs = self._create_accesscontrolserver(self.pbackend)
+
+        # Test Accounts
+        self.assertIsInstance(acs.collection_perms, datatypes.ChildIndex)
+        self.assertEqual(acs.collection_perms.type_child, accesscontrol.CollectionPerms)
+        self.assertEqual(acs.collection_perms.parent, acs)
 
         # Cleanup
         acs.destroy()
@@ -739,6 +762,66 @@ class ClientTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
         # Cleanup
         client.destroy()
+
+class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
+
+    def setUp(self):
+
+        # Call Parent
+        super().setUp()
+
+        # Setup Properties
+        self.acs = self._create_accesscontrolserver(self.pbackend)
+
+    def tearDown(self):
+
+        # Teardown Properties
+        self.acs.destroy()
+
+        # Call Parent
+        super().tearDown()
+
+    def test_init_create(self):
+
+        create_obj = functools.partial(self._create_collection_perms, self.acs)
+        self.helper_test_obj_create(accesscontrol.CollectionPerms,
+                                    self.acs.collection_perms,
+                                    create_obj, uuidobj=False, permobj=True)
+
+    def test_init_existing(self):
+
+        create_obj = functools.partial(self._create_collection_perms, self.acs)
+        get_obj = self.acs.collection_perms.get
+        self.helper_test_obj_existing(accesscontrol.CollectionPerms,
+                                      self.acs.collection_perms,
+                                      create_obj, get_obj, uuidobj=False, permobj=True)
+
+    def test_server(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Cleanup
+        perms.destroy()
+
+    def test_perm_create(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Test perm_create
+        self.assertIsInstance(perms.perm_create, datatypes.PlainObjIndex)
+        self.assertEqual(perms.perm_create.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.perm_create.obj, perms)
+
+        # Cleanup
+        perms.destroy()
 
 
 ### Main ###

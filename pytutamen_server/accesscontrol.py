@@ -11,15 +11,18 @@ import uuid
 
 from . import crypto
 from . import utility
+from . import constants
 from . import datatypes
 
-
 ### Constants ###
+
+_PERM_SEPERATOR = "_"
 
 _KEY_AUTHORIZATIONS = "authorizations"
 _KEY_VERIFIERS = "verifiers"
 _KEY_AUTHENTICATORS = "authenticators"
 _KEY_ACCOUNTS = "accounts"
+_KEY_COLLECTION_PERMS = "collection_perms"
 
 _KEY_ACSRV = "accesscontrol"
 
@@ -46,6 +49,8 @@ _POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_CLIENTS = "clients"
+
+_PREFIX_PERM = "permissions"
 
 AUTHZ_STATUS_NEW = "pending"
 AUTHZ_STATUS_APPROVED = "approved"
@@ -90,6 +95,7 @@ class AccessControlServer(datatypes.ServerObject):
         self._verifiers = datatypes.ChildIndex(self, Verifier, _KEY_VERIFIERS)
         self._authenticators = datatypes.ChildIndex(self, Authenticator, _KEY_AUTHENTICATORS)
         self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
+        self._collection_perms = datatypes.ChildIndex(self, CollectionPerms, _KEY_COLLECTION_PERMS)
 
         # Setup CA Keys
         if create:
@@ -144,6 +150,7 @@ class AccessControlServer(datatypes.ServerObject):
         self._ca_crt.rem()
 
         # Cleanup Indexes
+        self._collection_perms.destroy()
         self._accounts.destroy()
         self._authenticators.destroy()
         self._verifiers.destroy()
@@ -167,6 +174,10 @@ class AccessControlServer(datatypes.ServerObject):
     @property
     def accounts(self):
         return self._accounts
+
+    @property
+    def collection_perms(self):
+        return self._collection_perms
 
     @property
     def ca_crt(self):
@@ -520,3 +531,46 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
     def crt(self):
         """Return Certificate"""
         return self._crt.get_val()
+
+class CollectionPerms(datatypes.PermissionsObject, datatypes.ChildObject):
+
+    def __init__(self, pbackend, pindex=None, create=False,
+                 verifiers_create=None,
+                 **kwargs):
+        """Initialize Account"""
+
+        # Check Input
+        utility.check_isinstance(pindex.parent, AccessControlServer)
+        if create:
+            pass
+
+        # Call Parent
+        prefix = _PREFIX_PERM + _PERM_SEPERATOR + constants.TYPE_COL
+        super().__init__(pbackend, pindex=pindex, create=create,
+                         prefix=prefix,
+                         objtype=constants.TYPE_COL, **kwargs)
+
+        if not self.objuid:
+            raise TypeError("Requires objuid")
+
+        # Setup Vars
+        label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_COL_CREATE
+        self._perm_create = datatypes.PlainObjIndex(self, label, Verifier, init=verifiers_create)
+
+    def destroy(self):
+        """Delete Account"""
+
+        # Cleanup Indexes
+        self._perm_create.destroy()
+
+        # Call Parent
+        super().destroy()
+
+    @property
+    def server(self):
+        """Return Access Control Server"""
+        return self.parent
+
+    @property
+    def perm_create(self):
+        return self._perm_create
