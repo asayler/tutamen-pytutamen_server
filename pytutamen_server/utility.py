@@ -25,12 +25,21 @@ AUTHZ_KEY_OBJPERM = 'objperm'
 AUTHZ_KEY_OBJTYPE = 'objtype'
 AUTHZ_KEY_OBJUID = 'objuid'
 
+_REQ_TIMEOUT = 3.03
 
 ### Logging ###
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.NullHandler())
+
+
+### Exceptions ###
+class TokenVerificationFailed(Exception):
+    pass
+
+class SigkeyGetError(Exception):
+    pass
 
 
 ### Helper Functions ###
@@ -84,13 +93,13 @@ def decode_auth_token(pub_key, token):
 
     return val
 
-def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manager=None):
+def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=None):
 
     if not manager:
         manager = SigKeyManager()
 
     val = None
-    for server in auth_servers:
+    for server in servers:
         sigkey = manager.get_sigkey(server)
 
         try:
@@ -103,7 +112,7 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
             logger.debug(msg)
 
     if not val:
-        msg = "Failed to verify token: No matching servers in '{}'".format(auth_servers)
+        msg = "Failed to verify token: No matching servers in '{}'".format(servers)
         logger.warning(msg)
         return None
 
@@ -145,6 +154,35 @@ def verify_auth_token(token, auth_servers, objperm, objtype, objuid=None, manage
     # Verified!
     return server
 
+def verify_auth_token_list(tokens, servers, required,
+                           objperm, objtype, objuid=None, manager=None):
+
+    if len(tokens) < required:
+        msg = "Not enough tokens: {} of {}".format(len(tokens), required)
+        logger.warning(msg)
+        raise TokenVerificationFailed(msg)
+
+    remaining = list(servers)
+    cnt = 0
+    for token in tokens:
+        server = verify_auth_token(token, remaining, objperm, objtype, objuid, manager=manager)
+        if server:
+            msg = "Verified token '{}' via server '{}'".format(token, server)
+            logger.debug(msg)
+            remaining.remove(server)
+            cnt += 1
+            if cnt >= required:
+                break
+
+    if cnt < required:
+        msg = "Failed to verify enough tokens: {} of {}".format(cnt, required)
+        logger.warning(msg)
+        raise TokenVerificationFailed(msg)
+    else:
+        msg = "Verified {} tokens".format(cnt)
+        logger.debug(msg)
+        return cnt
+
 
 ### Classes ###
 
@@ -168,7 +206,7 @@ class SigkeyManager(object):
         return "{}/{}/{}/{}/{}/".format(url_srv, API_BASE, API_VERSION, EP_PUBLIC, EP_SIGKEY)
 
     def get_sigkey(self, url_srv, cache=True):
-        
+
         KEY_SIGKEY = 'sigkey'
 
         url_srv = url_srv.rstrip('/')
@@ -181,8 +219,18 @@ class SigkeyManager(object):
                     return sigkey
 
         url = self.url_sigkey(url_srv)
-        res = requests.get(url, verify=True)
-        res.raise_for_status()
+        try:
+            res = requests.get(url, verify=True, timeout=_REQ_TIMEOUT)
+        except requests.exceptions.Timeout as err:
+            msg = "Timeout getting sigkey from '{}': {}".format(url_srv, err)
+            logger.warning(msg)
+            raise SigkeyGetError(msg)
+        try:
+            res.raise_for_status()
+        except HTTPError as err:
+            msg = "{} error getting sigkey from '{}': {}".format(res.status_code, url_srv, err)
+            logger.warning(msg)
+            raise SigkeyGetError(msg)            
         res_json = res.json()
         logger.debug("res_json: {}".format(res_json))
         sigkey = res_json[KEY_SIGKEY]
