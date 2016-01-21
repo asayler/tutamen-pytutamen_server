@@ -774,7 +774,7 @@ class SlaveTestObj(datatypes.UUIDObject):
         # Call Parent
         super().destroy()
 
-class ObjectIndexTestCase(tests_common.BaseTestCase):
+class MasterSlaveObjIndexTestCase(tests_common.BaseTestCase):
 
     def test_init_and_destroy(self):
 
