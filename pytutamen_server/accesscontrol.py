@@ -184,7 +184,6 @@ class AccessControlServer(datatypes.ServerObject):
     def sigkey_priv(self):
         return self._sigkey_priv.get_val()
 
-
 class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 
     def __init__(self, pbackend, pindex=None, create=False,

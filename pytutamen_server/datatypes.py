@@ -193,7 +193,7 @@ class PersistentObject(object):
 
 class UUIDObject(PersistentObject):
 
-    def __init__(self, srv, key=None, uid=None, create=False, **kwargs):
+    def __init__(self, pbackend, key=None, uid=None, create=False, **kwargs):
         """Initialize Object"""
 
         #                      create
@@ -220,7 +220,7 @@ class UUIDObject(PersistentObject):
             uid = uuid.UUID(key)
 
         # Call Parent
-        super().__init__(srv, key=key, create=create, **kwargs)
+        super().__init__(pbackend, key=key, create=create, **kwargs)
 
         # Save UUID
         self._uid = uid
@@ -482,7 +482,7 @@ class SlaveObjIndex(object):
         utility.check_isinstance(obj, PersistentObject)
         utility.check_isinstance(label, str)
         if not hasattr(master_generator, '__call__'):
-            raise TypeError("master_generator must be callable")
+            raise TypeError("slave_generator must be callable")
         utility.check_issubclass(type_member, PersistentObject)
 
         # Save Args
