@@ -823,6 +823,70 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
         # Cleanup
         perms.destroy()
 
+    def test_perm_read(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Test perm_read
+        self.assertIsInstance(perms.perm_read, datatypes.PlainObjIndex)
+        self.assertEqual(perms.perm_read.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.perm_read.obj, perms)
+
+        # Cleanup
+        perms.destroy()
+
+    def test_perm_modify(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Test perm_modify
+        self.assertIsInstance(perms.perm_modify, datatypes.PlainObjIndex)
+        self.assertEqual(perms.perm_modify.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.perm_modify.obj, perms)
+
+        # Cleanup
+        perms.destroy()
+
+    def test_perm_delete(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Test perm_delete
+        self.assertIsInstance(perms.perm_delete, datatypes.PlainObjIndex)
+        self.assertEqual(perms.perm_delete.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.perm_delete.obj, perms)
+
+        # Cleanup
+        perms.destroy()
+
+    def test_perm_ac(self):
+
+        # Create Perms
+        perms = self._create_collection_perms(self.acs)
+
+        # Test Server
+        self.assertEqual(perms.server, self.acs)
+
+        # Test perm_ac
+        self.assertIsInstance(perms.perm_ac, datatypes.PlainObjIndex)
+        self.assertEqual(perms.perm_ac.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.perm_ac.obj, perms)
+
+        # Cleanup
+        perms.destroy()
+
 
 ### Main ###
 
