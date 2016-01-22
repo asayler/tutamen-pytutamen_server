@@ -3,6 +3,8 @@
 # Andy Sayler
 # Copyright 2015, 2016
 
+KEY_OBJTYPE = "objtype"
+KEY_OBJUID = "objuid"
 
 TYPE_SRV = "server"
 PERM_SRV_COL_CREATE = "srv-col-create"
@@ -19,3 +21,4 @@ PERM_READ = "read"
 PERM_MODIFY = "modify"
 PERM_DELETE = "delete"
 PERM_AC = "ac"
+PERM_DEFAULT = "default"
