@@ -546,9 +546,9 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
 class CollectionPerms(datatypes.PermissionsObject, datatypes.ChildObject):
 
     def __init__(self, pbackend, pindex=None, create=False,
-                 verifiers_create=None, verifiers_read=None,
-                 verifiers_modify=None, verifiers_delete=None,
-                 verifiers_ac=None, verifiers_default=None,
+                 v_create=None, v_read=None,
+                 v_modify=None, v_delete=None,
+                 v_ac=None, v_default=None,
                  **kwargs):
         """Initialize Account"""
 
@@ -556,17 +556,17 @@ class CollectionPerms(datatypes.PermissionsObject, datatypes.ChildObject):
         utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
             pass
-        if verifiers_default is not None:
-            if verifers_create is None:
-                verifiers_create = verifiers_default
-            if verifers_read is None:
-                verifiers_read = verifiers_default
-            if verifers_modify is None:
-                verifiers_modify = verifiers_default
-            if verifers_delete is None:
-                verifiers_delete = verifiers_default
-            if verifers_ac is None:
-                verifiers_ac = verifiers_default
+        if v_default is not None:
+            if v_create is None:
+                v_create = v_default
+            if v_read is None:
+                v_read = v_default
+            if v_modify is None:
+                v_modify = v_default
+            if v_delete is None:
+                v_delete = v_default
+            if v_ac is None:
+                v_ac = v_default
 
         # Call Parent
         prefix = _PREFIX_PERM + _PERM_SEPERATOR + constants.TYPE_COL
@@ -580,19 +580,19 @@ class CollectionPerms(datatypes.PermissionsObject, datatypes.ChildObject):
         # Setup Vars
         create_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_CREATE
         self._perm_create = datatypes.PlainObjIndex(self, create_label, Verifier,
-                                                    init=verifiers_create)
+                                                    init=v_create)
         read_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_READ
         self._perm_read = datatypes.PlainObjIndex(self, read_label, Verifier,
-                                                  init=verifiers_read)
+                                                  init=v_read)
         modify_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_MODIFY
         self._perm_modify = datatypes.PlainObjIndex(self, modify_label, Verifier,
-                                                    init=verifiers_modify)
+                                                    init=v_modify)
         delete_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_DELETE
         self._perm_delete = datatypes.PlainObjIndex(self, delete_label, Verifier,
-                                                    init=verifiers_delete)
+                                                    init=v_delete)
         ac_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_AC
         self._perm_ac = datatypes.PlainObjIndex(self, ac_label, Verifier,
-                                                init=verifiers_ac)
+                                                init=v_ac)
 
     def destroy(self):
         """Delete Account"""
