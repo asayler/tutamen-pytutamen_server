@@ -19,6 +19,7 @@ from . import crypto
 
 ### Constants ###
 
+AUTHZ_KEY_ACCOUNTUID = 'accountuid'
 AUTHZ_KEY_CLIENTUID = 'clientuid'
 AUTHZ_KEY_EXPIRATION = 'expiration'
 AUTHZ_KEY_OBJPERM = 'objperm'
@@ -69,10 +70,11 @@ def nos(val):
 
 ### Authorization Functions ###
 
-def encode_auth_token(priv_key, clientuid, expiration, objperm, objtype, objuid=None):
+def encode_auth_token(priv_key, accountuid, clientuid, expiration, objperm, objtype, objuid=None):
     """Sign and encode assertion token"""
 
-    val = { AUTHZ_KEY_CLIENTUID: str(clientuid),
+    val = { AUTHZ_KEY_ACCOUNTUID: str(accountuid),
+            AUTHZ_KEY_CLIENTUID: str(clientuid),
             AUTHZ_KEY_EXPIRATION: int(expiration.timestamp()),
             AUTHZ_KEY_OBJPERM: objperm,
             AUTHZ_KEY_OBJTYPE: objtype,
@@ -85,7 +87,8 @@ def decode_auth_token(pub_key, token):
 
     out = crypto.verify_jwt(token, pub_key)
 
-    val = { AUTHZ_KEY_CLIENTUID: uuid.UUID(out[AUTHZ_KEY_CLIENTUID]),
+    val = { AUTHZ_KEY_ACCOUNTUID: uuid.UUID(out[AUTHZ_KEY_ACCOUNTUID]),
+            AUTHZ_KEY_CLIENTUID: uuid.UUID(out[AUTHZ_KEY_CLIENTUID]),
             AUTHZ_KEY_EXPIRATION: datetime.datetime.fromtimestamp(out[AUTHZ_KEY_EXPIRATION]),
             AUTHZ_KEY_OBJPERM: out[AUTHZ_KEY_OBJPERM],
             AUTHZ_KEY_OBJTYPE: out[AUTHZ_KEY_OBJTYPE],
@@ -116,11 +119,11 @@ def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=Non
         logger.warning(msg)
         return None
 
-    # Check ClientID
+    # Check ClientID and/or AccountID
     # ToDo: May not be necessary - but if desired, it
     #       will require having the client co-sign each
     #       token and send a copy of its client cert -
-    #       which will also need to be verifed aginst the
+    #       which will also need to be verifed against the
     #       server CA. I.e. It's involved.
 
     # Check Expiration
@@ -230,7 +233,7 @@ class SigkeyManager(object):
         except HTTPError as err:
             msg = "{} error getting sigkey from '{}': {}".format(res.status_code, url_srv, err)
             logger.warning(msg)
-            raise SigkeyGetError(msg)            
+            raise SigkeyGetError(msg)
         res_json = res.json()
         logger.debug("res_json: {}".format(res_json))
         sigkey = res_json[KEY_SIGKEY]

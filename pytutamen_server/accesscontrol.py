@@ -38,6 +38,7 @@ _POSTFIX_CA_KEY = "ca_key"
 _POSTFIX_SIGKEY_PUB = "sigkey_pub"
 _POSTFIX_SIGKEY_PRIV = "sigkey_priv"
 _POSTFIX_CLIENT_CRT = "crt"
+_POSTFIX_ACCOUNTUID = "accountuid"
 _POSTFIX_CLIENTUID = "clientuid"
 _POSTFIX_EXPIRATION = "expiration"
 _POSTFIX_OBJPERM = "objperm"
@@ -193,13 +194,15 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
     def __init__(self, pbackend, pindex=None, create=False,
                  prefix=_PREFIX_AUTHORIZATION,
-                 clientuid=None, expiration=None,
+                 accountuid=None, clientuid=None, expiration=None,
                  objperm=None, objtype=None, objuid=None, **kwargs):
         """Initialize Authorization"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
+            utility.check_isinstance(accountuid, uuid.UUID)
+            accountuid = str(accountuid)
             utility.check_isinstance(clientuid, uuid.UUID)
             clientuid = str(clientuid)
             utility.check_isinstance(expiration, datetime.datetime)
@@ -212,6 +215,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             else:
                 objuid = ""
         else:
+            accountuid = None
             clientuid = None
             expiration = None
             objperm = None
@@ -222,6 +226,9 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
         # Setup Data
+        self._accountuid = self._build_pobj(self.pcollections.String,
+                                           _POSTFIX_ACCOUNTUID,
+                                           create=accountuid)
         self._clientuid = self._build_pobj(self.pcollections.String,
                                            _POSTFIX_CLIENTUID,
                                            create=clientuid)
@@ -245,12 +252,13 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Delete Authorization"""
 
         # Cleanup Status and Token
-        self._clientuid.rem()
-        self._expiration.rem()
-        self._objperm.rem()
-        self._objtype.rem()
-        self._objuid.rem()
         self._status.rem()
+        self._objuid.rem()
+        self._objtype.rem()
+        self._objperm.rem()
+        self._expiration.rem()
+        self._clientuid.rem()
+        self._accountuid.rem()
 
         # Call Parent
         super().destroy()
@@ -259,6 +267,11 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     def server(self):
         """Return Access Control Server"""
         return self.parent
+
+    @property
+    def accountuid(self):
+        """Return Account UID"""
+        return uuid.UUID(self._accountuid.get_val())
 
     @property
     def clientuid(self):
@@ -310,6 +323,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             raise AuthorizationNotApproved(self)
 
         token = utility.encode_auth_token(self.server.sigkey_priv,
+                                          self.accountuid,
                                           self.clientuid,
                                           self.expiration,
                                           self.objperm,
@@ -318,6 +332,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
         # Assertion Check
         val = utility.decode_auth_token(self.server.sigkey_pub, token)
+        assert(val[utility.AUTHZ_KEY_ACCOUNTUID] == self.accountuid)
         assert(val[utility.AUTHZ_KEY_CLIENTUID] == self.clientuid)
         assert(val[utility.AUTHZ_KEY_EXPIRATION] == self.expiration)
         assert(val[utility.AUTHZ_KEY_OBJPERM] == self.objperm)

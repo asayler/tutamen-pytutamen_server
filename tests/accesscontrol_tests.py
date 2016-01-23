@@ -70,12 +70,13 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_authorization(self, acs, **kwargs_user):
 
+        accountuid = uuid.uuid4()
         clientuid = uuid.uuid4()
         expiration = datetime.datetime.now()
         objperm = 'TESTPERM'
         objtype = 'TESTOBJ'
         objuid = uuid.uuid4()
-        kwargs = {'clientuid': clientuid, 'expiration': expiration,
+        kwargs = {'accountuid': accountuid, 'clientuid': clientuid, 'expiration': expiration,
                   'objperm': objperm, 'objtype': objtype, 'objuid': objuid}
         kwargs.update(kwargs_user)
 
@@ -333,6 +334,18 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
         # Test Server
         self.assertEqual(auth.server, self.acs)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_accountuid(self):
+
+        # Create Authorization
+        accountuid = uuid.uuid4()
+        auth = self._create_authorization(self.acs, accountuid=accountuid)
+
+        # Test Account UID
+        self.assertEqual(auth.accountuid, accountuid)
 
         # Cleanup
         auth.destroy()
