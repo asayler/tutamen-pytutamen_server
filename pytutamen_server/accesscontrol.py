@@ -8,6 +8,7 @@
 
 import datetime
 import uuid
+import logging
 
 from . import crypto
 from . import utility
@@ -50,6 +51,13 @@ _POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_CLIENTS = "clients"
+
+
+### Logging ###
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.NullHandler())
 
 
 ### Exceptions ###
@@ -558,25 +566,44 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
     def __init__(self, pbackend, pindex=None, create=False,
                  v_create=None, v_read=None,
                  v_modify=None, v_delete=None,
-                 v_ac=None, v_default=None,
+                 v_perms=None, v_default=None,
                  **kwargs):
         """Initialize Permissions"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)
         if create:
-            pass
-        if v_default is not None:
-            if v_create is None:
-                v_create = v_default
-            if v_read is None:
-                v_read = v_default
-            if v_modify is None:
-                v_modify = v_default
-            if v_delete is None:
-                v_delete = v_default
-            if v_ac is None:
-                v_ac = v_default
+
+            # Normalize
+            v_create = self._normalize_verifiers(v_create)
+            v_read = self._normalize_verifiers(v_read)
+            v_modify = self._normalize_verifiers(v_modify)
+            v_delete = self._normalize_verifiers(v_delete)
+            v_perms = self._normalize_verifiers(v_perms)
+            v_default = self._normalize_verifiers(v_default)
+
+            # Use Defaults
+            if v_default is not None:
+                if v_create is None:
+                    v_create = v_default
+                if v_read is None:
+                    v_read = v_default
+                if v_modify is None:
+                    v_modify = v_default
+                if v_delete is None:
+                    v_delete = v_default
+                if v_perms is None:
+                    v_perms = v_default
+
+        else:
+
+            # Zero
+            v_create = None
+            v_read = None
+            v_modify = None
+            v_delete = None
+            v_perms = None
+            v_default = None
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create,
@@ -588,28 +615,49 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
 
         # Setup Vars
         create_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_CREATE
-        self._perm_create = datatypes.PlainObjIndex(self, create_label, Verifier, init=v_create)
+        self._v_create = datatypes.PlainObjIndex(self, create_label, Verifier,
+                                                 pindex=self.server.verifiers, init=v_create)
         read_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_READ
-        self._perm_read = datatypes.PlainObjIndex(self, read_label, Verifier, init=v_read)
+        self._v_read = datatypes.PlainObjIndex(self, read_label, Verifier,
+                                               pindex=self.server.verifiers, init=v_read)
         modify_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_MODIFY
-        self._perm_modify = datatypes.PlainObjIndex(self, modify_label, Verifier, init=v_modify)
+        self._v_modify = datatypes.PlainObjIndex(self, modify_label, Verifier,
+                                                 pindex=self.server.verifiers, init=v_modify)
         delete_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_DELETE
-        self._perm_delete = datatypes.PlainObjIndex(self, delete_label, Verifier, init=v_delete)
-        ac_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_AC
-        self._perm_ac = datatypes.PlainObjIndex(self, ac_label, Verifier, init=v_ac)
+        self._v_delete = datatypes.PlainObjIndex(self, delete_label, Verifier,
+                                                 pindex=self.server.verifiers, init=v_delete)
+        perms_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_PERMS
+        self._v_perms = datatypes.PlainObjIndex(self, perms_label, Verifier,
+                                                pindex=self.server.verifiers, init=v_perms)
 
     def destroy(self):
         """Delete Account"""
 
         # Cleanup Indexes
-        self._perm_ac.destroy()
-        self._perm_delete.destroy()
-        self._perm_modify.destroy()
-        self._perm_read.destroy()
-        self._perm_create.destroy()
+        self._v_perms.destroy()
+        self._v_delete.destroy()
+        self._v_modify.destroy()
+        self._v_read.destroy()
+        self._v_create.destroy()
 
         # Call Parent
         super().destroy()
+
+    def _normalize_verifiers(self, verifiers):
+
+        if verifiers is None:
+            return None
+
+        out = []
+        for verifier in verifiers:
+            if isinstance(verifier, Verifier):
+                out.append(verifier.key)
+            elif isinstance(verifier, uuid.UUID):
+                out.append(str(verifier))
+            else:
+                raise TypeError("Unsupported verifier type: '{}'".format(type(verifier)))
+
+        return out
 
     @property
     def server(self):
@@ -617,21 +665,29 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
         return self.parent
 
     @property
-    def perm_create(self):
-        return self._perm_create
+    def v_create(self):
+        return self._v_create
 
     @property
-    def perm_read(self):
-        return self._perm_read
+    def v_read(self):
+        return self._v_read
 
     @property
-    def perm_modify(self):
-        return self._perm_modify
+    def v_modify(self):
+        return self._v_modify
 
     @property
-    def perm_delete(self):
-        return self._perm_delete
+    def v_delete(self):
+        return self._v_delete
 
     @property
-    def perm_ac(self):
-        return self._perm_ac
+    def v_perms(self):
+        return self._v_perms
+
+    @property
+    def verifiers(self):
+        return { constants.PERM_CREATE: self.v_create,
+                 constants.PERM_READ: self.v_read,
+                 constants.PERM_MODIFY: self.v_modify,
+                 constants.PERM_DELETE: self.v_delete,
+                 constants.PERM_PERMS: self.v_perms }

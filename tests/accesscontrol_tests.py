@@ -840,82 +840,88 @@ class Permissions(AccessControlTestCase, helpers.ObjectsHelpers):
         # Cleanup
         perms.destroy()
 
-    def test_perm_create(self):
+    def test_v_create(self):
 
         # Create Perms
         perms = self._create_permissions(self.acs)
 
-        # Test Server
-        self.assertEqual(perms.server, self.acs)
-
-        # Test perm_create
-        self.assertIsInstance(perms.perm_create, datatypes.PlainObjIndex)
-        self.assertEqual(perms.perm_create.type_member, accesscontrol.Verifier)
-        self.assertEqual(perms.perm_create.obj, perms)
+        # Test v_create
+        self.assertIsInstance(perms.v_create, datatypes.PlainObjIndex)
+        self.assertEqual(perms.v_create.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.v_create.obj, perms)
 
         # Cleanup
         perms.destroy()
 
-    def test_perm_read(self):
+    def test_v_read(self):
 
         # Create Perms
         perms = self._create_permissions(self.acs)
 
-        # Test Server
-        self.assertEqual(perms.server, self.acs)
-
-        # Test perm_read
-        self.assertIsInstance(perms.perm_read, datatypes.PlainObjIndex)
-        self.assertEqual(perms.perm_read.type_member, accesscontrol.Verifier)
-        self.assertEqual(perms.perm_read.obj, perms)
+        # Test v_read
+        self.assertIsInstance(perms.v_read, datatypes.PlainObjIndex)
+        self.assertEqual(perms.v_read.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.v_read.obj, perms)
 
         # Cleanup
         perms.destroy()
 
-    def test_perm_modify(self):
+    def test_v_modify(self):
 
         # Create Perms
         perms = self._create_permissions(self.acs)
 
-        # Test Server
-        self.assertEqual(perms.server, self.acs)
-
-        # Test perm_modify
-        self.assertIsInstance(perms.perm_modify, datatypes.PlainObjIndex)
-        self.assertEqual(perms.perm_modify.type_member, accesscontrol.Verifier)
-        self.assertEqual(perms.perm_modify.obj, perms)
+        # Test v_modify
+        self.assertIsInstance(perms.v_modify, datatypes.PlainObjIndex)
+        self.assertEqual(perms.v_modify.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.v_modify.obj, perms)
 
         # Cleanup
         perms.destroy()
 
-    def test_perm_delete(self):
+    def test_v_delete(self):
 
         # Create Perms
         perms = self._create_permissions(self.acs)
 
-        # Test Server
-        self.assertEqual(perms.server, self.acs)
-
-        # Test perm_delete
-        self.assertIsInstance(perms.perm_delete, datatypes.PlainObjIndex)
-        self.assertEqual(perms.perm_delete.type_member, accesscontrol.Verifier)
-        self.assertEqual(perms.perm_delete.obj, perms)
+        # Test v_delete
+        self.assertIsInstance(perms.v_delete, datatypes.PlainObjIndex)
+        self.assertEqual(perms.v_delete.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.v_delete.obj, perms)
 
         # Cleanup
         perms.destroy()
 
-    def test_perm_ac(self):
+    def test_v_perms(self):
 
         # Create Perms
         perms = self._create_permissions(self.acs)
 
-        # Test Server
-        self.assertEqual(perms.server, self.acs)
+        # Test v_perms
+        self.assertIsInstance(perms.v_perms, datatypes.PlainObjIndex)
+        self.assertEqual(perms.v_perms.type_member, accesscontrol.Verifier)
+        self.assertEqual(perms.v_perms.obj, perms)
 
-        # Test perm_ac
-        self.assertIsInstance(perms.perm_ac, datatypes.PlainObjIndex)
-        self.assertEqual(perms.perm_ac.type_member, accesscontrol.Verifier)
-        self.assertEqual(perms.perm_ac.obj, perms)
+        # Cleanup
+        perms.destroy()
+
+    def test_verifiers(self):
+
+        # Create Perms
+        perms = self._create_permissions(self.acs)
+
+        # Test verifiers
+        self.assertIsInstance(perms.verifiers, dict)
+        self.assertIn(constants.PERM_CREATE, perms.verifiers)
+        self.assertEqual(perms.verifiers[constants.PERM_CREATE], perms.v_create)
+        self.assertIn(constants.PERM_READ, perms.verifiers)
+        self.assertEqual(perms.verifiers[constants.PERM_READ], perms.v_read)
+        self.assertIn(constants.PERM_MODIFY, perms.verifiers)
+        self.assertEqual(perms.verifiers[constants.PERM_MODIFY], perms.v_modify)
+        self.assertIn(constants.PERM_DELETE, perms.verifiers)
+        self.assertEqual(perms.verifiers[constants.PERM_DELETE], perms.v_delete)
+        self.assertIn(constants.PERM_PERMS, perms.verifiers)
+        self.assertEqual(perms.verifiers[constants.PERM_PERMS], perms.v_perms)
 
         # Cleanup
         perms.destroy()
