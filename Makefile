@@ -50,3 +50,6 @@ clean:
 	$(RM)    $(SRV_DIR)/*~
 	$(RM)    $(SRV_DIR)/*.pyc
 	$(RM) -r $(SRV_DIR)/__pycache__
+	$(RM)    $(TEST_DIR)/*~
+	$(RM)    $(TEST_DIR)/*.pyc
+	$(RM) -r $(TEST_DIR)/__pycache__
