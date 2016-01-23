@@ -171,10 +171,13 @@ def gen_ca_pair(cn, country, state, locality, org, ou, email,
     return (ca_crt_pem, ca_key_pem)
 
 def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
-               cn=None, duration=None, serial=None):
+               cn=None, ou=None, org=None, serial=None,
+               duration=None):
 
     logger.debug("csr_pem:\n{}".format(csr_pem))
     logger.debug("cn: {}".format(cn))
+    logger.debug("ou: {}".format(ou))
+    logger.debug("org: {}".format(org))
     logger.debug("duration: {}".format(duration))
     logger.debug("serial: {}".format(serial))
 
@@ -194,6 +197,10 @@ def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
 
     if not cn:
         cn = csr.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+    if not ou:
+        ou = csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)[0].value
+    if not org:
+        org = csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value
     if not duration:
         duration = DUR_ONE_YEAR
     if not serial:
@@ -203,9 +210,9 @@ def csr_to_crt(csr_pem, ca_crt_pem, ca_key_pem, password=None,
     sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.COUNTRY_NAME)
     sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.LOCALITY_NAME)
     sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.STATE_OR_PROVINCE_NAME)
-    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)
-    sub_attrs += csr.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)
     sub_attrs.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, cn))
+    sub_attrs.append(x509.NameAttribute(x509.NameOID.ORGANIZATIONAL_UNIT_NAME, ou))
+    sub_attrs.append(x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, org))
 
     logger.debug("sub_attr: {}".format(sub_attrs))
 

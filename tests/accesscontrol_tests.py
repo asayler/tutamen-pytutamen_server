@@ -144,6 +144,15 @@ WW0nx4pTG4AUOJdjOA8kQejN9afcHJqRTuUEu5qlC4no9OsO3YeyyO5gFNXhpoSu
         perms = acs.permissions.create(**kwargs)
         return perms
 
+    def _create_permissions_from_authz(self, authz, **kwargs_user):
+
+        kwargs = {}
+        kwargs['objtype'] = authz.objtype
+        kwargs['objuid'] = authz.objuid
+        kwargs.update(kwargs_user)
+
+        perms = authz.server.permissions.create(**kwargs)
+        return perms
 
 class AccessControlServerTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
@@ -415,6 +424,7 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
         # Create Authorization
         auth = self._create_authorization(self.acs)
+        perms = self._create_permissions_from_authz(auth)
 
         # Test Verify
         self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
@@ -422,12 +432,14 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         self.assertEqual(auth.status, constants.AUTHZ_STATUS_APPROVED)
 
         # Cleanup
+        perms.destroy()
         auth.destroy()
 
     def test_export_token(self):
 
         # Create Authorization
         auth = self._create_authorization(self.acs)
+        perms = self._create_permissions_from_authz(auth)
 
         # Test Unapproved
         self.assertRaises(accesscontrol.AuthorizationNotApproved, auth.export_token)
@@ -446,6 +458,7 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         self.assertGreater(len(val), 0)
 
         # Cleanup
+        perms.destroy()
         auth.destroy()
 
 class VerifierTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
@@ -759,8 +772,13 @@ class ClientTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         self.assertIsInstance(client.crt, str)
         self.assertGreater(len(client.crt), 0)
         crt = x509.load_pem_x509_certificate(client.crt.encode(), default_backend())
-        self.assertGreater(crt.serial, 0)
-        self.assertEqual(crt.serial, int(client.uid))
+        self.assertEqual(int(crt.serial), int(client.uid))
+        cn = crt.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+        self.assertEqual(cn, client.key)
+        ou = crt.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATIONAL_UNIT_NAME)[0].value
+        self.assertEqual(ou, client.account.key)
+        org = crt.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value
+        self.assertEqual(int(org), int(client.account.uid))
 
         # Cleanup
         client.destroy()

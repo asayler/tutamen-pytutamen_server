@@ -506,7 +506,8 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
         # Setup Client Cert
         if create:
             crt_pem = crypto.csr_to_crt(csr_pem, self.server.ca_crt, self.server.ca_key,
-                                        cn=self.key, serial=self.uid)
+                                        cn=self.key, ou=self.account.key,
+                                        serial=self.uid.int, org=str(self.account.uid.int))
         else:
             crt_pem = None
         self._crt = self._build_pobj(self.pcollections.String,
