@@ -112,7 +112,7 @@ def gen_key_pair(length=None, pub_exp=None, typ=None, raw=False, password=None,
                                        format=serialization.PublicFormat.SubjectPublicKeyInfo)
         return pub_pem.decode(), priv_pem.decode()
 
-def gen_ca_pair(cn, country, state, locality, organization, ou, email,
+def gen_ca_pair(cn, country, state, locality, org, ou, email,
                 duration=None, serial=None, ca_key_pem=None, password=None,
                 length=None, pub_exp=None, typ=None, sig=SIG_SHA256):
 
@@ -141,7 +141,7 @@ def gen_ca_pair(cn, country, state, locality, organization, ou, email,
     sub_attr.append(x509.NameAttribute(x509.NameOID.COUNTRY_NAME, country))
     sub_attr.append(x509.NameAttribute(x509.NameOID.STATE_OR_PROVINCE_NAME, state))
     sub_attr.append(x509.NameAttribute(x509.NameOID.LOCALITY_NAME, locality))
-    sub_attr.append(x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, organization))
+    sub_attr.append(x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, org))
     sub_attr.append(x509.NameAttribute(x509.NameOID.ORGANIZATIONAL_UNIT_NAME, ou))
     sub_attr.append(x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, email))
 

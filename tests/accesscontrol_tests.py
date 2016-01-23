@@ -57,11 +57,11 @@ class AccessControlTestCase(tests_common.BaseTestCase):
         country = "US"
         state = "Colorado"
         locality = "Boulder"
-        organization = "Test Tutamen AC Server"
+        org = "Test Tutamen AC Server"
         ou = "Test CA"
         email = "test@test.null"
         kwargs = {'cn': cn, 'country': country, 'state': state, 'locality': locality,
-                  'organization': organization, 'ou': ou, 'email': email,
+                  'org': org, 'ou': ou, 'email': email,
                   'ca_key_pem': self.ca_key_pem, 'sigkey_priv_pem': self.sigkey_priv_pem}
         kwargs.update(kwargs_user)
 

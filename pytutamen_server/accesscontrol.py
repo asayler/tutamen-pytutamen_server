@@ -79,7 +79,7 @@ class AccessControlServer(datatypes.ServerObject):
                  ca_crt_pem=None, ca_key_pem=None,
                  sigkey_pub_pem=None, sigkey_priv_pem=None,
                  cn=None, country=None, state=None, locality=None,
-                 organization=None, ou=None, email=None):
+                 org=None, ou=None, email=None):
 
         # Call Parent
         super().__init__(pbackend, key=key, create=create)
@@ -104,11 +104,11 @@ class AccessControlServer(datatypes.ServerObject):
                 utility.check_isinstance(country, str)
                 utility.check_isinstance(state, str)
                 utility.check_isinstance(locality, str)
-                utility.check_isinstance(organization, str)
+                utility.check_isinstance(org, str)
                 utility.check_isinstance(ou, str)
                 utility.check_isinstance(email, str)
                 ca_crt_pem, ca_key_pem = crypto.gen_ca_pair(cn, country, state, locality,
-                                                            organization, ou, email,
+                                                            org, ou, email,
                                                             ca_key_pem=ca_key_pem)
         self._ca_crt = self._build_pobj(self.pcollections.String,
                                         _POSTFIX_CA_CRT,
