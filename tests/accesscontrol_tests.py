@@ -108,6 +108,15 @@ class AccessControlTestCase(tests_common.BaseTestCase):
         account = acs.accounts.create(**kwargs)
         return account
 
+    def _create_account_from_authz(self, authz, **kwargs_user):
+
+        kwargs = {}
+        kwargs['uid'] = authz.accountuid
+        kwargs.update(kwargs_user)
+
+        account = authz.server.accounts.create(**kwargs)
+        return account
+
     def _create_client(self, acct, **kwargs_user):
 
         csr_pem = \
@@ -433,26 +442,93 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         # Cleanup
         auth.destroy()
 
-    def test_verify(self):
+    def test_verify_pass(self):
 
         # Create Authorization
-        auth = self._create_authorization(self.acs)
-        perms = self._create_permissions_from_authz(auth)
+        auth = self._create_authorization(self.acs, objperm="read")
+        acct = self._create_account_from_authz(auth)
+        verifier = self._create_verifier(self.acs, accounts=[acct])
+        perms = self._create_permissions_from_authz(auth, v_default=[verifier])
 
-        # Test Verify
+        # Test Verify (Valid)
         self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
         self.assertTrue(auth.verify())
         self.assertEqual(auth.status, constants.AUTHZ_STATUS_APPROVED)
 
+        # Test Verify (Already processed)
+        self.assertRaises(accesscontrol.AuthorizationAlreadyProcessed, auth.verify)
+
         # Cleanup
         perms.destroy()
+        verifier.destroy()
+        acct.destroy()
+        auth.destroy()
+
+    def test_verify_fail_noperm(self):
+
+        # Create Authorization
+        auth = self._create_authorization(self.acs, objperm="read")
+        acct = self._create_account_from_authz(auth)
+
+        # Test Verify (Invalid)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
+        self.assertFalse(auth.verify())
+        self.assertEqual(auth.status.split('_')[0], constants.AUTHZ_STATUS_FAILED)
+
+        # Test Verify (Already processed)
+        self.assertRaises(accesscontrol.AuthorizationAlreadyProcessed, auth.verify)
+
+        # Cleanup
+        acct.destroy()
+        auth.destroy()
+
+    def test_verify_fail_badperm(self):
+
+        # Create Authorization
+        auth = self._create_authorization(self.acs, objperm="fake")
+        acct = self._create_account_from_authz(auth)
+        perms = self._create_permissions_from_authz(auth)
+
+        # Test Verify (Invalid)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
+        self.assertFalse(auth.verify())
+        self.assertEqual(auth.status.split('_')[0], constants.AUTHZ_STATUS_FAILED)
+
+        # Test Verify (Already processed)
+        self.assertRaises(accesscontrol.AuthorizationAlreadyProcessed, auth.verify)
+
+        # Cleanup
+        perms.destroy()
+        acct.destroy()
+        auth.destroy()
+
+    def test_verify_deny(self):
+
+        # Create Authorization
+        auth = self._create_authorization(self.acs, objperm="read")
+        acct = self._create_account_from_authz(auth)
+        perms = self._create_permissions_from_authz(auth)
+
+        # Test Verify (Invalid)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
+        self.assertFalse(auth.verify())
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_DENIED)
+
+        # Test Verify (Already processed)
+        self.assertRaises(accesscontrol.AuthorizationAlreadyProcessed, auth.verify)
+
+        # Cleanup
+        perms.destroy()
+        acct.destroy()
         auth.destroy()
 
     def test_export_token(self):
 
         # Create Authorization
-        auth = self._create_authorization(self.acs)
-        perms = self._create_permissions_from_authz(auth)
+        auth = self._create_authorization(self.acs, objperm="read")
+        acct = self._create_account_from_authz(auth)
+        verifier = self._create_verifier(self.acs, accounts=[acct])
+        perms = self._create_permissions_from_authz(auth, v_default=[verifier])
 
         # Test Unapproved
         self.assertRaises(accesscontrol.AuthorizationNotApproved, auth.export_token)
@@ -472,6 +548,8 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
         # Cleanup
         perms.destroy()
+        verifier.destroy()
+        acct.destroy()
         auth.destroy()
 
 class VerifierTestCase(AccessControlTestCase, helpers.ObjectsHelpers):

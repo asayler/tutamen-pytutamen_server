@@ -79,6 +79,19 @@ class AuthorizationNotApproved(AuthorizationException):
         # Call Parent
         super().__init__(msg)
 
+class AuthorizationAlreadyProcessed(AuthorizationException):
+
+    def __init__(self, authz):
+
+        # Check Args
+        utility.check_isinstance(authz, Authorization)
+
+        # Message
+        msg = "Authorization {} has already been processed".format(authz.key)
+
+        # Call Parent
+        super().__init__(msg)
+
 
 ### Objects ###
 
@@ -320,9 +333,71 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
     def verify(self):
         """Verify Authorization Request"""
 
-        # Todo: actually verify authorization against permissions
-        self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
-        return True
+        msg = "Verifying authorization '{}'".format(self)
+        logger.debug(msg)
+        passed = False
+
+        # Check Status
+        if (self.status != constants.AUTHZ_STATUS_NEW):
+            msg = "Authorization already processed"
+            logger.debug(msg)
+            raise AuthorizationAlreadyProcessed(self)
+
+        # Load Permissions
+        try:
+            perms = self.server.permissions.get(objtype=self.objtype, objuid=self.objuid)
+        except datatypes.ObjectDNE as err:
+            msg = "No such object: {} {}".format(self.objtype, self.objuid)
+            logger.warning(msg)
+            status = constants.AUTHZ_STATUS_FAILED + "_nosuchobj"
+            self._status.set_val(status)
+            return False
+        except TypeError as err:
+            msg = "Object '{}' missing objuid".format(self.objtype)
+            logger.warning(msg)
+            status = constants.AUTHZ_STATUS_FAILED + "_missingobjuid"
+            self._status.set_val(status)
+            return False
+        else:
+
+            msg = "Using permissions '{}'".format(perms)
+            logger.debug(msg)
+
+            # Load Verifiers
+            try:
+                verifiers = perms.verifiers[self.objperm]
+            except KeyError as err:
+                msg = "No such permission '{}'".format(self.objperm)
+                logger.warning(msg)
+                status = constants.AUTHZ_STATUS_FAILED + "_nosuchperm"
+                self._status.set_val(status)
+                return False
+            else:
+
+                msg = "Using verifiers '{}'".format(verifiers)
+                logger.debug(msg)
+
+                # Search for valid verifiers
+                for verifier in verifiers.by_obj():
+
+                    # Check Account
+                    if verifier.accounts.ismember(self.accountuid):
+
+                        msg = "Account '{}' matches verifier '{}'".format(self.accountuid, verifier)
+                        logger.debug(msg)
+
+                        # Check Authenticators
+                        # Todo
+                        passed = True
+
+        # Set Status and Return
+        if passed:
+            self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
+        else:
+            self._status.set_val(constants.AUTHZ_STATUS_DENIED)
+        msg = "Passed = '{}', Status = '{}'".format(passed, self.status)
+        logger.debug(msg)
+        return passed
 
     def export_token(self):
         """Get signed assertion token"""
