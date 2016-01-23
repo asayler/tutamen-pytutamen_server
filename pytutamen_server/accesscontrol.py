@@ -566,8 +566,7 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
         super().__init__(pbackend, pindex=pindex, create=create,
                          prefix=_PREFIX_PERMISSIONS, **kwargs)
 
-        if not ((self.objtype == constants.TYPE_SRV_AC) or
-                (self.objtype == constants.TYPE_SRV_STORAGE)):
+        if self.objtype not in constants.SRV_TYPES:
             if not self.objuid:
                 raise TypeError("Non-server types require objuid")
 
