@@ -18,26 +18,26 @@ from . import datatypes
 
 _PERM_SEPERATOR = "_"
 
-_KEY_AUTHORIZATIONS = "authorizations"
-_KEY_VERIFIERS = "verifiers"
-_KEY_AUTHENTICATORS = "authenticators"
-_KEY_ACCOUNTS = "accounts"
-_KEY_COLLECTION_PERMS = "collection_perms"
-
 _KEY_ACSRV = "accesscontrol"
+
+_LABEL_AUTHORIZATIONS = "authorizations"
+_LABEL_VERIFIERS = "verifiers"
+_LABEL_AUTHENTICATORS = "authenticators"
+_LABEL_ACCOUNTS = "accounts"
+_LABEL_PERMISSIONS = "permissions"
 
 _PREFIX_AUTHORIZATION = "authorization"
 _PREFIX_VERIFIER = "verifier"
 _PREFIX_AUTHENTICATOR = "authenticator"
 _PREFIX_ACCOUNT = "account"
 _PREFIX_CLIENT = "client"
+_PREFIX_PERMISSIONS = "permissions"
 
 _POSTFIX_CA_CRT = "ca_crt"
 _POSTFIX_CA_KEY = "ca_key"
 _POSTFIX_SIGKEY_PUB = "sigkey_pub"
 _POSTFIX_SIGKEY_PRIV = "sigkey_priv"
 _POSTFIX_CLIENT_CRT = "crt"
-
 _POSTFIX_CLIENTUID = "clientuid"
 _POSTFIX_EXPIRATION = "expiration"
 _POSTFIX_OBJPERM = "objperm"
@@ -49,12 +49,6 @@ _POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_CLIENTS = "clients"
-
-_PREFIX_PERM = "permissions"
-
-AUTHZ_STATUS_NEW = "pending"
-AUTHZ_STATUS_APPROVED = "approved"
-AUTHZ_STATUS_DENIED = "denied"
 
 
 ### Exceptions ###
@@ -90,12 +84,12 @@ class AccessControlServer(datatypes.ServerObject):
         # Call Parent
         super().__init__(pbackend, key=key, create=create)
 
-        # Setup Collections Index
-        self._authorizations = datatypes.ChildIndex(self, Authorization, _KEY_AUTHORIZATIONS)
-        self._verifiers = datatypes.ChildIndex(self, Verifier, _KEY_VERIFIERS)
-        self._authenticators = datatypes.ChildIndex(self, Authenticator, _KEY_AUTHENTICATORS)
-        self._accounts = datatypes.ChildIndex(self, Account, _KEY_ACCOUNTS)
-        self._collection_perms = datatypes.ChildIndex(self, CollectionPerms, _KEY_COLLECTION_PERMS)
+        # Setup Child Indexes
+        self._authorizations = datatypes.ChildIndex(self, Authorization, _LABEL_AUTHORIZATIONS)
+        self._verifiers = datatypes.ChildIndex(self, Verifier, _LABEL_VERIFIERS)
+        self._authenticators = datatypes.ChildIndex(self, Authenticator, _LABEL_AUTHENTICATORS)
+        self._accounts = datatypes.ChildIndex(self, Account, _LABEL_ACCOUNTS)
+        self._permissions = datatypes.ChildIndex(self, Permissions, _LABEL_PERMISSIONS)
 
         # Setup CA Keys
         if create:
@@ -135,11 +129,11 @@ class AccessControlServer(datatypes.ServerObject):
                 sigkey_pub_pem, sigkey_priv_pem = crypto.gen_key_pair(length=4096,
                                                                       priv_key_pem=sigkey_priv_pem)
         self._sigkey_pub = self._build_pobj(self.pcollections.String,
-                                             _POSTFIX_SIGKEY_PUB,
-                                             create=sigkey_pub_pem)
+                                            _POSTFIX_SIGKEY_PUB,
+                                            create=sigkey_pub_pem)
         self._sigkey_priv = self._build_pobj(self.pcollections.String,
-                                              _POSTFIX_SIGKEY_PRIV,
-                                              create=sigkey_priv_pem)
+                                             _POSTFIX_SIGKEY_PRIV,
+                                             create=sigkey_priv_pem)
 
     def destroy(self):
 
@@ -245,7 +239,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                                         create=objuid)
         self._status = self._build_pobj(self.pcollections.MutableString,
                                         _POSTFIX_STATUS,
-                                        create=AUTHZ_STATUS_NEW)
+                                        create=constants.AUTHZ_STATUS_NEW)
 
     def destroy(self):
         """Delete Authorization"""
@@ -306,13 +300,13 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         """Verify Authorization Request"""
 
         # Todo: actually verify authorization against permissions
-        self._status.set_val(AUTHZ_STATUS_APPROVED)
+        self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
         return True
 
     def export_token(self):
         """Get signed assertion token"""
 
-        if self.status != AUTHZ_STATUS_APPROVED:
+        if self.status != constants.AUTHZ_STATUS_APPROVED:
             raise AuthorizationNotApproved(self)
 
         token = utility.encode_auth_token(self.server.sigkey_priv,
@@ -543,14 +537,14 @@ class Client(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObje
         """Return Certificate"""
         return self._crt.get_val()
 
-class CollectionPerms(datatypes.PermissionsObject, datatypes.ChildObject):
+class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
 
     def __init__(self, pbackend, pindex=None, create=False,
                  v_create=None, v_read=None,
                  v_modify=None, v_delete=None,
                  v_ac=None, v_default=None,
                  **kwargs):
-        """Initialize Account"""
+        """Initialize Permissions"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)

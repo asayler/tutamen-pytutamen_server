@@ -6,15 +6,10 @@
 KEY_OBJTYPE = "objtype"
 KEY_OBJUID = "objuid"
 
-TYPE_SRV = "server"
-PERM_SRV_COL_CREATE = "srv-col-create"
+TYPE_SRV_AC = "acserver"
+TYPE_SRV_STORAGE = "storageserver"
 
 TYPE_COL = "collection"
-PERM_COL_CREATE = "col-create"
-PERM_COL_READ = "col-read"
-PERM_COL_MODIFY = "col-modify"
-PERM_COL_DELETE = "col-delete"
-PERM_COL_AC = "col-ac"
 
 PERM_CREATE = "create"
 PERM_READ = "read"
@@ -22,3 +17,7 @@ PERM_MODIFY = "modify"
 PERM_DELETE = "delete"
 PERM_AC = "ac"
 PERM_DEFAULT = "default"
+
+AUTHZ_STATUS_NEW = "pending"
+AUTHZ_STATUS_APPROVED = "approved"
+AUTHZ_STATUS_DENIED = "denied"

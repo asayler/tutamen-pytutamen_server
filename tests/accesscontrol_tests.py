@@ -27,6 +27,7 @@ import helpers
 ## tutamen_server ##
 from pytutamen_server import crypto
 from pytutamen_server import utility
+from pytutamen_server import constants
 from pytutamen_server import datatypes
 from pytutamen_server import accesscontrol
 
@@ -404,7 +405,7 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         auth = self._create_authorization(self.acs)
 
         # Test Status
-        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_NEW)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
 
         # Cleanup
         auth.destroy()
@@ -415,9 +416,9 @@ class AuthorizationTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         auth = self._create_authorization(self.acs)
 
         # Test Verify
-        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_NEW)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_NEW)
         self.assertTrue(auth.verify())
-        self.assertEqual(auth.status, accesscontrol.AUTHZ_STATUS_APPROVED)
+        self.assertEqual(auth.status, constants.AUTHZ_STATUS_APPROVED)
 
         # Cleanup
         auth.destroy()
