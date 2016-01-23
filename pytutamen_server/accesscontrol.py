@@ -144,7 +144,7 @@ class AccessControlServer(datatypes.ServerObject):
         self._ca_crt.rem()
 
         # Cleanup Indexes
-        self._collection_perms.destroy()
+        self._permissions.destroy()
         self._accounts.destroy()
         self._authenticators.destroy()
         self._verifiers.destroy()
@@ -170,8 +170,8 @@ class AccessControlServer(datatypes.ServerObject):
         return self._accounts
 
     @property
-    def collection_perms(self):
-        return self._collection_perms
+    def permissions(self):
+        return self._permissions
 
     @property
     def ca_crt(self):
@@ -563,30 +563,25 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
                 v_ac = v_default
 
         # Call Parent
-        prefix = _PREFIX_PERM + _PERM_SEPERATOR + constants.TYPE_COL
         super().__init__(pbackend, pindex=pindex, create=create,
-                         prefix=prefix,
-                         objtype=constants.TYPE_COL, **kwargs)
+                         prefix=_PREFIX_PERMISSIONS, **kwargs)
 
-        if not self.objuid:
-            raise TypeError("Requires objuid")
+        if not ((self.objtype == constants.TYPE_SRV_AC) or
+                (self.objtype == constants.TYPE_SRV_STORAGE)):
+            if not self.objuid:
+                raise TypeError("Non-server types require objuid")
 
         # Setup Vars
         create_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_CREATE
-        self._perm_create = datatypes.PlainObjIndex(self, create_label, Verifier,
-                                                    init=v_create)
+        self._perm_create = datatypes.PlainObjIndex(self, create_label, Verifier, init=v_create)
         read_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_READ
-        self._perm_read = datatypes.PlainObjIndex(self, read_label, Verifier,
-                                                  init=v_read)
+        self._perm_read = datatypes.PlainObjIndex(self, read_label, Verifier, init=v_read)
         modify_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_MODIFY
-        self._perm_modify = datatypes.PlainObjIndex(self, modify_label, Verifier,
-                                                    init=v_modify)
+        self._perm_modify = datatypes.PlainObjIndex(self, modify_label, Verifier, init=v_modify)
         delete_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_DELETE
-        self._perm_delete = datatypes.PlainObjIndex(self, delete_label, Verifier,
-                                                    init=v_delete)
+        self._perm_delete = datatypes.PlainObjIndex(self, delete_label, Verifier, init=v_delete)
         ac_label = _POSTFIX_VERIFIERS + _PERM_SEPERATOR + constants.PERM_AC
-        self._perm_ac = datatypes.PlainObjIndex(self, ac_label, Verifier,
-                                                init=v_ac)
+        self._perm_ac = datatypes.PlainObjIndex(self, ac_label, Verifier, init=v_ac)
 
     def destroy(self):
         """Delete Account"""

@@ -134,13 +134,14 @@ WW0nx4pTG4AUOJdjOA8kQejN9afcHJqRTuUEu5qlC4no9OsO3YeyyO5gFNXhpoSu
         client = acct.clients.create(**kwargs)
         return client
 
-    def _create_collection_perms(self, acs, **kwargs_user):
+    def _create_permissions(self, acs, **kwargs_user):
 
         kwargs = {}
+        kwargs['objtype'] = "testobj"
         kwargs['objuid'] = uuid.uuid4()
         kwargs.update(kwargs_user)
 
-        perms = acs.collection_perms.create(**kwargs)
+        perms = acs.permissions.create(**kwargs)
         return perms
 
 
@@ -213,15 +214,15 @@ class AccessControlServerTestCase(AccessControlTestCase, helpers.ObjectsHelpers)
         # Cleanup
         acs.destroy()
 
-    def test_collection_perms(self):
+    def test_permissions(self):
 
         # Create Server
         acs = self._create_accesscontrolserver(self.pbackend)
 
         # Test Accounts
-        self.assertIsInstance(acs.collection_perms, datatypes.ChildIndex)
-        self.assertEqual(acs.collection_perms.type_child, accesscontrol.CollectionPerms)
-        self.assertEqual(acs.collection_perms.parent, acs)
+        self.assertIsInstance(acs.permissions, datatypes.ChildIndex)
+        self.assertEqual(acs.permissions.type_child, accesscontrol.Permissions)
+        self.assertEqual(acs.permissions.parent, acs)
 
         # Cleanup
         acs.destroy()
@@ -764,7 +765,7 @@ class ClientTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         # Cleanup
         client.destroy()
 
-class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
+class Permissions(AccessControlTestCase, helpers.ObjectsHelpers):
 
     def setUp(self):
 
@@ -784,23 +785,23 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
 
     def test_init_create(self):
 
-        create_obj = functools.partial(self._create_collection_perms, self.acs)
-        self.helper_test_obj_create(accesscontrol.CollectionPerms,
-                                    self.acs.collection_perms,
+        create_obj = functools.partial(self._create_permissions, self.acs)
+        self.helper_test_obj_create(accesscontrol.Permissions,
+                                    self.acs.permissions,
                                     create_obj, uuidobj=False, permobj=True)
 
     def test_init_existing(self):
 
-        create_obj = functools.partial(self._create_collection_perms, self.acs)
-        get_obj = self.acs.collection_perms.get
-        self.helper_test_obj_existing(accesscontrol.CollectionPerms,
-                                      self.acs.collection_perms,
+        create_obj = functools.partial(self._create_permissions, self.acs)
+        get_obj = self.acs.permissions.get
+        self.helper_test_obj_existing(accesscontrol.Permissions,
+                                      self.acs.permissions,
                                       create_obj, get_obj, uuidobj=False, permobj=True)
 
     def test_server(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)
@@ -811,7 +812,7 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
     def test_perm_create(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)
@@ -827,7 +828,7 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
     def test_perm_read(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)
@@ -843,7 +844,7 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
     def test_perm_modify(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)
@@ -859,7 +860,7 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
     def test_perm_delete(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)
@@ -875,7 +876,7 @@ class CollectionPerms(AccessControlTestCase, helpers.ObjectsHelpers):
     def test_perm_ac(self):
 
         # Create Perms
-        perms = self._create_collection_perms(self.acs)
+        perms = self._create_permissions(self.acs)
 
         # Test Server
         self.assertEqual(perms.server, self.acs)

@@ -33,14 +33,22 @@ class ObjectsHelpers(object):
         self.assertRaises(datatypes.ObjectExists, create_obj, key=obj.key)
         if uuidobj:
             self.assertRaises(datatypes.ObjectExists, create_obj, uid=obj.uid)
-        if permobj:
-            self.assertRaises(datatypes.ObjectExists, create_obj, objuid=obj.objuid)
+        elif permobj:
+            self.assertRaises(datatypes.ObjectExists, create_obj,
+                              objtype=obj.objtype, objuid=obj.objuid)
+        else:
+            raise Exception("Requires either uuidobj or permobj")
 
         # Cleanup
         obj.destroy()
 
         # Test Create (Key)
-        key = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        if uuidobj:
+            key = "eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        elif permobj:
+            key = "testobj_eb424026-6f54-4ef8-a4d0-bb658a1fc6cf"
+        else:
+            raise Exception("Requires either uuidobj or permobj")
         obj = create_obj(key=key)
         self.assertIsInstance(obj, obj_type)
         self.assertTrue(obj.exists())
@@ -57,8 +65,7 @@ class ObjectsHelpers(object):
             self.assertTrue(obj_index.exists(obj))
             self.assertEqual(obj.uid, uid)
             obj.destroy()
-
-        if permobj:
+        elif permobj:
             # Test Create (objuid)
             objuid = uuid.uuid4()
             obj = create_obj(objuid=objuid)
@@ -67,6 +74,8 @@ class ObjectsHelpers(object):
             self.assertTrue(obj_index.exists(obj))
             self.assertEqual(obj.objuid, objuid)
             obj.destroy()
+        else:
+            raise Exception("Requires either uuidobj or permobj")
 
     def helper_test_obj_existing(self, obj_type, obj_index, create_obj, get_obj,
                                  uuidobj=True, permobj=False):
@@ -75,9 +84,12 @@ class ObjectsHelpers(object):
         if uuidobj:
             uid = uuid.uuid4()
             self.assertRaises(datatypes.ObjectDNE, get_obj, uid=uid)
-        if permobj:
+        elif permobj:
+            objtype = "nosuchtype"
             objuid = uuid.uuid4()
-            self.assertRaises(datatypes.ObjectDNE, get_obj, objuid=objuid)
+            self.assertRaises(datatypes.ObjectDNE, get_obj, objuid=objuid, objtype=objtype)
+        else:
+            raise Exception("Requires either uuidobj or permobj")
 
         # Create Object
         obj = create_obj()
@@ -98,15 +110,17 @@ class ObjectsHelpers(object):
             self.assertTrue(obj.exists())
             self.assertTrue(obj_index.exists(obj))
             self.assertEqual(obj.uid, uid)
-
-        if permobj:
+        elif permobj:
             # Test get (objuid)
+            objtype = obj.objtype
             objuid = obj.objuid
-            obj = get_obj(objuid=objuid)
+            obj = get_obj(objtype=objtype, objuid=objuid)
             self.assertIsInstance(obj, obj_type)
             self.assertTrue(obj.exists())
             self.assertTrue(obj_index.exists(obj))
             self.assertEqual(obj.objuid, objuid)
+        else:
+            raise Exception("Requires either uuidobj or permobj")
 
         # Cleanup
         obj.destroy()
