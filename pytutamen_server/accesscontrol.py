@@ -48,8 +48,10 @@ _POSTFIX_OBJUID = "objuid"
 _POSTFIX_STATUS = "status"
 _POSTFIX_MODULE = "module"
 _POSTFIX_VERIFIERS = "verifiers"
-_POSTFIX_AUTHENTICATORS = "authenticators"
 _POSTFIX_ACCOUNTS = "accounts"
+_POSTFIX_AUTHENTICATORS = "authenticators"
+_POSTFIX_BYPASS_ACCOUNTS = "bypass_accounts"
+_POSTFIX_BYPASS_AUTHENTICATORS = "bypass_authenticators"
 _POSTFIX_CLIENTS = "clients"
 
 
@@ -335,7 +337,6 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
         msg = "Verifying authorization '{}'".format(self)
         logger.debug(msg)
-        passed = False
 
         # Check Status
         if (self.status != constants.AUTHZ_STATUS_NEW):
@@ -358,46 +359,62 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             status = constants.AUTHZ_STATUS_FAILED + "_missingobjuid"
             self._status.set_val(status)
             return False
-        else:
 
-            msg = "Using permissions '{}'".format(perms)
-            logger.debug(msg)
+        msg = "Using permissions '{}'".format(perms)
+        logger.debug(msg)
 
-            # Load Verifiers
-            try:
-                verifiers = perms.verifiers[self.objperm]
-            except KeyError as err:
-                msg = "No such permission '{}'".format(self.objperm)
-                logger.warning(msg)
-                status = constants.AUTHZ_STATUS_FAILED + "_nosuchperm"
-                self._status.set_val(status)
-                return False
-            else:
+        # Load Verifiers
+        try:
+            verifiers = perms.verifiers[self.objperm]
+        except KeyError as err:
+            msg = "No such permission '{}'".format(self.objperm)
+            logger.warning(msg)
+            status = constants.AUTHZ_STATUS_FAILED + "_nosuchperm"
+            self._status.set_val(status)
+            return False
 
-                msg = "Using verifiers '{}'".format(verifiers)
+        msg = "Using verifiers '{}'".format(verifiers)
+        logger.debug(msg)
+
+        # Search for valid verifiers
+        passed_accounts = False
+        passed_authenticators = False
+        for verifier in verifiers.by_obj():
+
+            # Check Account
+            if verifier.bypass_accounts:
+                msg = "Bypassing Account Verification"
                 logger.debug(msg)
+                passed_accounts = True
+            elif verifier.accounts.ismember(self.accountuid):
+                msg = "Account '{}' matches verifier '{}'".format(self.accountuid, verifier)
+                logger.debug(msg)
+                passed_accounts = True
+            else:
+                msg = "No matching accounts found"
+                logger.debug(msg)
+                passed_accounts = False
 
-                # Search for valid verifiers
-                for verifier in verifiers.by_obj():
-
-                    # Check Account
-                    if verifier.accounts.ismember(self.accountuid):
-
-                        msg = "Account '{}' matches verifier '{}'".format(self.accountuid, verifier)
-                        logger.debug(msg)
-
-                        # Check Authenticators
-                        # Todo
-                        passed = True
+            # Check Authenticators
+            passed_authenticators = False
+            if verifier.bypass_authenticators:
+                msg = "Bypassing Authenticator Verification"
+                logger.debug(msg)
+                passed_authenticators = True
+            else:
+                # Todo: verify authenticators
+                passed_authenticators = True
 
         # Set Status and Return
-        if passed:
+        if passed_accounts and passed_authenticators:
             self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
         else:
             self._status.set_val(constants.AUTHZ_STATUS_DENIED)
-        msg = "Passed = '{}', Status = '{}'".format(passed, self.status)
+        msg = "passed_accounts = '{}', ".format(passed_accounts)
+        msg += "passed_authenticators = '{}', ".format(passed_authenticators)
+        msg += "status = '{}'".format(self.status)
         logger.debug(msg)
-        return passed
+        return (passed_accounts and passed_authenticators)
 
     def export_token(self):
         """Get signed assertion token"""
@@ -428,47 +445,67 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
 
     def __init__(self, pbackend, pindex=None, create=False,
                  prefix=_PREFIX_VERIFIER,
-                 accounts=None, authenticators=None, **kwargs):
+                 accounts=None, authenticators=None,
+                 bypass_accounts=None, bypass_authenticators=None, **kwargs):
         """Initialize Verifier"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)
-        if create:
-            pass
         if accounts is None:
             accounts = []
         if authenticators is None:
             authenticators = []
+        if bypass_accounts is None:
+            bypass_accounts = False
+        if bypass_authenticators is None:
+            bypass_authenticators = False
+        utility.check_isinstance(accounts, list)
+        utility.check_isinstance(authenticators, list)
+        utility.check_isinstance(bypass_accounts, bool)
+        utility.check_isinstance(bypass_authenticators, bool)
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
 
-        # Setup Vars
-        def authenticator_masters(key, **kwargs):
-            return Authenticator(self.pbackend, key=key, **kwargs).verifiers
-        self._authenticators = datatypes.MasterObjIndex(self, _POSTFIX_AUTHENTICATORS,
-                                                        authenticator_masters,
-                                                        Authenticator,
-                                                        pindex=self.server.authenticators)
+        # Setup Objects
+        self._bypass_accounts = self._build_pobj(self.pcollections.MutableString,
+                                                 _POSTFIX_BYPASS_ACCOUNTS,
+                                                 create=str(int(bypass_accounts)))
+        self._bypass_authenticators = self._build_pobj(self.pcollections.MutableString,
+                                                 _POSTFIX_BYPASS_AUTHENTICATORS,
+                                                 create=str(int(bypass_authenticators)))
+
+        # Setup Index
         def account_masters(key, **kwargs):
             return Account(self.pbackend, key=key, **kwargs).verifiers
         self._accounts = datatypes.MasterObjIndex(self, _POSTFIX_ACCOUNTS,
                                                   account_masters,
                                                   Account,
                                                   pindex=self.server.accounts)
+        def authenticator_masters(key, **kwargs):
+            return Authenticator(self.pbackend, key=key, **kwargs).verifiers
+        self._authenticators = datatypes.MasterObjIndex(self, _POSTFIX_AUTHENTICATORS,
+                                                        authenticator_masters,
+                                                        Authenticator,
+                                                        pindex=self.server.authenticators)
 
-        # Add initial values:
-        for account in accounts:
-            self.accounts.add(account)
-        for authenticator in authenticators:
-            self.autenticators.add(authenticator)
+        # Add initial index values:
+        if create:
+            for account in accounts:
+                self.accounts.add(account)
+            for authenticator in authenticators:
+                self.autenticators.add(authenticator)
 
     def destroy(self):
         """Delete Verifier"""
 
         # Cleanup Indexes
-        self._accounts.destroy()
         self._authenticators.destroy()
+        self._accounts.destroy()
+
+        # Cleanup Objects
+        self._bypass_authenticators.rem()
+        self._bypass_accounts.rem()
 
         # Call Parent
         super().destroy()
@@ -479,14 +516,24 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
         return self.parent
 
     @property
-    def authenticators(self):
-        """Return Authenticators Object Index"""
-        return self._authenticators
+    def bypass_accounts(self):
+        """Bypass Accounts Bool"""
+        return bool(int(self._bypass_accounts.get_val()))
+
+    @property
+    def bypass_authenticators(self):
+        """Bypass Authenticators Bool"""
+        return bool(int(self._bypass_authenticators.get_val()))
 
     @property
     def accounts(self):
         """Return Accounts Object Index"""
         return self._accounts
+
+    @property
+    def authenticators(self):
+        """Return Authenticators Object Index"""
+        return self._authenticators
 
 class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 

@@ -596,6 +596,30 @@ class VerifierTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         # Cleanup
         verf.destroy()
 
+    def test_bypass_accounts(self):
+
+        # Test Bypass True
+        verf = self._create_verifier(self.acs, bypass_accounts=True)
+        self.assertEqual(verf.bypass_accounts, True)
+        verf.destroy()
+
+        # Test Bypass False
+        verf = self._create_verifier(self.acs, bypass_accounts=False)
+        self.assertEqual(verf.bypass_accounts, False)
+        verf.destroy()
+
+    def test_bypass_authenticators(self):
+
+        # Test Bypass True
+        verf = self._create_verifier(self.acs, bypass_authenticators=True)
+        self.assertEqual(verf.bypass_authenticators, True)
+        verf.destroy()
+
+        # Test Bypass False
+        verf = self._create_verifier(self.acs, bypass_authenticators=False)
+        self.assertEqual(verf.bypass_authenticators, False)
+        verf.destroy()
+
     def test_authenticators(self):
 
         # Create Verifier
