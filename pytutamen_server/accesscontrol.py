@@ -729,6 +729,8 @@ class Permissions(datatypes.PermissionsObject, datatypes.ChildObject):
                 out.append(verifier.key)
             elif isinstance(verifier, uuid.UUID):
                 out.append(str(verifier))
+            elif isinstance(verifier, str):
+                out.append(verifier)
             else:
                 raise TypeError("Unsupported verifier type: '{}'".format(type(verifier)))
 
