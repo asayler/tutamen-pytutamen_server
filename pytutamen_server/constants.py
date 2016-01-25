@@ -3,6 +3,17 @@
 # Andy Sayler
 # Copyright 2015, 2016
 
+
+import datetime
+
+
+DUR_ONE_MINUTE = datetime.timedelta(minutes=1)
+DUR_ONE_HOUR = datetime.timedelta(hours=1)
+DUR_ONE_DAY = datetime.timedelta(days=1)
+DUR_ONE_MONTH = datetime.timedelta(days=28)
+DUR_ONE_YEAR = datetime.timedelta(days=366)
+DUR_TEN_YEAR = datetime.timedelta(days=3660)
+
 KEY_OBJTYPE = "objtype"
 KEY_OBJUID = "objuid"
 
