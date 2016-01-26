@@ -403,20 +403,29 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             # Check Authenticators
             passed_authenticators = False
             if verifier.bypass_authenticators:
+                passed_authenticators = True
                 msg = "Bypassing Authenticator Verification"
                 logger.debug(msg)
-                passed_authenticators = True
             else:
-                # Todo: verify authenticators
                 passed_authenticators = True
+                for authenticator in verifiers.authenticators.by_obj():
+                    passed = authenticator.run(self):
+                    if not passed:
+                        passed_authenticators = False
+                        msg = "Failed to pass authenticator {}".format(authenticator)
+                        logger.debug(msg)
+                        break
+                    else:
+                        msg = "Passed authenticator {}".format(authenticator)
+                        logger.debug(msg)
 
         # Set Status and Return
+        msg = "passed_accounts = '{}', ".format(passed_accounts)
+        msg += "passed_authenticators = '{}', ".format(passed_authenticators)
         if passed_accounts and passed_authenticators:
             self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
         else:
             self._status.set_val(constants.AUTHZ_STATUS_DENIED)
-        msg = "passed_accounts = '{}', ".format(passed_accounts)
-        msg += "passed_authenticators = '{}', ".format(passed_authenticators)
         msg += "status = '{}'".format(self.status)
         logger.debug(msg)
         return (passed_accounts and passed_authenticators)
