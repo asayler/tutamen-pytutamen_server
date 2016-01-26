@@ -9,11 +9,15 @@
 import datetime
 import uuid
 import logging
+import importlib
 
 from . import crypto
 from . import utility
 from . import constants
 from . import datatypes
+
+import authmods
+
 
 ### Constants ###
 
@@ -46,7 +50,8 @@ _POSTFIX_OBJPERM = "objperm"
 _POSTFIX_OBJTYPE = "objtype"
 _POSTFIX_OBJUID = "objuid"
 _POSTFIX_STATUS = "status"
-_POSTFIX_MODULE = "module"
+_POSTFIX_MODULE_NAME = "module_name"
+_POSTFIX_MODULE_KWARGS = "module_kwargs"
 _POSTFIX_VERIFIERS = "verifiers"
 _POSTFIX_ACCOUNTS = "accounts"
 _POSTFIX_AUTHENTICATORS = "authenticators"
@@ -539,13 +544,19 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
 
     def __init__(self, pbackend, pindex=None, create=False,
                  prefix=_PREFIX_AUTHENTICATOR,
-                 module=None, **kwargs):
+                 module_name=None, module_kwargs=None, **kwargs):
         """Initialize Authenticator"""
 
         # Check Input
         utility.check_isinstance(pindex.parent, AccessControlServer)
+        module = None
         if create:
-            utility.check_isinstance(module, str)
+            utility.check_isinstance(module_name, str)
+            module_kwargs = {} if (module_kwargs is None) else module_kwargs
+            utility.check_isinstance(module_kwargs, dict)
+        else:
+            module_name = None
+            module_kwargs = None
 
         # Call Parent
         super().__init__(pbackend, pindex=pindex, create=create, prefix=prefix, **kwargs)
@@ -557,15 +568,35 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                                                   verifier_slaves,
                                                   Verifier,
                                                   pindex=self.server.verifiers)
-        self._module = self._build_pobj(self.pcollections.String,
-                                        _POSTFIX_MODULE,
-                                        create=module)
+        self._module_name = self._build_pobj(self.pcollections.String,
+                                             _POSTFIX_MODULE_NAME,
+                                             create=module_name)
+        self._module_kwargs = self._build_pobj(self.pcollections.Dictionary,
+                                               _POSTFIX_MODULE_KWARGS,
+                                               create=module_kwargs)
+
+        # Setup Module
+        import_name = self._to_import_name(self.module_name)
+        try:
+            module = importlib.import_module(import_name, package='authmods')
+            instance = module.Authmod(self, **self.module_kwargs)
+        except Exception as err:
+            self.destroy()
+            raise
+        else:
+            self._module = module
+            self._instance = instance
+
+    def _to_import_name(self, module_name):
+        module_name = module_name.lstrip('.')
+        return ".{}".format(module_name)
 
     def destroy(self):
         """Delete Authenticator"""
 
         # Cleanup Vars
-        self._module.rem()
+        self._module_kwargs.rem()
+        self._module_name.rem()
         self._verifiers.destroy()
 
         # Call Parent
@@ -582,9 +613,18 @@ class Authenticator(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         return self._verifiers
 
     @property
-    def module(self):
-        """Return Module"""
-        return self._module.get_val()
+    def module_name(self):
+        """Return Module Name"""
+        return self._module_name.get_val()
+
+    @property
+    def module_kwargs(self):
+        """Return Module Name"""
+        return self._module_kwargs.get_val()
+
+    def run(self, authenticator):
+        return self._instance.run(authenticator)
+
 
 class Account(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildObject):
 

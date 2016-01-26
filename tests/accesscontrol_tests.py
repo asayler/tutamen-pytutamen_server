@@ -31,6 +31,9 @@ from pytutamen_server import constants
 from pytutamen_server import datatypes
 from pytutamen_server import accesscontrol
 
+## Authmods ##
+import authmods.dummy
+
 
 ### Object Classes ###
 
@@ -93,8 +96,8 @@ class AccessControlTestCase(tests_common.BaseTestCase):
 
     def _create_authenticator(self, acs, **kwargs_user):
 
-        module = 'TESTMOD'
-        kwargs = {'module': module}
+        module_name = 'dummy'
+        kwargs = {'module_name': module_name}
         kwargs.update(kwargs_user)
 
         authenticator = acs.authenticators.create(**kwargs)
@@ -731,17 +734,88 @@ class AuthenticatorTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
         self.helper_test_slave_obj_index(create_master, create_slave,
                                          get_master_index, get_slave_index)
 
-    def test_module(self):
+    def test_module_name(self):
 
         # Create Authenticator
-        module = 'TESTMODULE'
-        auth = self._create_authenticator(self.acs, module=module)
+        module_name = 'dummy'
+        auth = self._create_authenticator(self.acs, module_name=module_name)
 
-        # Test Client UID
-        self.assertEqual(auth.module, module)
+        # Test module Name
+        self.assertEqual(auth.module_name, module_name)
 
         # Cleanup
         auth.destroy()
+
+    def test_module_kwargs(self):
+
+        # Create Authenticator
+        module_name = 'dummy'
+        module_kwargs = {'return_val': 'true'}
+        auth = self._create_authenticator(self.acs, module_name=module_name,
+                                          module_kwargs=module_kwargs)
+
+        # Test module kwargs
+        self.assertEqual(auth.module_kwargs, module_kwargs)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_module(self):
+
+        # Create Authenticator
+        module_name = 'dummy'
+        auth = self._create_authenticator(self.acs, module_name=module_name)
+
+        # Test _module
+        self.assertEqual(auth._module, authmods.dummy)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_instance(self):
+
+        # Create Authenticator
+        module_name = 'dummy'
+        auth = self._create_authenticator(self.acs, module_name=module_name)
+
+        # Test _module
+        self.assertIsInstance(auth._instance, auth._module.Authmod)
+
+        # Cleanup
+        auth.destroy()
+
+    def test_run_true(self):
+
+        # Create Authenticator
+        module_name = 'dummy'
+        module_kwargs = {'return_val': 'true'}
+        authn = self._create_authenticator(self.acs, module_name=module_name,
+                                          module_kwargs=module_kwargs)
+        autho = self._create_authorization(self.acs)
+
+        # Test run()
+        self.assertTrue(authn.run(autho))
+
+        # Cleanup
+        autho.destroy()
+        authn.destroy()
+
+    def test_run_false(self):
+
+        # Create Authenticator
+        module_name = 'dummy'
+        module_kwargs = {'return_val': 'false'}
+        authn = self._create_authenticator(self.acs, module_name=module_name,
+                                          module_kwargs=module_kwargs)
+        autho = self._create_authorization(self.acs)
+
+        # Test run()
+        self.assertFalse(authn.run(autho))
+
+        # Cleanup
+        autho.destroy()
+        authn.destroy()
+
 
 class AccountTestCase(AccessControlTestCase, helpers.ObjectsHelpers):
 
