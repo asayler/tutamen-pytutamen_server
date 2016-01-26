@@ -353,7 +353,7 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         try:
             perms = self.server.permissions.get(objtype=self.objtype, objuid=self.objuid)
         except datatypes.ObjectDNE as err:
-            msg = "No such object: {} {}".format(self.objtype, self.objuid)
+            msg = "No such permission: {} {}".format(self.objtype, self.objuid)
             logger.warning(msg)
             status = constants.AUTHZ_STATUS_FAILED + "_nosuchobj"
             self._status.set_val(status)

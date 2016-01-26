@@ -21,8 +21,9 @@ TYPE_SRV_AC = "acserver"
 TYPE_SRV_STORAGE = "storageserver"
 SRV_TYPES = [TYPE_SRV_AC, TYPE_SRV_STORAGE]
 
+TYPE_VERIFIER = "verifier"
 TYPE_COL = "collection"
-UID_TYPES = [TYPE_COL]
+UID_TYPES = [TYPE_COL, TYPE_VERIFIER]
 
 PERM_CREATE = "create"
 PERM_READ = "read"
