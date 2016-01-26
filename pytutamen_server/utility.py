@@ -97,28 +97,16 @@ def decode_auth_token(pub_key, token):
 
     return val
 
-def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=None):
+def verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=None):
 
-    if not manager:
-        manager = SigKeyManager()
-
-    val = None
-    for server in servers:
-        sigkey = manager.get_sigkey(server)
-
-        try:
-            val = decode_auth_token(sigkey, token)
-            msg = "Decoded token with server '{}'".format(server)
-            logger.debug(msg)
-            break
-        except jwt.exceptions.DecodeError as err:
-            msg = "Failed to decode token with server '{}': {}".format(server, str(err))
-            logger.debug(msg)
-
-    if not val:
-        msg = "Failed to verify token: No matching servers in '{}'".format(servers)
-        logger.warning(msg)
-        return None
+    try:
+        val = decode_auth_token(sigkey, token)
+        msg = "Decoded token"
+        logger.debug(msg)
+    except jwt.exceptions.DecodeError as err:
+        msg = "Failed to decode token: {}".format(str(err))
+        logger.debug(msg)
+        return False
 
     # Check ClientID and/or AccountID
     # ToDo: May not be necessary - but if desired, it
@@ -132,31 +120,56 @@ def verify_auth_token(token, servers, objperm, objtype, objuid=None, manager=Non
     if token_expiration < datetime.datetime.now():
         msg = "Failed to verify token: Expired at '{}'".format(token_expiration)
         logger.warning(msg)
-        return None
+        return False
 
     # Check objperm
     token_objperm = val[AUTHZ_KEY_OBJPERM]
     if token_objperm != objperm:
         msg = "Failed to verify token: Objperm '{}' != '{}'".format(token_objperm, objperm)
         logger.warning(msg)
-        return None
+        return False
 
     # Check objtype
     token_objtype = val[AUTHZ_KEY_OBJTYPE]
     if token_objtype != objtype:
         msg = "Failed to verify token: Objtype '{}' != '{}'".format(token_objtype, objtype)
         logger.warning(msg)
-        return None
+        return False
 
     # Check objuid
     token_objuid = val[AUTHZ_KEY_OBJUID]
     if token_objuid != objuid:
         msg = "Failed to verify token: Objuid '{}' != '{}'".format(token_objuid, objuid)
         logger.warning(msg)
-        return None
+        return False
 
     # Verified!
-    return server
+    return True
+
+def verify_auth_token_servers(token, servers, objperm, objtype, objuid=None, manager=None):
+
+    if not manager:
+        manager = SigKeyManager()
+
+    passed = False
+    for server in servers:
+        sigkey = manager.get_sigkey(server)
+        passed = verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=objuid)
+        if passed:
+            pass_server = server
+            msg = "Decoded token with server '{}'".format(server)
+            logger.debug(msg)
+            break
+        else:
+            msg = "Failed to verify token with server '{}'".format(server)
+            logger.debug(msg)
+
+    if not passed:
+        msg = "Failed to verify token: No matching servers in '{}'".format(servers)
+        logger.warning(msg)
+        return None
+    else:
+        return pass_server
 
 def verify_auth_token_list(tokens, servers, required,
                            objperm, objtype, objuid=None, manager=None):
@@ -169,7 +182,8 @@ def verify_auth_token_list(tokens, servers, required,
     remaining = list(servers)
     cnt = 0
     for token in tokens:
-        server = verify_auth_token(token, remaining, objperm, objtype, objuid, manager=manager)
+        server = verify_auth_token_servers(token, remaining, objperm, objtype,
+                                           objuid=objuid, manager=manager)
         if server:
             msg = "Verified token '{}' via server '{}'".format(token, server)
             logger.debug(msg)
