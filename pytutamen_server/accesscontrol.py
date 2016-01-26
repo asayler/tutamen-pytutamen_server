@@ -382,53 +382,61 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
         logger.debug(msg)
 
         # Search for valid verifiers
-        passed_accounts = False
-        passed_authenticators = False
+        passed_verifier = False
         for verifier in verifiers.by_obj():
 
+            msg = "Checking verifier '{}'".format(verifier)
+            logger.debug(msg)
+
             # Check Account
+            passed_accounts = False
             if verifier.bypass_accounts:
                 msg = "Bypassing Account Verification"
                 logger.debug(msg)
                 passed_accounts = True
             elif verifier.accounts.ismember(self.accountuid):
-                msg = "Account '{}' matches verifier '{}'".format(self.accountuid, verifier)
+                msg = "Account '{}' allowed".format(self.accountuid)
                 logger.debug(msg)
                 passed_accounts = True
             else:
                 msg = "No matching accounts found"
                 logger.debug(msg)
-                passed_accounts = False
 
             # Check Authenticators
             passed_authenticators = False
             if verifier.bypass_authenticators:
-                passed_authenticators = True
                 msg = "Bypassing Authenticator Verification"
                 logger.debug(msg)
+                passed_authenticators = True
             else:
                 passed_authenticators = True
                 for authenticator in verifier.authenticators.by_obj():
                     passed = authenticator.run(self)
                     if not passed:
-                        passed_authenticators = False
-                        msg = "Failed to pass authenticator {}".format(authenticator)
+                        msg = "Failed to pass authenticator '{}'".format(authenticator)
                         logger.debug(msg)
+                        passed_authenticators = False
                         break
                     else:
-                        msg = "Passed authenticator {}".format(authenticator)
+                        msg = "Passed authenticator '{}'".format(authenticator)
                         logger.debug(msg)
 
+            # Combine
+            msg = "passed_accounts = '{}', ".format(passed_accounts)
+            msg += "passed_authenticators = '{}', ".format(passed_authenticators)
+            if passed_accounts and passed_authenticators:
+                passed_verifier = True
+                break
+
         # Set Status and Return
-        msg = "passed_accounts = '{}', ".format(passed_accounts)
-        msg += "passed_authenticators = '{}', ".format(passed_authenticators)
-        if passed_accounts and passed_authenticators:
+        msg += "passed_verifiers = '{}', ".format(passed_verifier)
+        if passed_verifier
             self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
         else:
             self._status.set_val(constants.AUTHZ_STATUS_DENIED)
         msg += "status = '{}'".format(self.status)
         logger.debug(msg)
-        return (passed_accounts and passed_authenticators)
+        return (passed_verifier)
 
     def export_token(self):
         """Get signed assertion token"""
