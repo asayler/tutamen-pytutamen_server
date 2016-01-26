@@ -378,27 +378,34 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
             self._status.set_val(status)
             return False
 
-        msg = "Using verifiers '{}'".format(verifiers)
+        msg = "Using verifiers {}".format(verifiers.by_key())
         logger.debug(msg)
 
         # Search for valid verifiers
-        passed_accounts = False
-        passed_authenticators = False
+        passed_verifier = False
         for verifier in verifiers.by_obj():
 
+            msg = "Checking verifier '{}'".format(verifier.key)
+            logger.debug(msg)
+
             # Check Account
+            passed_accounts = False
             if verifier.bypass_accounts:
                 msg = "Bypassing Account Verification"
                 logger.debug(msg)
                 passed_accounts = True
             elif verifier.accounts.ismember(self.accountuid):
-                msg = "Account '{}' matches verifier '{}'".format(self.accountuid, verifier)
+                msg = "Account '{}' allowed".format(self.accountuid)
                 logger.debug(msg)
                 passed_accounts = True
             else:
                 msg = "No matching accounts found"
                 logger.debug(msg)
-                passed_accounts = False
+
+            msg = "passed_accounts = '{}'".format(passed_accounts)
+            logger.debug(msg)
+            if not passed_accounts:
+                continue
 
             # Check Authenticators
             passed_authenticators = False
@@ -406,20 +413,43 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                 msg = "Bypassing Authenticator Verification"
                 logger.debug(msg)
                 passed_authenticators = True
+            elif not len(verifier.authenticators):
+                msg = "No authenticators required"
+                logger.debug(msg)
+                passed_authenticators = True                
             else:
-                # Todo: verify authenticators
                 passed_authenticators = True
+                for authenticator in verifier.authenticators.by_obj():
+                    passed = authenticator.run(self)
+                    if not passed:
+                        msg = "Failed to pass authenticator '{}'".format(authenticator.key)
+                        logger.debug(msg)
+                        passed_authenticators = False
+                        break
+                    else:
+                        msg = "Passed authenticator '{}'".format(authenticator.key)
+                        logger.debug(msg)
+
+            msg = "passed_authenticators = '{}'".format(passed_authenticators)
+            logger.debug(msg)
+            if not passed_authenticators:
+                continue            
+
+            # Combine
+            if passed_accounts and passed_authenticators:
+                passed_verifier = True
+                break
 
         # Set Status and Return
-        if passed_accounts and passed_authenticators:
+        msg = "passed_verifier = '{}'".format(passed_verifier)
+        logger.debug(msg)
+        if passed_verifier:
             self._status.set_val(constants.AUTHZ_STATUS_APPROVED)
         else:
             self._status.set_val(constants.AUTHZ_STATUS_DENIED)
-        msg = "passed_accounts = '{}', ".format(passed_accounts)
-        msg += "passed_authenticators = '{}', ".format(passed_authenticators)
-        msg += "status = '{}'".format(self.status)
+        msg = "status = '{}'".format(self.status)
         logger.debug(msg)
-        return (passed_accounts and passed_authenticators)
+        return (passed_verifier)
 
     def export_token(self):
         """Get signed assertion token"""
