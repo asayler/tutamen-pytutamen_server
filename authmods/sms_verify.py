@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
 # Andy Sayler
-# Copyright 2015
+# Copyright 2016
 
 
 ### Imports ###
 
-import datetime
-import uuid
 import logging
 import os
 import time
@@ -31,7 +29,9 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.NullHandler())
 
 
-class AuthenticatorModule(object):
+### Authmod ###
+
+class Authmod(object):
 
     def __init__(self, authenticator, account_sid=None, auth_token=None, sender=None):
 
