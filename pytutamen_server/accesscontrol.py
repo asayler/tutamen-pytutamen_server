@@ -408,8 +408,8 @@ class Authorization(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.Ch
                 logger.debug(msg)
             else:
                 passed_authenticators = True
-                for authenticator in verifiers.authenticators.by_obj():
-                    passed = authenticator.run(self):
+                for authenticator in verifier.authenticators.by_obj():
+                    passed = authenticator.run(self)
                     if not passed:
                         passed_authenticators = False
                         msg = "Failed to pass authenticator {}".format(authenticator)
