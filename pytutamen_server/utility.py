@@ -97,7 +97,9 @@ def decode_auth_token(pub_key, token):
 
     return val
 
-def verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=None):
+def verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=None, error=False):
+
+    passing = True
 
     try:
         val = decode_auth_token(sigkey, token)
@@ -106,7 +108,7 @@ def verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=None):
     except jwt.exceptions.DecodeError as err:
         msg = "Failed to decode token: {}".format(str(err))
         logger.debug(msg)
-        return False
+        passing = False
 
     # Check ClientID and/or AccountID
     # ToDo: May not be necessary - but if desired, it
@@ -116,37 +118,51 @@ def verify_auth_token_sigkey(token, sigkey, objperm, objtype, objuid=None):
     #       server CA. I.e. It's involved.
 
     # Check Expiration
-    token_expiration = val[AUTHZ_KEY_EXPIRATION]
-    if token_expiration < datetime.datetime.now():
-        msg = "Failed to verify token: Expired at '{}'".format(token_expiration)
-        logger.warning(msg)
-        return False
+    if passing:
+        token_expiration = val[AUTHZ_KEY_EXPIRATION]
+        if token_expiration < datetime.datetime.now():
+            msg = "Failed to verify token: Expired at '{}'".format(token_expiration)
+            logger.warning(msg)
+            passing = False
 
     # Check objperm
-    token_objperm = val[AUTHZ_KEY_OBJPERM]
-    if token_objperm != objperm:
-        msg = "Failed to verify token: Objperm '{}' != '{}'".format(token_objperm, objperm)
-        logger.warning(msg)
-        return False
+    if passing:
+        token_objperm = val[AUTHZ_KEY_OBJPERM]
+        if token_objperm != objperm:
+            msg = "Failed to verify token: Objperm '{}' != '{}'".format(token_objperm, objperm)
+            logger.warning(msg)
+            passing = False
 
     # Check objtype
-    token_objtype = val[AUTHZ_KEY_OBJTYPE]
-    if token_objtype != objtype:
-        msg = "Failed to verify token: Objtype '{}' != '{}'".format(token_objtype, objtype)
-        logger.warning(msg)
-        return False
+    if passing:
+        token_objtype = val[AUTHZ_KEY_OBJTYPE]
+        if token_objtype != objtype:
+            msg = "Failed to verify token: Objtype '{}' != '{}'".format(token_objtype, objtype)
+            logger.warning(msg)
+            passing = False
 
     # Check objuid
-    token_objuid = val[AUTHZ_KEY_OBJUID]
-    if token_objuid != objuid:
-        msg = "Failed to verify token: Objuid '{}' != '{}'".format(token_objuid, objuid)
+    if passing:
+        token_objuid = val[AUTHZ_KEY_OBJUID]
+        if token_objuid != objuid:
+            msg = "Failed to verify token: Objuid '{}' != '{}'".format(token_objuid, objuid)
+            logger.warning(msg)
+            passing = False
+
+    # Check Passing
+    if not passing:
+        msg = "Failed to verify token"
         logger.warning(msg)
-        return False
+        if error:
+            raise TokenVerificationFailed(msg)
+    else:
+        msg = "Verified Token"
+        logger.debug(msg)
 
-    # Verified!
-    return True
+    return passing
 
-def verify_auth_token_servers(token, servers, objperm, objtype, objuid=None, manager=None):
+def verify_auth_token_servers(token, servers, objperm, objtype, objuid=None,
+                              manager=None, error=False):
 
     if not manager:
         manager = SigKeyManager()
@@ -167,12 +183,16 @@ def verify_auth_token_servers(token, servers, objperm, objtype, objuid=None, man
     if not passed:
         msg = "Failed to verify token: No matching servers in '{}'".format(servers)
         logger.warning(msg)
-        return None
+        if error:
+            raise TokenVerificationFailed(msg)
+        else:
+            return None
     else:
         return pass_server
 
 def verify_auth_token_list(tokens, servers, required,
-                           objperm, objtype, objuid=None, manager=None):
+                           objperm, objtype, objuid=None,
+                           manager=None, error=True):
 
     if len(tokens) < required:
         msg = "Not enough tokens: {} of {}".format(len(tokens), required)
@@ -195,11 +215,13 @@ def verify_auth_token_list(tokens, servers, required,
     if cnt < required:
         msg = "Failed to verify enough tokens: {} of {}".format(cnt, required)
         logger.warning(msg)
-        raise TokenVerificationFailed(msg)
+        if error:
+            raise TokenVerificationFailed(msg)
     else:
         msg = "Verified {} tokens".format(cnt)
         logger.debug(msg)
-        return cnt
+
+    return cnt
 
 
 ### Classes ###
