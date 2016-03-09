@@ -529,7 +529,7 @@ class Verifier(datatypes.UUIDObject, datatypes.UserDataObject, datatypes.ChildOb
             for account in accounts:
                 self.accounts.add(account)
             for authenticator in authenticators:
-                self.autenticators.add(authenticator)
+                self.authenticators.add(authenticator)
 
     def destroy(self):
         """Delete Verifier"""
