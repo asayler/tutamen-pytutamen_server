@@ -9,8 +9,7 @@
 import logging
 import os
 import time
-from datetime import datetime
-from datetime import date
+import datetime
 
 from twilio.rest import TwilioRestClient
 
@@ -19,7 +18,7 @@ from pytutamen_server import constants
 
 ### Constants ###
 
-_TIMEOUT = constants.DUR_ONE_MINUTE/2
+_TIMEOUT = constants.DUR_ONE_MINUTE
 _SLEEP = 3
 
 ### Logging ###
@@ -78,18 +77,20 @@ class Authmod(object):
         message = self._twilio.messages.create(to=recipient, from_=sender, body=body)
 
         # Poll for response
-        deadline = datetime.now() + _TIMEOUT
-        while datetime.now() < deadline:
-            # Todo: Handle end-of-day roll-over correctly
-            lst = self._twilio.messages.list(to=sender, from_=recipient, date_sent=date.today())
+        start_utc = datetime.datetime.utcnow()
+        deadline_utc = start_utc + _TIMEOUT
+        while datetime.datetime.utcnow() < deadline_utc:
+            yesterday_utc = datetime.datetime.utcnow().date() - constants.DUR_ONE_DAY
+            lst = self._twilio.messages.list(to=sender, from_=recipient, after=yesterday_utc)
             logger.debug("Received messages '{}'".format(lst))
             for message in lst:
-                # Todo: Add time window restriction
-                # Todo: Only count most recent message
-                logger.debug("message.body: {}".format(message.body))
-                if str(nonce) in message.body:
-                    logger.debug("Nonce Found - Pass")
-                    return True
+                logger.debug("message.date_sent: {}".format(message.date_sent))
+                if message.date_sent > start_utc:
+                    # Todo: Only count most recent message
+                    logger.debug("message.body: {}".format(message.body))
+                    if str(nonce) in message.body:
+                        logger.debug("Nonce Found - Pass")
+                        return True
             time.sleep(_SLEEP)
 
         logger.debug("No Nonce Found - Fail")
